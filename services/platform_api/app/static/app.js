@@ -100,7 +100,8 @@ async function ask(question) {
   const answer = $("#answer"); answer.className = "answer"; answer.textContent = "Systeme werden abgefragt …";
   try {
     const result = await api("/api/assistant/ask", { method: "POST", body: JSON.stringify({ question }) });
-    answer.innerHTML = `<p>${escapeHtml(result.answer)}</p><div class="sources">${result.sources.map((source) => `<span class="source">${escapeHtml(source.system)} · ${escapeHtml(source.reference)}</span>`).join("")}</div>`;
+    const tools = (result.tools_used || []).map((tool) => `<span class="source">Tool · ${escapeHtml(tool)}</span>`).join("");
+    answer.innerHTML = `<p>${escapeHtml(result.answer)}</p><div class="sources">${tools}${result.sources.map((source) => `<span class="source">${escapeHtml(source.system)} · ${escapeHtml(source.reference)}</span>`).join("")}</div>`;
   } catch (error) { answer.textContent = error.message; }
 }
 

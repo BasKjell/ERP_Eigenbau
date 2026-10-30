@@ -3,6 +3,7 @@
 | System | Technologie | Lizenz | Profil | Port | Doku |
 |---|---|---|---|---:|---|
 | Management Portal / Integration | Python, FastAPI | MIT | Standard | 8088 | [Benutzer](../tools/user/portal.md) · [Admin](../tools/admin/portal.md) |
+| Plattform-MCP | Python, MCP SDK | MIT | Standard | 8090 | [Benutzer](../tools/user/mcp.md) · [Admin](../tools/admin/mcp.md) |
 | Prozess-Wiki | MkDocs Material | MIT | Standard | 8001 | [Benutzer](../tools/user/mkdocs.md) · [Admin](../tools/admin/mkdocs.md) |
 | PostgreSQL + pgvector | PostgreSQL/C | PostgreSQL | Standard | intern | [Benutzer](../tools/user/postgresql.md) · [Admin](../tools/admin/postgresql.md) |
 | ERPNext/Frappe | Python | GPLv3/MIT | full | 8081 | [Benutzer](../tools/user/erpnext.md) · [Admin](../tools/admin/erpnext.md) |

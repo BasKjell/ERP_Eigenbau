@@ -178,6 +178,30 @@
     {"item": "DISPLAY-7", "name": "Display-Modul 7 Zoll", "qty": 1, "source": "buy", "available": 7},
     {"item": "FW-SCU-3", "name": "Firmware SCU v3", "qty": 1, "source": "software", "available": 999}
   ],
+  "purchase_orders": [
+    {
+      "id": "PO-2027-0088",
+      "supplier": "Baltic Electronics",
+      "item": "PCB-MAIN-42",
+      "quantity": 5,
+      "promised_date": "2027-01-05",
+      "expected_date": "2027-01-07",
+      "status": "late",
+      "delay_days": 2,
+      "sales_order": "SO-4711"
+    },
+    {
+      "id": "PO-2027-0091",
+      "supplier": "Display Components Europe",
+      "item": "DISPLAY-7",
+      "quantity": 3,
+      "promised_date": "2027-01-09",
+      "expected_date": "2027-01-09",
+      "status": "on_time",
+      "delay_days": 0,
+      "sales_order": "SO-4711"
+    }
+  ],
   "capacity": [
     {
       "id": "WS-MECH",

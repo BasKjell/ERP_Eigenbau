@@ -24,11 +24,16 @@ Danach:
 - Management-Portal: <http://localhost:8088>
 - Prozess-Wiki: <http://localhost:8001>
 - API-Dokumentation: <http://localhost:8088/docs>
+- MCP-Endpunkt: <http://localhost:8090/mcp>
 
-Die Demo laeuft ohne Cloud und ohne externes KI-Modell. Im Portal kann der
+Die Demo laeuft ohne Cloud und ohne externes KI-Modell. Ein lokales
+Ollama-Modell kann ueber `host.docker.internal` angebunden werden. Im Portal kann der
 Prozess schrittweise durchgespielt, der Fehlerfall `SN-10004` ausgeloest und
 behoben sowie der Status von Auftrag `4711` in natuerlicher Sprache abgefragt
 werden.
+
+Der Read-only-MCP-Server stellt unter anderem `list_production_orders`,
+`list_late_purchase_orders`, `get_order_status` und `search_documents` bereit.
 
 ## Vollstaendiger Plattform-Stack
 

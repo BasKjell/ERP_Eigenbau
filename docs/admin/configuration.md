@@ -11,8 +11,11 @@ werden durch `.gitignore` ausgeschlossen.
 | `DOCS_PORT` | MkDocs | 8001 |
 | `ERPNEXT_PORT` | ERPNext | 8081 |
 | `PAPERLESS_PORT` | Paperless | 8010 |
+| `MCP_PORT` | Read-only-MCP-Endpunkt | 8090 |
 | `AI_MODE` | `deterministic` oder `ollama` | deterministic |
-| `OLLAMA_MODEL` | lokales Modell | qwen3:4b |
+| `OLLAMA_BASE_URL` | Modellserver aus dem Container | `host.docker.internal:11434` auf dem Mac |
+| `OLLAMA_MODEL` | lokales Modell | qwen3:8b |
+| `OLLAMA_TIMEOUT_SECONDS` | maximale Antwortzeit | 120 |
 | `ERPNEXT_API_KEY/SECRET` | Live-Adapter | leer |
 | `PAPERLESS_API_TOKEN` | Live-Adapter | leer |
 

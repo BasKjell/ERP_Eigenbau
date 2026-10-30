@@ -8,6 +8,7 @@ Unternehmensprozess direkt mit den nötigen Bedienschritten.
 | Werkzeug | Zweck im Prozess | Benutzeranleitung | Administration |
 |---|---|---|---|
 | Management-Portal / FastAPI | Prozesscockpit, Demo, Integrations-API | [Portal bedienen](user/portal.md) | [Portal administrieren](admin/portal.md) |
+| Plattform-MCP | standardisierte Read-only-Werkzeuge für Assistenten | [MCP-Werkzeuge nutzen](user/mcp.md) | [MCP administrieren](admin/mcp.md) |
 | ERPNext / Frappe | CRM, Verkauf, MRP, Einkauf, Fertigung, Lager, Finanzen | [ERPNext im Prozess](user/erpnext.md) | [ERPNext administrieren](admin/erpnext.md) |
 | Paperless-ngx | Dokumentenlenkung und Nachweise | [Dokumente im Prozess](user/paperless.md) | [Paperless administrieren](admin/paperless.md) |
 | Keycloak | Anmeldung, Rollen und SSO | [Anmelden und Rollen nutzen](user/keycloak.md) | [Keycloak administrieren](admin/keycloak.md) |

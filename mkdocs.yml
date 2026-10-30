@@ -73,6 +73,7 @@ nav:
       - Katalog und Matrix: tools/index.md
       - Benutzeranleitungen:
           - Management-Portal: tools/user/portal.md
+          - Plattform-MCP: tools/user/mcp.md
           - ERPNext: tools/user/erpnext.md
           - Paperless-ngx: tools/user/paperless.md
           - Keycloak: tools/user/keycloak.md
@@ -84,6 +85,7 @@ nav:
           - Docker Compose: tools/user/docker-compose.md
       - Administrationsanleitungen:
           - Management-Portal: tools/admin/portal.md
+          - Plattform-MCP: tools/admin/mcp.md
           - ERPNext: tools/admin/erpnext.md
           - Paperless-ngx: tools/admin/paperless.md
           - Keycloak: tools/admin/keycloak.md
@@ -99,6 +101,7 @@ nav:
       - ERPNext zu MES: interfaces/erpnext-mes.md
       - Paperless-ngx: interfaces/paperless.md
       - AI-Tools: interfaces/ai-tools.md
+      - MCP-Server: interfaces/mcp.md
   - Administration:
       - Lokaler Betrieb: admin/local-operation.md
       - Konfiguration: admin/configuration.md

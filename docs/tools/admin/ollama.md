@@ -3,13 +3,15 @@
 ## Start und Modell
 
 ```bash
-docker compose --profile ai up -d ollama
-docker compose exec ollama ollama pull qwen3:4b
-docker compose exec ollama ollama list
+ollama list
+ollama pull qwen3:8b        # nur wenn nicht vorhanden
+curl http://127.0.0.1:11434/api/version
 ```
 
-Anschließend in `.env` `AI_MODE=ollama`, interne Basis-URL und den exakt
-installierten Modellnamen setzen und `platform-api` neu starten. Ohne
+Für das auf dem Mac laufende Ollama in `.env` `AI_MODE=ollama`,
+`OLLAMA_BASE_URL=http://host.docker.internal:11434` und den exakt installierten
+Modellnamen setzen. Danach `platform-api` neu starten. Für den optionalen
+Compose-Ollama-Dienst lautet die interne URL `http://ollama:11434`. Ohne
 erreichbares Modell bleibt der deterministische Modus die sichere Basis.
 
 ## Sicherheitsmodell

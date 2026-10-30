@@ -43,7 +43,8 @@ services:
       DOCUMENT_DIR: /app/documents
       AI_MODE: ${AI_MODE:-deterministic}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:8b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
       ERPNEXT_BASE_URL: ${ERPNEXT_BASE_URL:-http://erpnext-frontend:8080}
       ERPNEXT_API_KEY: ${ERPNEXT_API_KEY:-}
       ERPNEXT_API_SECRET: ${ERPNEXT_API_SECRET:-}
@@ -59,6 +60,36 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [platform]
+
+  platform-mcp:
+    build:
+      context: ./services/platform_api
+      target: base
+    restart: unless-stopped
+    command: ["python", "-m", "app.mcp_server"]
+    environment:
+      DEMO_DATA_FILE: /data/scenario.json
+      DEMO_SEED_FILE: /app/seed/scenario.json
+      DOCUMENT_DIR: /app/documents
+      ERPNEXT_BASE_URL: ${ERPNEXT_BASE_URL:-http://erpnext-frontend:8080}
+      ERPNEXT_API_KEY: ${ERPNEXT_API_KEY:-}
+      ERPNEXT_API_SECRET: ${ERPNEXT_API_SECRET:-}
+      PAPERLESS_BASE_URL: ${PAPERLESS_BASE_URL:-http://paperless-webserver:8000}
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
+    ports:
+      - "${MCP_PORT:-8090}:8090"
+    volumes:
+      - demo-state:/data
+      - ./output/pdf:/app/documents:ro
+    depends_on:
+      platform-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8090), 2).close()"]
       interval: 10s
       timeout: 3s
       retries: 10

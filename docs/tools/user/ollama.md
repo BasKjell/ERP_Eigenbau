@@ -16,6 +16,8 @@ Freigaberegeln bleiben gleich.
 ## Geeignete Fragen
 
 - „Wie ist der Status von Auftrag 4711?“
+- „Welche Aufträge sind gerade in Produktion?“
+- „Welche Bestellungen sind verspätet?“
 - „Warum ist SN-10004 gesperrt?“
 - „Welche Dokumentrevision gilt für WO-2027-0042?“
 - „Was fehlt vor der Lieferung?“
@@ -24,3 +26,7 @@ Der Assistent darf keine Qualitätsfreigabe, Buchung oder Benutzerberechtigung
 eigenständig erteilen. Fehlt eine Quelle oder widerspricht die Antwort dem
 Fachsystem, gilt das Fachsystem; Antwort und Referenz werden als Fehlerfall an
 den Administrator gemeldet.
+
+Unter der Antwort zeigen `Tool`-Chips, welche Lesefunktion verwendet wurde;
+die weiteren Chips nennen die Fachreferenzen. Ein lokales Sprachmodell
+formuliert die Antwort, bestimmt aber nicht selbst die Quellen.
