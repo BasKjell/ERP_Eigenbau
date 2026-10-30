@@ -6,7 +6,7 @@ help:
 	@echo "  make full      Startet zusaetzlich ERPNext und Paperless-ngx"
 	@echo "  make seed-erp  Legt den SCU-100-Demofall idempotent in ERPNext an"
 	@echo "  make ai        Startet zusaetzlich Ollama (Modell separat laden)"
-	@echo "  make mcp       Startet den lokalen Read-only-MCP-Server"
+	@echo "  make mcp       Startet den lokalen MCP-Server fuer Abfragen und Testdaten"
 	@echo "  make test      Fuehrt Python-Tests aus"
 	@echo "  make validate  Prueft Compose und baut die Dokumentation"
 	@echo "  make reset     Setzt den Demo-Datensatz zurueck"

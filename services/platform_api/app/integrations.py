@@ -23,7 +23,10 @@ def integration_status(settings: Settings) -> list[dict[str, object]]:
         _probe(
             "ERPNext",
             settings.erpnext_base_url,
-            bool(settings.erpnext_api_key and settings.erpnext_api_secret),
+            bool(
+                (settings.erpnext_api_key and settings.erpnext_api_secret)
+                or (settings.erpnext_username and settings.erpnext_password)
+            ),
             "/api/method/ping",
         ),
         _probe(

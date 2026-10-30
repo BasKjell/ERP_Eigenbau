@@ -1,63 +1,90 @@
 # Model Context Protocol (MCP)
 
-## Was im PoC enthalten ist
+## Implementierter Umfang
 
-Der lokale, ausschließlich lesende MCP-Server läuft unter
-`http://localhost:8090/mcp`. Er verwendet den offiziellen Python-SDK und gibt
-nur fachlich begrenzte Werkzeugergebnisse zurück.
+Der lokale MCP-Server läuft unter `http://localhost:8090/mcp`. Er verwendet
+den offiziellen Python-SDK und trennt quellenbasierte Leseabfragen von
+kontrollierten Testdaten-Schreibaktionen.
 
-| Werkzeug | Antwortet auf |
+| Werkzeug | Zweck |
 |---|---|
-| `list_production_orders` | Welche Fertigungsaufträge sind gerade aktiv? |
-| `list_late_purchase_orders` | Welche Bestellungen sind gegenüber dem zugesagten Termin verspätet? |
-| `get_order_status` | Wo steht ein Kundenauftrag und besteht ein Liefer- oder Qualitätsrisiko? |
-| `search_documents` | Welche freigegebenen Dokumentmetadaten passen zu Artikel, Revision oder Referenz? |
+| `list_production_orders` | aktive Fertigungsaufträge anzeigen |
+| `list_late_purchase_orders` | verspätete Bestellungen anzeigen |
+| `get_order_status` | Kundenauftragsstatus und Risiken anzeigen |
+| `search_documents` | freigegebene Dokumentmetadaten suchen |
+| `list_test_data_types` | erlaubte ERPNext-Typen, Felder, Defaults und Beispiele liefern |
+| `create_test_data` | einzelne oder mehrere Testdatensätze vorschauen und anlegen |
+| `import_test_data` | CSV- oder JSON-Inhalt vorschauen und importieren |
+| `rollback_test_data_batch` | ausschließlich eine auditierte MCP-Testdatencharge löschen |
+
+Der Katalog deckt unter anderem Mitarbeiter, Arbeitszeitnachweise,
+Arbeitsplätze und -typen, Werkshallen, Arbeitsgänge, Lieferanten, Kunden,
+Artikel, Lager, Abteilungen, Stellen, Niederlassungen, Projekte,
+Tätigkeitsarten, Feiertagslisten und Mengeneinheiten ab. Freies SQL,
+beliebige DocTypes und beliebige Felder sind nicht möglich.
 
 ```mermaid
 flowchart LR
-  U[Benutzerfrage] --> H[Portal / MCP-Host]
-  H --> T[freigegebenes Read-only-Tool]
-  T --> E[ERPNext- oder Paperless-Adapter]
-  E --> T
-  T --> L[Ollama qwen3:8b]
-  L --> H
-  H --> U
+  U[Benutzer] --> H[MCP-fähiger LLM-Host]
+  H --> C[Katalog oder Vorschau]
+  C --> U
+  U -->|explizite Bestätigung| W[freigegebenes Schreibwerkzeug]
+  W --> V[Schema-, Mengen- und Feldprüfung]
+  V --> E[ERPNext REST API]
+  E --> A[Audit mit Batch-ID]
+  A --> H
 ```
 
-Ollama selbst ist Modellserver, aber kein MCP-Host. Erst Portal, Codex, ein
-Desktop-Client oder ein Gateway verbindet MCP-Werkzeuge mit dem Modell. Im
-Portal wird derselbe Python-Werkzeugkatalog direkt verwendet; der MCP-Endpunkt
-stellt ihn zusätzlich anderen Clients standardisiert bereit.
+Ollama ist Modellserver, aber kein MCP-Host. Ein Desktop-Client, Codex, ein
+Gateway oder eine andere MCP-fähige Anwendung verbindet das lokale Modell mit
+`http://localhost:8090/mcp`. Das Management-Portal verwendet weiterhin seinen
+eigenen, nur lesenden Assistentenpfad.
 
-## Verfügbare Upstream-Server
+## Schreibvertrag
 
-| System | Stand | Empfehlung |
-|---|---|---|
-| ERPNext/Frappe | [Frappe MCP](https://github.com/frappe/mcp) aus der Frappe-Organisation | für echte DocTypes als Frappe-App evaluieren; zunächst nur freigegebene Lesetools |
-| Grafana | [offizieller Grafana MCP-Server](https://github.com/grafana/mcp-grafana) | mit Viewer-Servicekonto und deaktivierten Schreibtools einsetzen |
-| Prometheus | [Prometheus MCP](https://github.com/prometheus/prometheus-mcp) | nur PromQL-Lesezugriff; alternativ über Grafana MCP |
-| Paperless-ngx | Community-Projekte, z. B. [paperless-mcp](https://github.com/tb1337/paperless-mcp) | experimentell; read-only und mit Backup testen oder den eigenen Adapter nutzen |
-| Keycloak | kein fachlicher Datenserver; [Keycloak kann MCP-Autorisierung bereitstellen](https://github.com/keycloak/keycloak/blob/main/docs/guides/securing-apps/mcp-authz-server.adoc) | später für OAuth/Rollen des Plattform-MCP nutzen |
-| Docker | [Docker MCP Gateway](https://github.com/docker/mcp-gateway) | mehrere geprüfte Server zentral und isoliert bündeln |
-| PostgreSQL | generische SQL-Server existieren | nicht für Fachanwender freigeben; Domänenwerkzeuge statt freiem SQL |
+1. Das Modell ruft `list_test_data_types` auf und verwendet nur die gelieferten
+   Feldnamen.
+2. `create_test_data` oder `import_test_data` wird zunächst ohne
+   `confirm` aufgerufen und liefert nur eine normalisierte Vorschau.
+3. Erst nach Benutzerfreigabe wird derselbe Aufruf mit `confirm=true`
+   wiederholt.
+4. Bestehende Dokumente werden mit `on_duplicate=skip` übersprungen oder mit
+   `on_duplicate=error` als Fehler behandelt; es gibt kein verstecktes Update.
+5. Jeder Schreibaufruf erhält eine `batch_id`. Nur diese protokollierten
+   Dokumente können über `rollback_test_data_batch` nach erneuter Vorschau und
+   Bestätigung gelöscht werden.
+
+Standardmäßig ist ein Import atomar: Scheitert ein Datensatz, versucht der
+Server die im selben Aufruf bereits angelegten Dokumente wieder zu löschen.
+ERPNext kann ein Rollback verhindern, wenn inzwischen abhängige Belege
+existieren; solche Fehler stehen explizit in `rollback_errors`.
+
+## Importformate
+
+JSON besteht aus einer Liste von Objekten oder aus
+`{"records": [...]}`. CSV verwendet in der ersten Zeile die ERPNext-Feldnamen.
+Kindtabellen werden in einer CSV-Zelle als JSON-Liste übergeben, zum Beispiel
+`time_logs` eines Arbeitszeitnachweises. Ein Aufruf ist auf 1 MB und
+standardmäßig 100 Datensätze begrenzt.
 
 ## Sicherheitsgrenzen
 
-- Der aktuelle Server ist für `localhost` und Demodaten gedacht.
-- Keine generische SQL-, Shell- oder beliebige DocType-Abfrage.
-- Keine Schreibwerkzeuge; spätere Writes erfordern Rolle, Bestätigung und Audit.
-- Credentials bleiben serverseitig und werden nie an Ollama übergeben.
-- Vor Netzfreigabe kommen TLS, Keycloak/OAuth, Audience-Prüfung, Rate Limits
-  und getrennte Servicekonten hinzu.
+- Schreibwerkzeuge benötigen `MCP_WRITE_ENABLED=true`, gültige serverseitige
+  ERPNext-Zugangsdaten und `confirm=true`.
+- Zugangsdaten werden nie an Modell oder MCP-Client zurückgegeben.
+- Systemfelder wie `owner`, beliebige DocTypes, SQL und Shell bleiben gesperrt.
+- Auditereignisse liegen im Volume unter `/data/mcp-write-audit.jsonl`.
+- Die Administrator-Anmeldung ist nur für die lokale Demo vorgesehen. Vor
+  jeder Netzfreigabe sind ein eingeschränktes Servicekonto, Tokenauthentifizierung,
+  TLS, Keycloak/OAuth, Rollen, Rate Limits und Backups erforderlich.
 
 ## Start und Prüfung
 
 ```bash
+docker compose --profile full up -d --build
 docker compose up -d --build platform-mcp
-curl http://localhost:8090/mcp    # ein GET allein ist kein vollständiger MCP-Call
+docker compose logs --tail=150 platform-mcp
 ```
 
-Ein MCP-Client verbindet sich per Streamable HTTP mit
-`http://localhost:8090/mcp`. Die Werkzeugliste und Aufrufe werden über das
-MCP-Protokoll ausgehandelt; für einen Funktionstest wird der offizielle
-Python-Client oder MCP Inspector verwendet.
+Ein Browser-GET ist kein vollständiger MCP-Aufruf. Der Funktionstest erfolgt
+mit einem MCP-Client oder MCP Inspector über den Streamable-HTTP-Endpunkt.

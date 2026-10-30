@@ -32,8 +32,11 @@ Prozess schrittweise durchgespielt, der Fehlerfall `SN-10004` ausgeloest und
 behoben sowie der Status von Auftrag `4711` in natuerlicher Sprache abgefragt
 werden.
 
-Der Read-only-MCP-Server stellt unter anderem `list_production_orders`,
-`list_late_purchase_orders`, `get_order_status` und `search_documents` bereit.
+Der MCP-Server stellt die vier quellenbasierten Lesewerkzeuge sowie kontrollierte
+ERPNext-Testdatenwerkzeuge bereit. Ein lokales Modell kann damit nach Vorschau
+und expliziter Bestätigung Mitarbeiter, Arbeitszeiten, Arbeitsplätze,
+Lieferanten und weitere freigegebene Stammdaten einzeln oder per CSV/JSON
+anlegen. Schreibzugriffe gelten ausschließlich für die lokale Demo.
 
 ## Vollstaendiger Plattform-Stack
 

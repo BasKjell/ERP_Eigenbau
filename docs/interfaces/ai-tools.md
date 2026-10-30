@@ -15,13 +15,20 @@ fachliche Tools mit serverseitiger Rollenprüfung aufrufen.
 | `get_capacity` | ERPNext | lesen | nein |
 | `search_documents` | Paperless | lesen | nein |
 | `get_quality_incident` | MES | lesen | nein |
+| `list_test_data_types` | MCP-Katalog | lesen | nein |
+| `create_test_data` | ERPNext | Testdaten schreiben | Vorschau + immer |
+| `import_test_data` | ERPNext | CSV/JSON-Testdaten schreiben | Vorschau + immer |
+| `rollback_test_data_batch` | ERPNext/Audit | Testdaten löschen | Vorschau + immer |
 | `create_purchase_request` | ERPNext | schreiben | immer |
 | `release_work_order` | ERPNext | schreiben | immer + Rolle |
 
-Im implementierten PoC sind die vier Read-only-Werkzeuge
+Im implementierten PoC sind die vier Lesewerkzeuge
 `list_production_orders`, `list_late_purchase_orders`, `get_order_status` und
-`search_documents` aktiv. Weitere Einträge in der Tabelle sind das Zielbild
-und werden erst nach Rollen- und Integrationstest freigeschaltet.
+`search_documents` sowie die vier kontrollierten Testdatenwerkzeuge aktiv.
+Fachliche Buchungen wie Bestellanforderung oder Fertigungsfreigabe bleiben
+Zielbild und sind nicht freigeschaltet. Die Testdatenwerkzeuge aktualisieren
+keine vorhandenen Dokumente und akzeptieren nur einen festen DocType- und
+Feldkatalog.
 
 ## Antwortvertrag
 

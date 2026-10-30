@@ -78,6 +78,12 @@ services:
       ERPNEXT_BASE_URL: ${ERPNEXT_BASE_URL:-http://erpnext-frontend:8080}
       ERPNEXT_API_KEY: ${ERPNEXT_API_KEY:-}
       ERPNEXT_API_SECRET: ${ERPNEXT_API_SECRET:-}
+      ERPNEXT_USERNAME: ${ERPNEXT_USERNAME:-Administrator}
+      ERPNEXT_PASSWORD: ${ERPNEXT_ADMIN_PASSWORD:-admin-demo-change-me}
+      MCP_WRITE_ENABLED: ${MCP_WRITE_ENABLED:-true}
+      MCP_MAX_WRITE_RECORDS: ${MCP_MAX_WRITE_RECORDS:-100}
+      MCP_AUDIT_FILE: /data/mcp-write-audit.jsonl
+      MCP_DEFAULT_COMPANY: ${MCP_DEFAULT_COMPANY:-Open Manufacturing Demo GmbH}
       PAPERLESS_BASE_URL: ${PAPERLESS_BASE_URL:-http://paperless-webserver:8000}
       PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
     ports:

@@ -11,12 +11,16 @@ werden durch `.gitignore` ausgeschlossen.
 | `DOCS_PORT` | MkDocs | 8001 |
 | `ERPNEXT_PORT` | ERPNext | 8081 |
 | `PAPERLESS_PORT` | Paperless | 8010 |
-| `MCP_PORT` | Read-only-MCP-Endpunkt | 8090 |
+| `MCP_PORT` | MCP-Endpunkt | 8090 |
+| `MCP_WRITE_ENABLED` | Testdaten-Schreibwerkzeuge aktivieren | true (nur lokale Demo) |
+| `MCP_MAX_WRITE_RECORDS` | maximale Datensätze je Schreibaufruf | 100 |
+| `MCP_DEFAULT_COMPANY` | Standardfirma für importierte Testdaten | Open Manufacturing Demo GmbH |
 | `AI_MODE` | `deterministic` oder `ollama` | deterministic |
 | `OLLAMA_BASE_URL` | Modellserver aus dem Container | `host.docker.internal:11434` auf dem Mac |
 | `OLLAMA_MODEL` | lokales Modell | qwen3:8b |
 | `OLLAMA_TIMEOUT_SECONDS` | maximale Antwortzeit | 120 |
-| `ERPNEXT_API_KEY/SECRET` | Live-Adapter | leer |
+| `ERPNEXT_API_KEY/SECRET` | bevorzugte ERPNext-Tokenanmeldung | leer |
+| `ERPNEXT_USERNAME` | lokale ERPNext-Sitzungsanmeldung | Administrator |
 | `PAPERLESS_API_TOKEN` | Live-Adapter | leer |
 
 ## Passwörter und Secrets

@@ -1,8 +1,11 @@
 import asyncio
+from pathlib import Path
+from typing import Any
 
 from app.business_tools import list_late_purchase_orders, list_production_orders
-from app.config import settings
+from app.config import Settings, settings
 from app.main import app, store
+from app.master_data import AuditLog, MasterDataError, MasterDataService
 from app.mcp_server import mcp
 from fastapi.testclient import TestClient
 from mcp import Client
@@ -88,7 +91,7 @@ def test_assistant_exposes_grounding_tools_for_procurement_question() -> None:
     assert any(source["reference"] == "PO-2027-0088" for source in result["sources"])
 
 
-def test_mcp_server_exposes_only_the_approved_read_tools() -> None:
+def test_mcp_server_exposes_approved_read_and_test_data_tools() -> None:
     async def inspect_server() -> tuple[list[str], dict[str, object] | None]:
         async with Client(mcp) as client:
             tools = await client.list_tools()
@@ -101,6 +104,127 @@ def test_mcp_server_exposes_only_the_approved_read_tools() -> None:
         "list_late_purchase_orders",
         "get_order_status",
         "search_documents",
+        "list_test_data_types",
+        "create_test_data",
+        "import_test_data",
+        "rollback_test_data_batch",
     ]
     assert result is not None
     assert result["count"] == 1
+
+
+class FakeDocumentClient:
+    configured = True
+
+    def __init__(self) -> None:
+        self.documents: dict[tuple[str, str], dict[str, Any]] = {}
+        self.deleted: list[tuple[str, str]] = []
+        self.counter = 0
+
+    def find_document(self, doctype: str, field: str, value: object) -> str | None:
+        for (stored_doctype, name), document in self.documents.items():
+            if stored_doctype == doctype and document.get(field) == value:
+                return name
+        return None
+
+    def create_document(self, doctype: str, values: dict[str, Any]) -> dict[str, Any]:
+        self.counter += 1
+        name = f"TEST-{self.counter:05d}"
+        self.documents[(doctype, name)] = dict(values)
+        return {"name": name, **values}
+
+    def delete_document(self, doctype: str, name: str) -> None:
+        self.documents.pop((doctype, name))
+        self.deleted.append((doctype, name))
+
+
+def master_data_service(tmp_path: Path) -> tuple[MasterDataService, FakeDocumentClient]:
+    fake = FakeDocumentClient()
+    local_settings = Settings(
+        mcp_write_enabled=True,
+        mcp_max_write_records=3,
+        mcp_audit_file=tmp_path / "audit.jsonl",
+    )
+    return (
+        MasterDataService(local_settings, client=fake, audit=AuditLog(local_settings.mcp_audit_file)),
+        fake,
+    )
+
+
+def test_master_data_catalog_covers_people_time_and_manufacturing(tmp_path: Path) -> None:
+    service, _ = master_data_service(tmp_path)
+    result = service.list_types()
+    names = {entity["entity_type"] for entity in result["entities"]}
+    assert result["count"] >= 20
+    assert {"employees", "timesheets", "workstations", "suppliers", "items"} <= names
+
+
+def test_create_test_data_requires_preview_then_confirmation(tmp_path: Path) -> None:
+    service, fake = master_data_service(tmp_path)
+    records = [{"supplier_name": "TEST-Lieferant Nord"}]
+
+    preview = service.create("suppliers", records)
+    assert preview["mode"] == "preview"
+    assert preview["records"][0]["supplier_type"] == "Company"
+    assert not fake.documents
+
+    result = service.create("suppliers", records, confirm=True)
+    assert result["status"] == "created"
+    assert len(result["created"]) == 1
+    assert result["batch_id"]
+
+    duplicate = service.create("suppliers", records, confirm=True)
+    assert duplicate["created"] == []
+    assert duplicate["skipped"][0]["reason"] == "duplicate"
+
+
+def test_csv_and_json_imports_validate_and_normalize(tmp_path: Path) -> None:
+    service, _ = master_data_service(tmp_path)
+    csv_preview = service.import_content(
+        "workstations",
+        "workstation_name,production_capacity,status\nTEST-MONT-9,3,Production\n",
+    )
+    assert csv_preview["data_format"] == "csv"
+    assert csv_preview["records"][0]["production_capacity"] == 3
+
+    json_preview = service.import_content(
+        "timesheets",
+        '[{"employee":"HR-EMP-00001","time_logs":[{"activity_type":"Fertigung",'
+        '"from_time":"2026-10-30 08:00:00","hours":8}]}]',
+        data_format="json",
+    )
+    assert json_preview["records"][0]["time_logs"][0]["hours"] == 8
+
+
+def test_unknown_fields_and_record_limit_are_rejected(tmp_path: Path) -> None:
+    service, _ = master_data_service(tmp_path)
+    try:
+        service.create("suppliers", [{"supplier_name": "Test", "owner": "Administrator"}])
+    except MasterDataError as exc:
+        assert "unsupported fields" in str(exc)
+    else:
+        raise AssertionError("Unsupported fields were accepted")
+
+    try:
+        service.create("uoms", [{"uom_name": str(index)} for index in range(4)])
+    except MasterDataError as exc:
+        assert "At most 3" in str(exc)
+    else:
+        raise AssertionError("Record limit was not enforced")
+
+
+def test_only_audited_batch_can_be_rolled_back(tmp_path: Path) -> None:
+    service, fake = master_data_service(tmp_path)
+    created = service.create(
+        "activity_types", [{"activity_type": "TEST-Ruestzeit"}], confirm=True
+    )
+    batch_id = created["batch_id"]
+
+    preview = service.rollback(batch_id)
+    assert preview["requires_confirmation"] is True
+    assert fake.documents
+
+    result = service.rollback(batch_id, confirm=True)
+    assert result["status"] == "rolled_back"
+    assert not fake.documents
+    assert fake.deleted == [("Activity Type", "TEST-00001")]
