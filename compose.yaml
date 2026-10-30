@@ -7,8 +7,8 @@ x-erpnext-image: &erpnext-image
 x-erpnext-backend: &erpnext-backend
   <<: *erpnext-image
   volumes:
-    - erpnext-sites:/home/frappe/frappe-bench/sites
-    - erpnext-logs:/home/frappe/frappe-bench/logs
+    - erpnext-sites-v16:/home/frappe/frappe-bench/sites
+    - erpnext-logs-v16:/home/frappe/frappe-bench/logs
   depends_on:
     erpnext-configurator:
       condition: service_completed_successfully
@@ -181,7 +181,9 @@ services:
     networks: [platform]
 
   erpnext-db:
-    image: mariadb:10.6.23
+    # ERPNext/Frappe v16's MariaDB client requires TLS during site bootstrap.
+    # This is the same LTS line used by the upstream frappe_docker v16 demo.
+    image: mariadb:11.8.9
     profiles: [full]
     restart: unless-stopped
     command:
@@ -190,8 +192,9 @@ services:
       - --skip-character-set-client-handshake
     environment:
       MYSQL_ROOT_PASSWORD: ${ERPNEXT_DB_ROOT_PASSWORD:-erpnext-demo-change-me}
+      MARIADB_ROOT_PASSWORD: ${ERPNEXT_DB_ROOT_PASSWORD:-erpnext-demo-change-me}
     volumes:
-      - erpnext-db-data:/var/lib/mysql
+      - erpnext-db-data-v16:/var/lib/mysql
     healthcheck:
       test: ["CMD-SHELL", "healthcheck.sh --connect --innodb_initialized"]
       interval: 5s
@@ -264,6 +267,26 @@ services:
         condition: service_completed_successfully
     networks: [platform]
 
+  erpnext-seed:
+    <<: *erpnext-image
+    profiles: [full]
+    restart: "no"
+    entrypoint: ["/home/frappe/frappe-bench/env/bin/python", "/seed/seed_demo.py"]
+    environment:
+      FRAPPE_SITE: frontend
+      FRAPPE_BENCH_ROOT: /home/frappe/frappe-bench
+      FRAPPE_SITES_PATH: /home/frappe/frappe-bench/sites
+      ERP_DEMO_DATA_FILE: /seed/scenario.json
+    volumes:
+      - erpnext-sites-v16:/home/frappe/frappe-bench/sites
+      - erpnext-logs-v16:/home/frappe/frappe-bench/logs
+      - ./deployment/erpnext/seed_demo.py:/seed/seed_demo.py:ro
+      - ./services/platform_api/seed/scenario.json:/seed/scenario.json:ro
+    depends_on:
+      erpnext-create-site:
+        condition: service_completed_successfully
+    networks: [platform]
+
   erpnext-frontend:
     <<: *erpnext-image
     profiles: [full]
@@ -280,8 +303,8 @@ services:
     ports:
       - "${ERPNEXT_PORT:-8081}:8080"
     volumes:
-      - erpnext-sites:/home/frappe/frappe-bench/sites
-      - erpnext-logs:/home/frappe/frappe-bench/logs
+      - erpnext-sites-v16:/home/frappe/frappe-bench/sites
+      - erpnext-logs-v16:/home/frappe/frappe-bench/logs
     depends_on:
       - erpnext-backend
       - erpnext-websocket
@@ -387,10 +410,10 @@ volumes:
   paperless-media:
   paperless-export:
   paperless-consume:
-  erpnext-db-data:
+  erpnext-db-data-v16:
   erpnext-redis-queue:
-  erpnext-sites:
-  erpnext-logs:
+  erpnext-sites-v16:
+  erpnext-logs-v16:
   ollama-data:
   prometheus-data:
   grafana-data:

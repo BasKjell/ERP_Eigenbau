@@ -74,5 +74,7 @@ flowchart LR
 !!! info "PoC-Grenze"
     Das Portal simuliert die fachlichen Transaktionen reproduzierbar und zeigt
     die Integrationsverträge. ERPNext und Paperless-ngx sind als echte Container
-    enthalten. Die automatische Anlage aller ERPNext-Stammdaten ist ein nächster
-    Ausbauschritt und kein versteckter Bestandteil dieses PoC.
+    enthalten. Der ERPNext-Seed legt die für den manuellen SCU-100-Durchlauf
+    erforderlichen Stammdaten, Bestände, BOM und die Start-Opportunity an. Die
+    weiteren ERPNext-Belege erzeugt der Benutzer bewusst selbst; Fortschritte
+    im Portal ändern diese Belege nicht automatisch.

@@ -11,6 +11,17 @@ make demo
 [Prozess-Wiki](http://localhost:8001) in getrennten Tabs. Setze die Demo vor
 jedem Termin über **Demo zurücksetzen** auf den Anfang.
 
+Soll zusätzlich der echte ERPNext-Ablauf gezeigt werden, vorher ausführen:
+
+```bash
+docker compose --profile full up -d
+docker compose --profile full run --rm erpnext-seed
+```
+
+Anschließend [ERPNext](http://localhost:8081) öffnen und bei
+`OPP-2027-0018` beginnen. Die Portal-Demo und die manuell erzeugten
+ERPNext-Belege besitzen getrennte Zustände.
+
 ## Dramaturgie
 
 ### Minute 0-2: Das Zielbild

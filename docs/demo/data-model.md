@@ -5,6 +5,11 @@ Der Datensatz liegt versioniert in
 Start in ein Docker-Volume. **Demo zurücksetzen** stellt exakt diesen Zustand
 wieder her.
 
+Der ERPNext-Seed liest dieselbe Datei, legt daraus jedoch nur Stammdaten,
+Kapazitäten, Anfangsbestände, BOM, Qualitätsvorlage und die Opportunity an. Die
+ERPNext-Belegkette bleibt ein manueller Anwenderablauf und wird durch
+**Demo zurücksetzen** im Portal nicht verändert.
+
 ## Kernobjekte
 
 ```mermaid

@@ -1,9 +1,10 @@
-.PHONY: help demo full docs test lint validate stop reset logs ai mcp
+.PHONY: help demo full seed-erp docs test lint validate stop reset logs ai mcp
 
 help:
 	@echo "ERP Eigenbau - verfuegbare Befehle"
 	@echo "  make demo      Startet Portal, API, Datenbank und Wiki"
 	@echo "  make full      Startet zusaetzlich ERPNext und Paperless-ngx"
+	@echo "  make seed-erp  Legt den SCU-100-Demofall idempotent in ERPNext an"
 	@echo "  make ai        Startet zusaetzlich Ollama (Modell separat laden)"
 	@echo "  make mcp       Startet den lokalen Read-only-MCP-Server"
 	@echo "  make test      Fuehrt Python-Tests aus"
@@ -16,6 +17,9 @@ demo:
 
 full:
 	docker compose --profile full up -d --build
+
+seed-erp:
+	docker compose --profile full run --rm erpnext-seed
 
 ai:
 	docker compose --profile ai up -d --build

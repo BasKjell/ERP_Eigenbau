@@ -7,18 +7,28 @@ lange Worker, Site-Erstellung, MariaDB sowie getrennte Redis-Dienste für Cache
 und Queue. Benutzer greifen nur über `erpnext-frontend` auf Port
 `${ERPNEXT_PORT:-8081}` zu.
 
-## Erststart und Diagnose
+## Erststart, Seed und Diagnose
 
 ```bash
-docker compose --profile full up -d erpnext-frontend
+docker compose --profile full up -d
 docker compose ps -a
 docker compose logs --tail=200 erpnext-create-site
+docker compose logs --tail=200 erpnext-seed
 docker compose logs --tail=200 erpnext-backend erpnext-queue-short
 ```
 
 `erpnext-create-site` muss erfolgreich beendet sein. Ein 502 während der
 Erstinitialisierung ist erst dann ein Fehler, wenn Backend und Site-Erstellung
-bereit sein müssten.
+bereit sein müssten. `erpnext-seed` muss mit Exitcode 0 enden. Er kann ohne
+Duplikate erneut ausgeführt werden:
+
+```bash
+docker compose --profile full run --rm erpnext-seed
+```
+
+Das Skript liegt unter `deployment/erpnext/seed_demo.py` und liest den gleichen
+versionierten Szenariodatensatz wie das Management-Portal. Es überschreibt
+weder vorhandene Stammdaten noch bereits gebuchte Lagerbewegungen.
 
 ## Fachkonfiguration
 
@@ -33,8 +43,9 @@ bereit sein müssten.
 
 ## MariaDB, Redis und Backup
 
-MariaDB (`erpnext-db-data`) enthält die Fachbelege; `erpnext-sites` enthält
-Site-Dateien. Beides muss konsistent gesichert werden. Redis Cache ist
+MariaDB (`erpnext-db-data-v16`) enthält die Fachbelege;
+`erpnext-sites-v16` enthält Site-Dateien. Beides muss konsistent gesichert
+werden. Redis Cache ist
 rekonstruierbar, Queue-Daten und laufende Jobs müssen bei Wiederherstellung
 bewusst behandelt werden. Ein Restore wird in einem isolierten Stack getestet,
 bevor DNS oder Integrationen umgeschaltet werden.

@@ -3,6 +3,32 @@
 ERPNext ist das führende Fachsystem für Kundenauftrag, Material, Fertigung,
 Lager, Lieferung, Rechnung und die dazugehörigen Buchungen.
 
+## Vorbereiteter SCU-100-Demofall
+
+Das Compose-Profil `full` führt den idempotenten ERPNext-Seed beim ersten Start
+aus. Manuell lässt er sich aus dem Repository-Verzeichnis erneut ausführen:
+
+```bash
+docker compose --profile full run --rm erpnext-seed
+```
+
+Der Seed legt nur Voraussetzungen und den Prozessstart an. Vorhandene Daten
+werden nicht überschrieben. Erzeugt werden unter anderem:
+
+- Firma **Open Manufacturing Demo GmbH** mit Geschäftsjahren 2026 und 2027,
+- Kunde **NordMarine Systems GmbH** und zwei Lieferanten,
+- Produkt **SCU-100** samt Komponenten und freigegebener BOM,
+- Bestände entsprechend dem Demofall; nur `PCB-MAIN-42` fehlt vollständig,
+- fünf Workstations, Qualitätsmerkmale und Prüfvorlage,
+- Opportunity **OPP-2027-0018** über fünf Geräte zu je 12.500 EUR.
+
+Nach der Anmeldung unter [localhost:8081](http://localhost:8081) beginnt der
+manuelle Ablauf bei **CRM > Opportunity > OPP-2027-0018**. Falls ein Workspace
+in ERPNext v16 anders angeordnet ist, kann der Dokumenttyp über die globale
+Suche geöffnet werden. Angebot und alle Folgebelege erhalten die vom echten
+ERPNext erzeugten Nummern; die festen Referenzen wie `SO-4711` bleiben die
+fachlichen Kennungen des parallelen Portal-Szenarios.
+
 ## Prozess und Bedienweg
 
 | Phase | Rolle | Menü / Dokument | Benutzerhandlung |

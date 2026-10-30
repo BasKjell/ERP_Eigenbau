@@ -47,8 +47,19 @@ Zusaetzlich erreichbar:
 - Paperless-ngx: <http://localhost:8010> (Zugang aus `.env`)
 
 ERPNext benoetigt beim ersten Start mehrere Minuten. Der Portal-Demodatensatz
-bleibt davon unabhaengig bedienbar. Beispiel-PDFs liegen in `output/pdf/` und
-werden ueber `sample-documents/consume/` fuer Paperless bereitgestellt.
+bleibt davon unabhaengig bedienbar. Beim ersten `full`-Start legt der
+`erpnext-seed`-Container die Firma, Stammdaten, Bestände, Stückliste,
+Arbeitsplätze, Qualitätsvorlage und die Opportunity `OPP-2027-0018` im echten
+ERPNext an. Der Seed ist wiederholbar und kann bei Bedarf manuell gestartet
+werden:
+
+```bash
+docker compose --profile full run --rm erpnext-seed
+```
+
+Die nachfolgenden Belege werden bewusst im ERPNext-Webclient manuell erzeugt.
+Beispiel-PDFs liegen in `output/pdf/` und werden über den Paperless-Consume-
+Ordner bereitgestellt.
 
 Optionale Profile:
 

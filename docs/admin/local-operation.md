@@ -26,8 +26,14 @@ docker compose logs -f erpnext-create-site
 ```
 
 ERPNext ist bereit, wenn `erpnext-create-site` erfolgreich beendet ist und
-`erpnext-frontend` läuft. Je nach Mac und Verbindung kann die erste
-Initialisierung mehrere Minuten dauern.
+`erpnext-frontend` läuft. Der einmalige `erpnext-seed` muss ebenfalls mit
+Exitcode 0 beendet sein. Je nach Mac und Verbindung kann die erste
+Initialisierung mehrere Minuten dauern. Der Seed kann unabhängig wiederholt
+werden:
+
+```bash
+docker compose --profile full run --rm erpnext-seed
+```
 
 ## Stoppen und Zurücksetzen
 
@@ -48,13 +54,15 @@ prüfen.
 | Portal lädt nicht | `docker compose logs platform-api` | Port prüfen, Image neu bauen |
 | Wiki fehlt | `docker compose logs docs` | `mkdocs.yml` und Markdown-Build prüfen |
 | ERPNext zeigt 502 | `docker compose ps -a` | auf Site-Erstellung warten, Backend-Log prüfen |
+| `erpnext-create-site` meldet TLS-Fehler | Image und Volume-Namen mit `compose.yaml` vergleichen | MariaDB 11.8 und die v16-Volumes verwenden |
+| `erpnext-seed` endet mit Fehler | `docker compose logs erpnext-seed` | Schema-/Stammdatenfehler beheben, Seed erneut starten |
 | Paperless startet nicht | DB-/Broker-Health prüfen | Secrets und Volumes prüfen |
 | PDF liefert 404 | `ls output/pdf` | Beispieldokumente neu generieren |
 | AI antwortet deterministisch | `AI_MODE` und Ollama prüfen | Modell laden, API neu starten |
 
 ## Backup-Mindestumfang
 
-- `erpnext-sites`, `erpnext-db-data`
+- `erpnext-sites-v16`, `erpnext-db-data-v16`
 - `paperless-data`, `paperless-media`, `paperless-db-data`
 - `demo-state` nur für laufende Präsentationsstände
 - Git-Repository für Code und Dokumentation
