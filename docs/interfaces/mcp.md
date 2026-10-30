@@ -14,7 +14,7 @@ den read-only DMS- und Wiki-Zugriffen getrennt.
 
 | Werkzeug | Zweck |
 |---|---|
-| `list_production_orders` | aktive Fertigungsaufträge anzeigen |
+| `list_production_orders` | echte ERPNext-Work-Orders mit Status `In Process` anzeigen; optional geplante Aufträge ergänzen |
 | `list_late_purchase_orders` | verspätete Bestellungen anzeigen |
 | `get_order_status` | Kundenauftragsstatus und Risiken anzeigen |
 | `search_documents` | freigegebene Dokumentmetadaten suchen |

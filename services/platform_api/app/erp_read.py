@@ -29,6 +29,58 @@ class ERPReadService:
             "source": {"system": "ERPNext", "reference": "BOM"},
         }
 
+    def list_production_orders(
+        self, include_planned: bool = False, limit: int = 100
+    ) -> dict[str, Any]:
+        """List submitted ERPNext work orders that are active on the shopfloor."""
+        statuses = ["In Process"]
+        if include_planned:
+            statuses.extend(["Not Started", "Stock Reserved", "Stock Partially Reserved"])
+        rows = self.client.list_documents(
+            "Work Order",
+            fields=[
+                "name",
+                "production_item",
+                "item_name",
+                "qty",
+                "produced_qty",
+                "material_transferred_for_manufacturing",
+                "status",
+                "planned_start_date",
+                "planned_end_date",
+                "expected_delivery_date",
+                "sales_order",
+                "bom_no",
+                "wip_warehouse",
+                "fg_warehouse",
+            ],
+            filters=[["docstatus", "=", 1], ["status", "in", statuses]],
+            order_by="planned_start_date asc, name asc",
+            limit=limit,
+        )
+        orders = []
+        for row in rows:
+            quantity = float(row.get("qty") or 0)
+            produced = float(row.get("produced_qty") or 0)
+            transferred = float(row.get("material_transferred_for_manufacturing") or 0)
+            orders.append(
+                {
+                    **row,
+                    "remaining_qty": max(quantity - produced, 0),
+                    "progress_percent": round(produced / quantity * 100, 1) if quantity else 0,
+                    "material_transfer_percent": (
+                        round(transferred / quantity * 100, 1) if quantity else 0
+                    ),
+                }
+            )
+        return {
+            "tool": "list_production_orders",
+            "include_planned": include_planned,
+            "count": len(orders),
+            "orders": orders,
+            "source": {"system": "ERPNext", "reference": "Work Order"},
+        }
+
     def get_bom(self, item_code: str) -> dict[str, Any]:
         rows = self.client.list_documents(
             "BOM",

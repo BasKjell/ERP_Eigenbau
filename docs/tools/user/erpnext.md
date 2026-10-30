@@ -28,12 +28,16 @@ Zusätzlich werden idempotent gebuchte Beispiele angelegt:
 - Material Receipt für 25 `PCB-MAIN-42`,
 - Material Transfer der IOX-Komponenten ins WIP-Lager,
 - Manufacture für 3 `IOX-24`, 2 `HMI-070` und 1 `GW-EDGE-200`,
-- Material Issue für ein beschädigtes `CASE-GW-200`.
+- Material Issue für ein beschädigtes `CASE-GW-200`,
+- Work Orders `WO-DEMO-IOX-24-01` und `WO-DEMO-GW-EDGE-01` mit Status
+  **In Process** sowie `WO-DEMO-HMI-070-01` mit Status **Not Started**,
+- verknüpfte Materialbereitstellungen für die beiden laufenden Work Orders.
 
 Die Belege tragen in den Bemerkungen den Marker
 `[ERP-EIGENBAU-DEMO:…]`. Stücklisten stehen unter **Manufacturing > Bill of
 Materials**, Bestände unter **Stock > Reports > Stock Balance** und die
-Beispielbewegungen unter **Stock > Stock Entry** bzw. **Stock Ledger**.
+Beispielbewegungen unter **Stock > Stock Entry** bzw. **Stock Ledger**. Die
+Fertigungsaufträge stehen unter **Manufacturing > Work Order**.
 
 Nach der Anmeldung unter [localhost:8081](http://localhost:8081) beginnt der
 manuelle Ablauf bei **CRM > Opportunity > OPP-2027-0018**. Falls ein Workspace

@@ -226,6 +226,33 @@ EXTRA_PRODUCTS: list[dict[str, Any]] = [
     },
 ]
 
+DEMO_WORK_ORDERS: list[dict[str, Any]] = [
+    {
+        "name": "WO-DEMO-IOX-24-01",
+        "item": "IOX-24",
+        "qty": 4,
+        "start_offset_hours": -4,
+        "duration_hours": 8,
+        "transfer_qty": 4,
+    },
+    {
+        "name": "WO-DEMO-GW-EDGE-01",
+        "item": "GW-EDGE-200",
+        "qty": 2,
+        "start_offset_hours": -1,
+        "duration_hours": 12,
+        "transfer_qty": 1,
+    },
+    {
+        "name": "WO-DEMO-HMI-070-01",
+        "item": "HMI-070",
+        "qty": 6,
+        "start_offset_hours": 24,
+        "duration_hours": 16,
+        "transfer_qty": 0,
+    },
+]
+
 
 def log(message: str) -> None:
     print(f"[erpnext-seed] {message}", flush=True)
@@ -1119,6 +1146,113 @@ def ensure_demo_stock_movements(
     )
 
 
+def next_stock_posting_datetime() -> Any:
+    latest = frappe.db.get_value(
+        "Stock Ledger Entry",
+        {"is_cancelled": 0},
+        ["posting_date", "posting_time"],
+        order_by="posting_date desc, posting_time desc, creation desc",
+        as_dict=True,
+    )
+    base = now_datetime()
+    if latest and latest.posting_date and latest.posting_time:
+        base = max(base, get_datetime(f"{latest.posting_date} {latest.posting_time}"))
+    return add_to_date(base, minutes=1)
+
+
+def ensure_demo_work_orders(
+    company: str,
+    bom_names: dict[str, str],
+    stores: str,
+    work_in_progress: str,
+    finished_goods: str,
+) -> None:
+    """Create real submitted Work Orders and material transfers for live MCP queries."""
+    from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+
+    for specification in DEMO_WORK_ORDERS:
+        name = specification["name"]
+        if frappe.db.exists("Work Order", name):
+            work_order = frappe.get_doc("Work Order", name)
+            EXISTING.append(f"Work Order: {name}")
+        else:
+            planned_start = add_to_date(now_datetime(), hours=specification["start_offset_hours"])
+            planned_end = add_to_date(planned_start, hours=specification["duration_hours"])
+            bom = frappe.get_doc("BOM", bom_names[specification["item"]])
+            work_order = frappe.get_doc(
+                filtered_values(
+                    "Work Order",
+                    {
+                        "company": company,
+                        "production_item": specification["item"],
+                        "bom_no": bom.name,
+                        "qty": specification["qty"],
+                        "planned_start_date": planned_start,
+                        "planned_end_date": planned_end,
+                        "expected_delivery_date": planned_end.date(),
+                        "source_warehouse": stores,
+                        "wip_warehouse": work_in_progress,
+                        "fg_warehouse": finished_goods,
+                        "transfer_material_against": "Work Order",
+                        "use_multi_level_bom": 0,
+                        "description": (
+                            f"[ERP-EIGENBAU-DEMO:{name}] echter Demo-Fertigungsauftrag"
+                        ),
+                        "operations": [
+                            {
+                                "sequence_id": row.sequence_id,
+                                "operation": row.operation,
+                                "workstation": row.workstation,
+                                "time_in_mins": row.time_in_mins,
+                                "batch_size": row.batch_size or 1,
+                                "fixed_time": row.fixed_time,
+                            }
+                            for row in bom.operations
+                        ],
+                    },
+                )
+            )
+            work_order.flags.ignore_permissions = True
+            work_order.insert(ignore_permissions=True, set_name=name)
+            work_order.submit()
+            frappe.db.commit()
+            CREATED.append(f"Work Order: {work_order.name}")
+
+        transfer_qty = float(specification["transfer_qty"])
+        existing_transfer = frappe.db.get_value(
+            "Stock Entry",
+            {
+                "work_order": work_order.name,
+                "purpose": "Material Transfer for Manufacture",
+                "docstatus": 1,
+            },
+            "name",
+        )
+        if not transfer_qty or existing_transfer:
+            if existing_transfer:
+                EXISTING.append(f"Stock Entry: {existing_transfer}")
+            continue
+
+        values = make_stock_entry(
+            work_order.name,
+            "Material Transfer for Manufacture",
+            qty=transfer_qty,
+        )
+        stock_entry = frappe.get_doc(values)
+        posting = next_stock_posting_datetime()
+        stock_entry.posting_date = posting.date()
+        stock_entry.posting_time = posting.strftime("%H:%M:%S")
+        stock_entry.set_posting_time = 1
+        stock_entry.remarks = f"[ERP-EIGENBAU-DEMO:{name}-TRANSFER] Material fuer Demo-Work-Order"
+        stock_entry.flags.ignore_permissions = True
+        stock_entry.insert(ignore_permissions=True)
+        stock_entry.submit()
+        frappe.db.commit()
+        work_order.reload()
+        work_order.update_status()
+        CREATED.append(f"Stock Entry: {stock_entry.name}")
+
+
 def ensure_opportunity(scenario: dict[str, Any], company: str, customer: str, product: str) -> None:
     order = scenario["order"]
     insert_missing(
@@ -1211,6 +1345,13 @@ def seed() -> None:
     ensure_demo_stock_movements(
         company,
         extra_products,
+        bom_names,
+        stores,
+        work_in_progress,
+        finished_goods,
+    )
+    ensure_demo_work_orders(
+        company,
         bom_names,
         stores,
         work_in_progress,

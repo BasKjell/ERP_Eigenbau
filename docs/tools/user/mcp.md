@@ -24,6 +24,17 @@ danach ausdrücklich bestätigen.
 
 ## Bestände und Materialverbrauch fragen
 
+`list_production_orders` liest direkt den ERPNext-Doctype `Work Order`. Ohne
+Parameter zeigt das Werkzeug nur Aufträge mit Status `In Process`. Mit
+`include_planned=true` kommen `Not Started` und reservierte Aufträge hinzu.
+Die Antwort enthält Sollmenge, Fertigmenge, Restmenge, Materialbereitstellung,
+Plantermine, BOM und Lager.
+
+Beispiel:
+
+> Welche Fertigungsaufträge sind gerade in Produktion? Nenne Artikel,
+> Sollmenge, bereitgestellte Menge, Fertigmenge und geplantes Ende.
+
 Für zeitbezogene Fragen ein Datum im Format `YYYY-MM-DD` nennen. „Heute“ wird
 vom MCP-Server auf das lokale Tagesdatum aufgelöst. Beispiele:
 

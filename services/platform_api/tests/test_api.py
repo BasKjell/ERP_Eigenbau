@@ -155,6 +155,20 @@ class FakeERPReadClient:
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         del fields, filters, order_by, limit
+        if doctype == "Work Order":
+            return [
+                {
+                    "name": "WO-DEMO-IOX-24-01",
+                    "production_item": "IOX-24",
+                    "item_name": "Remote-I/O-Modul",
+                    "qty": 4,
+                    "produced_qty": 1,
+                    "material_transferred_for_manufacturing": 2,
+                    "status": "In Process",
+                    "wip_warehouse": "Work In Progress - OMD",
+                    "fg_warehouse": "Finished Goods - OMD",
+                }
+            ]
         if doctype == "BOM":
             return [
                 {
@@ -247,6 +261,10 @@ class FakeERPReadClient:
 
 def test_erp_read_service_covers_boms_inventory_and_stock_traceability() -> None:
     service = ERPReadService(Settings(), client=FakeERPReadClient())
+    work_orders = service.list_production_orders()
+    assert work_orders["orders"][0]["remaining_qty"] == 3
+    assert work_orders["orders"][0]["progress_percent"] == 25.0
+    assert work_orders["orders"][0]["material_transfer_percent"] == 50.0
     assert service.list_products()["products"][0]["item"] == "IOX-24"
     assert service.get_bom("IOX-24")["bom"]["operations"][0]["time_in_mins"] == 35
     assert service.get_inventory("PCB-IOX-24")["balances"][0]["actual_qty"] == 42

@@ -9,9 +9,6 @@ from .business_tools import (
     list_late_purchase_orders as query_late_purchase_orders,
 )
 from .business_tools import (
-    list_production_orders as query_production_orders,
-)
-from .business_tools import (
     search_documents as query_documents,
 )
 from .config import settings
@@ -27,9 +24,12 @@ mcp = MCPServer("Open Manufacturing Platform")
 
 
 @mcp.tool()
-def list_production_orders() -> dict[str, object]:
-    """List all work orders that are currently active in production."""
-    return query_production_orders(store.get())
+def list_production_orders(include_planned: bool = False, limit: int = 100) -> dict[str, object]:
+    """List live ERPNext work orders in production, optionally including planned orders."""
+    try:
+        return erp_read.list_production_orders(include_planned, limit)
+    except ERPNextError as exc:
+        return {"tool": "list_production_orders", "status": "error", "error": str(exc)}
 
 
 @mcp.tool()
@@ -165,9 +165,7 @@ def import_test_data(
 
 
 @mcp.tool()
-def rollback_test_data_batch(
-    batch_id: str, confirm: bool = False
-) -> dict[str, object]:
+def rollback_test_data_batch(batch_id: str, confirm: bool = False) -> dict[str, object]:
     """Preview or delete only documents recorded in an MCP test-data batch."""
     try:
         return master_data.rollback(batch_id, confirm=confirm)

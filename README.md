@@ -38,9 +38,9 @@ werden.
 Die drei MCP-Server stellen reale ERPNext-Abfragen, eine read-only
 Paperless-Suche, das lokale Prozess-Wiki sowie kontrollierte
 ERPNext-Testdatenwerkzeuge bereit. Fragen nach Stücklisten, aktuellem Bestand,
-heutigem Materialverbrauch oder den Lagerbuchungen eines Artikels werden aus
-ERPNext beantwortet. Schreibzugriffe gelten ausschließlich für die lokale Demo
-und verlangen Vorschau plus explizite Bestätigung.
+laufenden Work Orders, heutigem Materialverbrauch oder den Lagerbuchungen eines
+Artikels werden aus ERPNext beantwortet. Schreibzugriffe gelten ausschließlich
+für die lokale Demo und verlangen Vorschau plus explizite Bestätigung.
 
 ## Vollstaendiger Plattform-Stack
 
@@ -57,9 +57,9 @@ Zusaetzlich erreichbar:
 ERPNext benoetigt beim ersten Start mehrere Minuten. Der Portal-Demodatensatz
 bleibt davon unabhaengig bedienbar. Beim ersten `full`-Start legt der
 `erpnext-seed`-Container die Firma, Stammdaten, Bestände, vier Produkte mit
-Stücklisten und Arbeitsgängen, Beispiel-Lagerbewegungen, Qualitätsvorlage und
-die Opportunity `OPP-2027-0018` im echten ERPNext an. Der Seed ist wiederholbar
-und kann bei Bedarf manuell gestartet werden:
+Stücklisten und Arbeitsgängen, drei Work Orders, Beispiel-Lagerbewegungen,
+Qualitätsvorlage und die Opportunity `OPP-2027-0018` im echten ERPNext an. Der
+Seed ist wiederholbar und kann bei Bedarf manuell gestartet werden:
 
 ```bash
 docker compose --profile full run --rm erpnext-seed

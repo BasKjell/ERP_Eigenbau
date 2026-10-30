@@ -7,9 +7,10 @@ wieder her.
 
 Der ERPNext-Seed liest dieselbe Datei und ergänzt drei weitere versionierte
 Demoprodukte. Er legt Stammdaten, Kapazitäten, Anfangsbestände, vier BOMs,
-Arbeitsgänge, Qualitätsvorlage, Opportunity und idempotent markierte
-Beispiel-Lagerbewegungen an. Die SCU-100-Auftragsbelegkette bleibt ein manueller
-Anwenderablauf und wird durch **Demo zurücksetzen** im Portal nicht verändert.
+Arbeitsgänge, Qualitätsvorlage, Opportunity, drei echte Work Orders und
+idempotent markierte Beispiel-Lagerbewegungen an. Die
+SCU-100-Auftragsbelegkette bleibt ein manueller Anwenderablauf und wird durch
+**Demo zurücksetzen** im Portal nicht verändert.
 
 ## Fertigungsprodukte
 
@@ -22,6 +23,19 @@ Anwenderablauf und wird durch **Demo zurücksetzen** im Portal nicht verändert.
 
 Die Musterbuchungen liegen am Ausführungstag des Seeds. Dadurch beantwortet
 der ERP-MCP Fragen nach „heute verbautem Material“ mit realen Stock Entries.
+
+## Fertigungsaufträge
+
+| Work Order | Artikel | Menge | Seed-Zustand |
+|---|---|---:|---|
+| `WO-DEMO-IOX-24-01` | `IOX-24` | 4 | Material vollständig im WIP, `In Process` |
+| `WO-DEMO-GW-EDGE-01` | `GW-EDGE-200` | 2 | Material für 1 Stück im WIP, `In Process` |
+| `WO-DEMO-HMI-070-01` | `HMI-070` | 6 | geplant, `Not Started` |
+
+Die Materialbereitstellungen sind eingereichte ERPNext Stock Entries vom Typ
+`Material Transfer for Manufacture`. Der Seed erkennt Work Orders und
+Transferbelege anhand ihrer stabilen Namen bzw. Verknüpfungen und legt sie bei
+einem erneuten Lauf nicht doppelt an.
 
 ## Kernobjekte
 
