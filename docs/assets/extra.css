@@ -1,0 +1,17 @@
+:root {
+  --md-primary-fg-color: #0d756c;
+  --md-accent-fg-color: #7d9f12;
+}
+
+.md-typeset h1,
+.md-typeset h2 {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.md-typeset .grid.cards > ul > li {
+  border-radius: 0.3rem;
+}
+
+.status-ok { color: #0d756c; font-weight: 700; }
+.status-warn { color: #bf5b26; font-weight: 700; }

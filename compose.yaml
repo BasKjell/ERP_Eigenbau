@@ -1,0 +1,365 @@
+name: erp-eigenbau
+
+x-erpnext-image: &erpnext-image
+  image: frappe/erpnext:v16.53.0
+  restart: unless-stopped
+
+x-erpnext-backend: &erpnext-backend
+  <<: *erpnext-image
+  volumes:
+    - erpnext-sites:/home/frappe/frappe-bench/sites
+    - erpnext-logs:/home/frappe/frappe-bench/logs
+  depends_on:
+    erpnext-configurator:
+      condition: service_completed_successfully
+
+services:
+  demo-db:
+    image: pgvector/pgvector:0.8.7-pg17-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DEMO_DB_NAME:-platform_demo}
+      POSTGRES_USER: ${DEMO_DB_USER:-platform}
+      POSTGRES_PASSWORD: ${DEMO_DB_PASSWORD:-platform-demo-change-me}
+    volumes:
+      - demo-db-data:/var/lib/postgresql/data
+      - ./deployment/postgres/init.sql:/docker-entrypoint-initdb.d/10-platform.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [platform]
+
+  platform-api:
+    build:
+      context: ./services/platform_api
+      target: base
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      DEMO_DATA_FILE: /data/scenario.json
+      DEMO_SEED_FILE: /app/seed/scenario.json
+      DOCUMENT_DIR: /app/documents
+      AI_MODE: ${AI_MODE:-deterministic}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
+      ERPNEXT_BASE_URL: ${ERPNEXT_BASE_URL:-http://erpnext-frontend:8080}
+      ERPNEXT_API_KEY: ${ERPNEXT_API_KEY:-}
+      ERPNEXT_API_SECRET: ${ERPNEXT_API_SECRET:-}
+      PAPERLESS_BASE_URL: ${PAPERLESS_BASE_URL:-http://paperless-webserver:8000}
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
+    ports:
+      - "${DEMO_API_PORT:-8088}:8080"
+    volumes:
+      - demo-state:/data
+      - ./output/pdf:/app/documents:ro
+    depends_on:
+      demo-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [platform]
+
+  docs:
+    image: squidfunk/mkdocs-material:9.8.0
+    restart: unless-stopped
+    command: serve --dev-addr=0.0.0.0:8000
+    ports:
+      - "${DOCS_PORT:-8001}:8000"
+    volumes:
+      - .:/docs:ro
+    networks: [platform]
+
+  paperless-broker:
+    image: redis:8.2.2-alpine
+    profiles: [full]
+    restart: unless-stopped
+    volumes:
+      - paperless-redis:/data
+    networks: [platform]
+
+  paperless-db:
+    image: postgres:18.0-alpine
+    profiles: [full]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${PAPERLESS_DB_PASSWORD:-paperless-demo-change-me}
+    volumes:
+      - paperless-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperless -d paperless"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [platform]
+
+  paperless-webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.4.0
+    profiles: [full]
+    restart: unless-stopped
+    depends_on:
+      paperless-db:
+        condition: service_healthy
+      paperless-broker:
+        condition: service_started
+    ports:
+      - "${PAPERLESS_PORT:-8010}:8000"
+    environment:
+      PAPERLESS_REDIS: redis://paperless-broker:6379
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: paperless-db
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD:-paperless-demo-change-me}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:-replace-with-a-long-random-value}
+      PAPERLESS_TIME_ZONE: ${TZ:-Europe/Berlin}
+      PAPERLESS_OCR_LANGUAGE: deu+eng
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER:-admin}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:-admin-demo-change-me}
+      PAPERLESS_URL: http://localhost:${PAPERLESS_PORT:-8010}
+    volumes:
+      - paperless-data:/usr/src/paperless/data
+      - paperless-media:/usr/src/paperless/media
+      - paperless-export:/usr/src/paperless/export
+      - paperless-consume:/usr/src/paperless/consume
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8000/api/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks: [platform]
+
+  paperless-seed:
+    image: alpine:3.22.2
+    profiles: [full]
+    restart: "no"
+    command: ["sh", "-c", "cp -n /seed/*.pdf /consume/ 2>/dev/null || true"]
+    volumes:
+      - ./output/pdf:/seed:ro
+      - paperless-consume:/consume
+    depends_on:
+      paperless-webserver:
+        condition: service_healthy
+    networks: [platform]
+
+  erpnext-db:
+    image: mariadb:10.6.23
+    profiles: [full]
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ERPNEXT_DB_ROOT_PASSWORD:-erpnext-demo-change-me}
+    volumes:
+      - erpnext-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck.sh --connect --innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [platform]
+
+  erpnext-redis-cache:
+    image: redis:8.2.2-alpine
+    profiles: [full]
+    restart: unless-stopped
+    networks: [platform]
+
+  erpnext-redis-queue:
+    image: redis:8.2.2-alpine
+    profiles: [full]
+    restart: unless-stopped
+    volumes:
+      - erpnext-redis-queue:/data
+    networks: [platform]
+
+  erpnext-configurator:
+    <<: *erpnext-backend
+    profiles: [full]
+    restart: "no"
+    entrypoint: ["bash", "-c"]
+    command:
+      - >
+        ls -1 apps > sites/apps.txt;
+        bench set-config -g db_host erpnext-db;
+        bench set-config -gp db_port 3306;
+        bench set-config -g redis_cache redis://erpnext-redis-cache:6379;
+        bench set-config -g redis_queue redis://erpnext-redis-queue:6379;
+        bench set-config -g redis_socketio redis://erpnext-redis-queue:6379;
+        bench set-config -gp socketio_port 9000;
+    depends_on:
+      erpnext-db:
+        condition: service_healthy
+      erpnext-redis-cache:
+        condition: service_started
+      erpnext-redis-queue:
+        condition: service_started
+    networks: [platform]
+
+  erpnext-create-site:
+    <<: *erpnext-backend
+    profiles: [full]
+    restart: "no"
+    entrypoint: ["bash", "-c"]
+    command:
+      - >
+        if [ -d sites/frontend ]; then echo 'Site frontend exists'; exit 0; fi;
+        bench new-site frontend
+        --mariadb-user-host-login-scope='%'
+        --admin-password='${ERPNEXT_ADMIN_PASSWORD:-admin-demo-change-me}'
+        --db-root-username=root
+        --db-root-password='${ERPNEXT_DB_ROOT_PASSWORD:-erpnext-demo-change-me}'
+        --install-app erpnext
+        --set-default;
+    depends_on:
+      erpnext-configurator:
+        condition: service_completed_successfully
+    networks: [platform]
+
+  erpnext-backend:
+    <<: *erpnext-backend
+    profiles: [full]
+    depends_on:
+      erpnext-create-site:
+        condition: service_completed_successfully
+    networks: [platform]
+
+  erpnext-frontend:
+    <<: *erpnext-image
+    profiles: [full]
+    command: ["nginx-entrypoint.sh"]
+    environment:
+      BACKEND: erpnext-backend:8000
+      SOCKETIO: erpnext-websocket:9000
+      FRAPPE_SITE_NAME_HEADER: frontend
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+      PROXY_READ_TIMEOUT: 120
+      CLIENT_MAX_BODY_SIZE: 50m
+    ports:
+      - "${ERPNEXT_PORT:-8081}:8080"
+    volumes:
+      - erpnext-sites:/home/frappe/frappe-bench/sites
+      - erpnext-logs:/home/frappe/frappe-bench/logs
+    depends_on:
+      - erpnext-backend
+      - erpnext-websocket
+    networks: [platform]
+
+  erpnext-websocket:
+    <<: *erpnext-backend
+    profiles: [full]
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    depends_on:
+      erpnext-create-site:
+        condition: service_completed_successfully
+    networks: [platform]
+
+  erpnext-queue-short:
+    <<: *erpnext-backend
+    profiles: [full]
+    command: ["bench", "worker", "--queue", "short,default"]
+    depends_on:
+      erpnext-create-site:
+        condition: service_completed_successfully
+    networks: [platform]
+
+  erpnext-queue-long:
+    <<: *erpnext-backend
+    profiles: [full]
+    command: ["bench", "worker", "--queue", "long,default,short"]
+    depends_on:
+      erpnext-create-site:
+        condition: service_completed_successfully
+    networks: [platform]
+
+  erpnext-scheduler:
+    <<: *erpnext-backend
+    profiles: [full]
+    command: ["bench", "schedule"]
+    depends_on:
+      erpnext-create-site:
+        condition: service_completed_successfully
+    networks: [platform]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    profiles: [iam]
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin-demo-change-me}
+    ports:
+      - "${KEYCLOAK_PORT:-8082}:8080"
+    volumes:
+      - ./deployment/keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    networks: [platform]
+
+  ollama:
+    image: ollama/ollama:0.40.7
+    profiles: [ai]
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks: [platform]
+
+  prometheus:
+    image: prom/prometheus:v3.7.1
+    profiles: [ops]
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployment/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks: [platform]
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    profiles: [ops]
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin-demo-change-me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on: [prometheus]
+    networks: [platform]
+
+networks:
+  platform:
+    driver: bridge
+
+volumes:
+  demo-db-data:
+  demo-state:
+  paperless-redis:
+  paperless-db-data:
+  paperless-data:
+  paperless-media:
+  paperless-export:
+  paperless-consume:
+  erpnext-db-data:
+  erpnext-redis-queue:
+  erpnext-sites:
+  erpnext-logs:
+  ollama-data:
+  prometheus-data:
+  grafana-data:

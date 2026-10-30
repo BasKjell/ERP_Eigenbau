@@ -1,0 +1,45 @@
+name: Quality
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: services/platform_api/requirements-dev.txt
+      - run: pip install -r services/platform_api/requirements-dev.txt
+      - run: ruff check services/platform_api/app services/platform_api/tests
+      - run: pytest
+        env:
+          PYTHONPATH: services/platform_api
+          DEMO_DATA_FILE: /tmp/erp-eigenbau-test-scenario.json
+          DEMO_SEED_FILE: ${{ github.workspace }}/services/platform_api/seed/scenario.json
+
+  docs-and-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker compose --profile full --profile ai --profile iam --profile ops config --quiet
+      - run: docker run --rm -v "$PWD:/docs" squidfunk/mkdocs-material:9.8.0 build --strict
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: services/platform_api
+          target: test
+          push: false

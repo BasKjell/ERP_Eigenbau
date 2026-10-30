@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Open Manufacturing Platform - Management-Demo" />
+    <title>Open Manufacturing Platform</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span><b>OPEN</b> MANUFACTURING</span>
+      </a>
+      <nav>
+        <a class="nav-link active" href="#cockpit">Cockpit</a>
+        <a class="nav-link" href="http://localhost:8001" target="_blank">Prozess-Wiki ↗</a>
+        <a class="nav-link" href="/docs" target="_blank">API ↗</a>
+      </nav>
+      <div class="live"><span></span> Demo live</div>
+    </header>
+
+    <main id="cockpit">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">KUNDENAUFTRAG · SO-4711</div>
+          <h1>Ein Wertstrom.<br /><em>Eine Sicht.</em></h1>
+          <p>Vom ersten Kundenkontakt bis zur verbuchten Rechnung - offen, lokal und über APIs verbunden.</p>
+          <div class="hero-actions">
+            <button id="advance" class="button primary">Nächsten Schritt ausführen <span>→</span></button>
+            <button id="reset" class="button ghost">Demo zurücksetzen</button>
+          </div>
+        </div>
+        <div class="order-card glass">
+          <div class="order-topline">
+            <span id="order-risk" class="risk good">Im Plan</span>
+            <span id="order-progress">0 %</span>
+          </div>
+          <div class="product-visual">
+            <span class="device-screen"><i></i><i></i><i></i></span>
+            <span class="device-port p1"></span><span class="device-port p2"></span>
+          </div>
+          <h2>Sonar Control Unit</h2>
+          <div class="product-code">SCU-100 · REVISION C</div>
+          <dl>
+            <div><dt>Kunde</dt><dd>NordMarine Systems</dd></div>
+            <div><dt>Menge</dt><dd>5 Stück</dd></div>
+            <div><dt>Wert</dt><dd>62.500 €</dd></div>
+            <div><dt>Liefertermin</dt><dd>15. Jan. 2027</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="section process-section">
+        <div class="section-heading">
+          <div><span class="eyebrow">END-TO-END-PROZESS</span><h2 id="current-status">Opportunity qualifizieren</h2></div>
+          <span class="hint">Schritt anklicken, um zur Präsentationsstation zu springen</span>
+        </div>
+        <div id="process" class="process-flow"></div>
+      </section>
+
+      <section id="metrics" class="metrics"></section>
+
+      <section class="workspace section">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="overview">Live-Übersicht</button>
+          <button class="tab" data-tab="bom">Material & MRP</button>
+          <button class="tab" data-tab="capacity">Kapazitätsplanung</button>
+          <button class="tab" data-tab="documents">Dokumente</button>
+          <button class="tab accent" data-tab="assistant">AI Copilot</button>
+        </div>
+
+        <div id="overview" class="tab-panel active">
+          <div class="panel-grid">
+            <article class="panel">
+              <div class="panel-title"><div><span class="eyebrow">EREIGNISSE</span><h3>Systemübergreifender Verlauf</h3></div><span class="pulse"></span></div>
+              <div id="timeline" class="timeline"></div>
+            </article>
+            <article class="panel dark-panel">
+              <div class="panel-title"><div><span class="eyebrow">QUALITÄT</span><h3>Realistischer Fehlerfall</h3></div></div>
+              <div id="incident" class="incident"></div>
+            </article>
+          </div>
+        </div>
+
+        <div id="bom" class="tab-panel">
+          <article class="panel full">
+            <div class="panel-title"><div><span class="eyebrow">BOM-SCU-100-C</span><h3>Stückliste und Verfügbarkeit</h3></div><span class="tag">Bedarf: 5 Geräte</span></div>
+            <div id="bom-table" class="data-table"></div>
+          </article>
+        </div>
+
+        <div id="capacity" class="tab-panel">
+          <article class="panel full">
+            <div class="panel-title"><div><span class="eyebrow">FINITE PLANUNG</span><h3>Workstations & Auslastung</h3></div><span class="tag warn">Engpass wird erkannt</span></div>
+            <div id="capacity-grid" class="capacity-grid"></div>
+          </article>
+        </div>
+
+        <div id="documents" class="tab-panel">
+          <article class="panel full">
+            <div class="panel-title"><div><span class="eyebrow">PAPERLESS-NGX</span><h3>Kontextbezogene Dokumente</h3></div><span class="tag">5 freigegebene Dokumente</span></div>
+            <div id="document-grid" class="document-grid"></div>
+          </article>
+        </div>
+
+        <div id="assistant" class="tab-panel">
+          <article class="assistant-panel">
+            <div class="assistant-intro">
+              <div class="orb"><span></span></div>
+              <div><span class="eyebrow">QUELLENBASIERTE ASSISTENZ</span><h3>Was möchtest du über Auftrag 4711 wissen?</h3><p>Der Copilot greift nur über freigegebene Tools auf ERP-, MES- und DMS-Daten zu.</p></div>
+            </div>
+            <div class="suggestions">
+              <button>Wie ist der Status von Auftrag 4711?</button>
+              <button>Welche Dokumente gelten für Revision C?</button>
+              <button>Wo ist aktuell der Kapazitätsengpass?</button>
+            </div>
+            <form id="ask-form" class="ask-form">
+              <input id="question" aria-label="Frage an den Assistenten" value="Wie ist der Status von Auftrag 4711?" />
+              <button class="button primary" type="submit">Fragen <span>↗</span></button>
+            </form>
+            <div id="answer" class="answer empty">Wähle eine Frage oder gib eine eigene ein.</div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/assets/app.js" defer></script>
+  </body>
+</html>

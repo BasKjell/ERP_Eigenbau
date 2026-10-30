@@ -1,0 +1,303 @@
+{
+  "scenario": {
+    "name": "Kundenauftrag bis Auslieferung",
+    "company": "Open Manufacturing Demo GmbH",
+    "customer": "NordMarine Systems GmbH",
+    "currency": "EUR"
+  },
+  "order": {
+    "id": "SO-4711",
+    "opportunity": "OPP-2027-0018",
+    "quotation": "QTN-2027-0031",
+    "work_order": "WO-2027-0042",
+    "customer": "NordMarine Systems GmbH",
+    "product": "SCU-100",
+    "product_name": "Sonar Control Unit SCU-100",
+    "quantity": 5,
+    "unit_price": 12500,
+    "total": 62500,
+    "delivery_date": "2027-01-15",
+    "revision": "C",
+    "status": "",
+    "progress": 0,
+    "delivery_risk": "on_track"
+  },
+  "metrics": {},
+  "process": [
+    {
+      "id": "crm",
+      "sequence": 1,
+      "label": "Opportunity qualifizieren",
+      "short_label": "CRM",
+      "system": "ERPNext CRM",
+      "owner": "Vertrieb",
+      "status": "active",
+      "progress": 35,
+      "reference": "OPP-2027-0018",
+      "description": "Anfrage ueber 5 SCU-100, Budget und Liefertermin qualifizieren."
+    },
+    {
+      "id": "quotation",
+      "sequence": 2,
+      "label": "Angebot erstellen",
+      "short_label": "Angebot",
+      "system": "ERPNext Sales",
+      "owner": "Vertrieb",
+      "status": "pending",
+      "progress": 0,
+      "reference": "QTN-2027-0031",
+      "description": "Angebot ueber 62.500 EUR mit Revision C und Liefertermin."
+    },
+    {
+      "id": "sales-order",
+      "sequence": 3,
+      "label": "Kundenauftrag bestaetigen",
+      "short_label": "Auftrag",
+      "system": "ERPNext Sales",
+      "owner": "Auftragszentrum",
+      "status": "pending",
+      "progress": 0,
+      "reference": "SO-4711",
+      "description": "Auftrag aus dem angenommenen Angebot erzeugen."
+    },
+    {
+      "id": "mrp",
+      "sequence": 4,
+      "label": "Materialbedarf planen",
+      "short_label": "MRP",
+      "system": "ERPNext MRP",
+      "owner": "Disposition",
+      "status": "pending",
+      "progress": 0,
+      "reference": "PP-2027-0012",
+      "description": "Stueckliste aufloesen und fehlende Mainboards erkennen."
+    },
+    {
+      "id": "procurement",
+      "sequence": 5,
+      "label": "Fehlteile beschaffen",
+      "short_label": "Einkauf",
+      "system": "ERPNext Buying",
+      "owner": "Einkauf",
+      "status": "pending",
+      "progress": 0,
+      "reference": "PO-2027-0088",
+      "description": "5 Mainboards bei Baltic Electronics bestellen."
+    },
+    {
+      "id": "goods-receipt",
+      "sequence": 6,
+      "label": "Wareneingang pruefen",
+      "short_label": "Wareneingang",
+      "system": "ERPNext Stock",
+      "owner": "Lager / Qualitaet",
+      "status": "pending",
+      "progress": 0,
+      "reference": "PREC-2027-0045",
+      "description": "Mainboards, Lieferschein und Lieferantenzertifikat pruefen."
+    },
+    {
+      "id": "capacity",
+      "sequence": 7,
+      "label": "Kapazitaet terminieren",
+      "short_label": "Planung",
+      "system": "ERPNext Manufacturing",
+      "owner": "Produktionsplanung",
+      "status": "pending",
+      "progress": 0,
+      "reference": "WO-2027-0042",
+      "description": "Arbeitsgaenge gegen verfuegbare Workstations einplanen."
+    },
+    {
+      "id": "production",
+      "sequence": 8,
+      "label": "SCU-100 fertigen",
+      "short_label": "MES",
+      "system": "MES / Shopfloor",
+      "owner": "Produktion",
+      "status": "pending",
+      "progress": 0,
+      "reference": "WO-2027-0042",
+      "description": "Montage, Firmware und Rueckmeldungen fuer 5 Seriennummern."
+    },
+    {
+      "id": "quality",
+      "sequence": 9,
+      "label": "Funktion und Qualitaet pruefen",
+      "short_label": "Qualitaet",
+      "system": "MES / Paperless",
+      "owner": "Qualitaet",
+      "status": "pending",
+      "progress": 0,
+      "reference": "QI-2027-0039",
+      "description": "Messwerte erfassen, Abweichung behandeln und Protokoll archivieren."
+    },
+    {
+      "id": "stock",
+      "sequence": 10,
+      "label": "Fertigware einlagern",
+      "short_label": "Lager",
+      "system": "ERPNext Stock",
+      "owner": "Lager",
+      "status": "pending",
+      "progress": 0,
+      "reference": "STE-2027-0112",
+      "description": "5 seriennummerngefuehrte Geraete in das Fertigwarenlager buchen."
+    },
+    {
+      "id": "delivery",
+      "sequence": 11,
+      "label": "Lieferung buchen",
+      "short_label": "Versand",
+      "system": "ERPNext Selling",
+      "owner": "Versand",
+      "status": "pending",
+      "progress": 0,
+      "reference": "DN-2027-0061",
+      "description": "Lieferschein, Warenausgang und Versand an NordMarine."
+    },
+    {
+      "id": "invoice",
+      "sequence": 12,
+      "label": "Rechnung verbuchen",
+      "short_label": "Accounting",
+      "system": "ERPNext Accounting",
+      "owner": "Finanzen",
+      "status": "pending",
+      "progress": 0,
+      "reference": "SINV-2027-0044",
+      "description": "Rechnung ueber 62.500 EUR und offene Forderung erzeugen."
+    }
+  ],
+  "bom": [
+    {"item": "CASE-100-C", "name": "Gehause Revision C", "qty": 1, "source": "make", "available": 5},
+    {"item": "PCB-MAIN-42", "name": "Mainboard", "qty": 1, "source": "buy", "available": 0},
+    {"item": "PSU-24V-80", "name": "Netzteil 24 V", "qty": 1, "source": "buy", "available": 8},
+    {"item": "CON-M12", "name": "M12 Steckverbinder", "qty": 2, "source": "buy", "available": 40},
+    {"item": "HARNESS-100", "name": "Kabelsatz", "qty": 1, "source": "make", "available": 6},
+    {"item": "DISPLAY-7", "name": "Display-Modul 7 Zoll", "qty": 1, "source": "buy", "available": 7},
+    {"item": "FW-SCU-3", "name": "Firmware SCU v3", "qty": 1, "source": "software", "available": 999}
+  ],
+  "capacity": [
+    {
+      "id": "WS-MECH",
+      "name": "Mechanische Montage",
+      "capacity": 3,
+      "shift": "06:00-14:00",
+      "utilization": 68,
+      "operation_minutes": 60,
+      "scheduled": "2027-01-08 06:00"
+    },
+    {
+      "id": "WS-ELEC",
+      "name": "Elektronikmontage",
+      "capacity": 4,
+      "shift": "06:00-14:00",
+      "utilization": 76,
+      "operation_minutes": 90,
+      "scheduled": "2027-01-08 08:00"
+    },
+    {
+      "id": "WS-FW",
+      "name": "Firmware-Station",
+      "capacity": 2,
+      "shift": "08:00-16:00",
+      "utilization": 54,
+      "operation_minutes": 30,
+      "scheduled": "2027-01-09 08:00"
+    },
+    {
+      "id": "WS-TEST-A",
+      "name": "Pruefstand A",
+      "capacity": 1,
+      "shift": "06:00-22:00",
+      "utilization": 91,
+      "operation_minutes": 120,
+      "scheduled": "2027-01-09 10:00"
+    },
+    {
+      "id": "WS-QC",
+      "name": "Endpruefung",
+      "capacity": 2,
+      "shift": "06:00-14:00",
+      "utilization": 63,
+      "operation_minutes": 45,
+      "scheduled": "2027-01-11 06:00"
+    }
+  ],
+  "serials": [
+    {"id": "SN-10001", "status": "planned", "last_operation": "-"},
+    {"id": "SN-10002", "status": "planned", "last_operation": "-"},
+    {"id": "SN-10003", "status": "planned", "last_operation": "-"},
+    {"id": "SN-10004", "status": "planned", "last_operation": "-"},
+    {"id": "SN-10005", "status": "planned", "last_operation": "-"}
+  ],
+  "documents": [
+    {
+      "id": "DOC-DRW-100",
+      "title": "Technische Zeichnung SCU-100",
+      "type": "Zeichnung",
+      "revision": "Rev. C",
+      "item": "SCU-100",
+      "filename": "SCU-100_Technische_Zeichnung_Rev-C.pdf",
+      "tags": ["SCU-100", "Revision-C", "Freigegeben"]
+    },
+    {
+      "id": "DOC-WI-100",
+      "title": "Montageanweisung SCU-100",
+      "type": "Arbeitsanweisung",
+      "revision": "Rev. D",
+      "item": "SCU-100",
+      "filename": "SCU-100_Montageanweisung_Rev-D.pdf",
+      "tags": ["SCU-100", "Montage", "Freigegeben"]
+    },
+    {
+      "id": "DOC-QP-100",
+      "title": "Pruefplan SCU-100",
+      "type": "Pruefplan",
+      "revision": "Rev. B",
+      "item": "SCU-100",
+      "filename": "SCU-100_Pruefplan_Rev-B.pdf",
+      "tags": ["SCU-100", "Qualitaet", "Pruefstand"]
+    },
+    {
+      "id": "DOC-CERT-MB",
+      "title": "Lieferantenzertifikat Mainboard",
+      "type": "Zertifikat",
+      "revision": "Charge BE-24117",
+      "item": "PCB-MAIN-42",
+      "filename": "Mainboard_Lieferantenzertifikat_BE-24117.pdf",
+      "tags": ["PCB-MAIN-42", "Lieferant", "Charge-BE-24117"]
+    },
+    {
+      "id": "DOC-ATP-4711",
+      "title": "Abnahmeprotokoll Auftrag 4711",
+      "type": "Pruefprotokoll",
+      "revision": "Entwurf",
+      "item": "SCU-100",
+      "filename": "Auftrag-4711_Abnahmeprotokoll.pdf",
+      "tags": ["SO-4711", "WO-2027-0042", "Abnahme"]
+    }
+  ],
+  "systems": [
+    {"name": "ERPNext", "purpose": "CRM, ERP, MRP, Fertigung, Accounting", "mode": "optional full profile", "port": 8081},
+    {"name": "Paperless-ngx", "purpose": "DMS, OCR, Suche, Versionen", "mode": "optional full profile", "port": 8010},
+    {"name": "Integration Layer", "purpose": "API, Demo-Orchestrierung, AI-Tools", "mode": "active", "port": 8080},
+    {"name": "MkDocs", "purpose": "Prozess-, User- und Admin-Dokumentation", "mode": "active", "port": 8001}
+  ],
+  "quality_incident": null,
+  "timeline": [
+    {
+      "timestamp": "2026-10-30T09:00:00+00:00",
+      "message": "Anfrage von NordMarine Systems GmbH eingegangen",
+      "system": "ERPNext CRM",
+      "level": "info"
+    },
+    {
+      "timestamp": "2026-10-30T09:05:00+00:00",
+      "message": "SCU-100 Revision C und Zieltermin erfasst",
+      "system": "ERPNext CRM",
+      "level": "info"
+    }
+  ]
+}

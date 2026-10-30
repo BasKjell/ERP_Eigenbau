@@ -1,0 +1,110 @@
+site_name: Open Manufacturing Platform
+site_description: Prozess-, User- und Admin-Dokumentation der ERP-Eigenbau-Demo
+site_url: http://localhost:8001
+repo_name: ERP_Eigenbau
+docs_dir: docs
+
+theme:
+  name: material
+  language: de
+  palette:
+    - scheme: default
+      primary: teal
+      accent: light green
+      toggle:
+        icon: material/weather-night
+        name: Dunkles Design
+    - scheme: slate
+      primary: teal
+      accent: light green
+      toggle:
+        icon: material/weather-sunny
+        name: Helles Design
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+
+plugins:
+  - search:
+      lang: de
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+extra_css:
+  - assets/extra.css
+
+nav:
+  - Start: index.md
+  - Prozesse:
+      - Order-to-Cash:
+          - Gesamtprozess: processes/order-to-cash/overview.md
+          - CRM und Auftrag: processes/order-to-cash/crm-sales.md
+          - MRP und Einkauf: processes/order-to-cash/procurement.md
+          - Planung und Fertigung: processes/order-to-cash/production.md
+          - Qualität und DMS: processes/order-to-cash/quality.md
+          - Lieferung und Buchhaltung: processes/order-to-cash/delivery-accounting.md
+  - Anwender:
+      - Management-Demo: user-guides/presentation.md
+      - Shopfloor: user-guides/shopfloor.md
+      - Dokumente: user-guides/dms.md
+  - Werkzeuge:
+      - Katalog und Matrix: tools/index.md
+      - Benutzeranleitungen:
+          - Management-Portal: tools/user/portal.md
+          - ERPNext: tools/user/erpnext.md
+          - Paperless-ngx: tools/user/paperless.md
+          - Keycloak: tools/user/keycloak.md
+          - Ollama / AI-Assistent: tools/user/ollama.md
+          - Grafana: tools/user/grafana.md
+          - Prometheus: tools/user/prometheus.md
+          - PostgreSQL / pgvector: tools/user/postgresql.md
+          - MkDocs-Wiki: tools/user/mkdocs.md
+          - Docker Compose: tools/user/docker-compose.md
+      - Administrationsanleitungen:
+          - Management-Portal: tools/admin/portal.md
+          - ERPNext: tools/admin/erpnext.md
+          - Paperless-ngx: tools/admin/paperless.md
+          - Keycloak: tools/admin/keycloak.md
+          - Ollama / AI-Assistent: tools/admin/ollama.md
+          - Grafana: tools/admin/grafana.md
+          - Prometheus: tools/admin/prometheus.md
+          - PostgreSQL / pgvector: tools/admin/postgresql.md
+          - MkDocs-Wiki: tools/admin/mkdocs.md
+          - Docker Compose: tools/admin/docker-compose.md
+  - Systeme:
+      - Systemübersicht: systems/overview.md
+  - Schnittstellen:
+      - ERPNext zu MES: interfaces/erpnext-mes.md
+      - Paperless-ngx: interfaces/paperless.md
+      - AI-Tools: interfaces/ai-tools.md
+  - Administration:
+      - Lokaler Betrieb: admin/local-operation.md
+      - Konfiguration: admin/configuration.md
+      - Änderungen und DoD: admin/change-management.md
+  - Architektur:
+      - Zielbild: architecture/overview.md
+      - Entscheidungen: architecture/decisions.md
+      - Sicherheit: architecture/security.md
+  - Demo-Daten: demo/data-model.md

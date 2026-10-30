@@ -54,7 +54,10 @@ docker compose --profile ops up -d       # Prometheus + Grafana
 ```
 
 Details zu Betrieb, Rollen, Schnittstellen und dem 15-minuetigen
-Praesentationsablauf stehen im Wiki unter `docs/`.
+Praesentationsablauf stehen im Wiki unter `docs/`. Der Werkzeugkatalog unter
+`docs/tools/` enthaelt fuer jede eingesetzte Werkzeugfamilie eine getrennte
+Benutzer- und Administrationsanleitung; die Benutzerseiten sind direkt mit den
+Unternehmensprozessen verknuepft.
 
 ## Architektur
 

@@ -1,0 +1,42 @@
+.PHONY: help demo full docs test lint validate stop reset logs ai
+
+help:
+	@echo "ERP Eigenbau - verfuegbare Befehle"
+	@echo "  make demo      Startet Portal, API, Datenbank und Wiki"
+	@echo "  make full      Startet zusaetzlich ERPNext und Paperless-ngx"
+	@echo "  make ai        Startet zusaetzlich Ollama (Modell separat laden)"
+	@echo "  make test      Fuehrt Python-Tests aus"
+	@echo "  make validate  Prueft Compose und baut die Dokumentation"
+	@echo "  make reset     Setzt den Demo-Datensatz zurueck"
+	@echo "  make stop      Stoppt alle Profile"
+
+demo:
+	docker compose up -d --build demo-db platform-api docs
+
+full:
+	docker compose --profile full up -d --build
+
+ai:
+	docker compose --profile ai up -d --build
+
+docs:
+	docker compose up docs
+
+test:
+	docker build -t erp-eigenbau-api-test --target test services/platform_api
+
+lint:
+	docker build -t erp-eigenbau-api-test --target test services/platform_api
+
+validate:
+	docker compose --profile full --profile ai --profile ops --profile iam config --quiet
+	docker run --rm -v "$(CURDIR):/docs" squidfunk/mkdocs-material:9.8.0 build --strict
+
+reset:
+	curl --fail --silent --show-error -X POST http://localhost:$${DEMO_API_PORT:-8088}/api/demo/reset
+
+logs:
+	docker compose logs -f --tail=150 platform-api
+
+stop:
+	docker compose --profile full --profile ai --profile ops --profile iam down
