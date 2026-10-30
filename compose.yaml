@@ -376,6 +376,32 @@ services:
       - ollama-data:/root/.ollama
     networks: [platform]
 
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.12.4
+    profiles: [full, webui]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      WEBUI_URL: http://localhost:${OPEN_WEBUI_PORT:-3001}
+      WEBUI_NAME: ERP Eigenbau - Lokale KI
+      WEBUI_SECRET_KEY: ${OPEN_WEBUI_SECRET_KEY:-local-open-webui-demo-secret-change-before-network-use}
+      OLLAMA_BASE_URL: ${OPEN_WEBUI_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      ENABLE_OLLAMA_API: "true"
+      ENABLE_TOOL_SERVERS: "true"
+      MCP_INITIALIZE_TIMEOUT: 30
+    ports:
+      - "127.0.0.1:${OPEN_WEBUI_PORT:-3001}:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks: [platform]
+
   prometheus:
     image: prom/prometheus:v3.7.1
     profiles: [ops]
@@ -421,5 +447,6 @@ volumes:
   erpnext-sites-v16:
   erpnext-logs-v16:
   ollama-data:
+  open-webui-data:
   prometheus-data:
   grafana-data:

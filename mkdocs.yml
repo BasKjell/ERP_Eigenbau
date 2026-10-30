@@ -78,6 +78,7 @@ nav:
           - Paperless-ngx: tools/user/paperless.md
           - Keycloak: tools/user/keycloak.md
           - Ollama / AI-Assistent: tools/user/ollama.md
+          - Open WebUI: tools/user/open-webui.md
           - Grafana: tools/user/grafana.md
           - Prometheus: tools/user/prometheus.md
           - PostgreSQL / pgvector: tools/user/postgresql.md
@@ -90,6 +91,7 @@ nav:
           - Paperless-ngx: tools/admin/paperless.md
           - Keycloak: tools/admin/keycloak.md
           - Ollama / AI-Assistent: tools/admin/ollama.md
+          - Open WebUI: tools/admin/open-webui.md
           - Grafana: tools/admin/grafana.md
           - Prometheus: tools/admin/prometheus.md
           - PostgreSQL / pgvector: tools/admin/postgresql.md

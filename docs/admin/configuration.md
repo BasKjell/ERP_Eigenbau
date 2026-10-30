@@ -12,6 +12,7 @@ werden durch `.gitignore` ausgeschlossen.
 | `ERPNEXT_PORT` | ERPNext | 8081 |
 | `PAPERLESS_PORT` | Paperless | 8010 |
 | `MCP_PORT` | MCP-Endpunkt | 8090 |
+| `OPEN_WEBUI_PORT` | lokale Chat-Oberfläche | 3001 |
 | `MCP_WRITE_ENABLED` | Testdaten-Schreibwerkzeuge aktivieren | true (nur lokale Demo) |
 | `MCP_MAX_WRITE_RECORDS` | maximale Datensätze je Schreibaufruf | 100 |
 | `MCP_DEFAULT_COMPANY` | Standardfirma für importierte Testdaten | Open Manufacturing Demo GmbH |
@@ -19,6 +20,8 @@ werden durch `.gitignore` ausgeschlossen.
 | `OLLAMA_BASE_URL` | Modellserver aus dem Container | `host.docker.internal:11434` auf dem Mac |
 | `OLLAMA_MODEL` | lokales Modell | qwen3:8b |
 | `OLLAMA_TIMEOUT_SECONDS` | maximale Antwortzeit | 120 |
+| `OPEN_WEBUI_OLLAMA_BASE_URL` | Ollama aus Open WebUI | `host.docker.internal:11434` |
+| `OPEN_WEBUI_SECRET_KEY` | Sitzungs- und Tokenverschlüsselung | lokaler Demo-Wert; ändern |
 | `ERPNEXT_API_KEY/SECRET` | bevorzugte ERPNext-Tokenanmeldung | leer |
 | `ERPNEXT_USERNAME` | lokale ERPNext-Sitzungsanmeldung | Administrator |
 | `PAPERLESS_API_TOKEN` | Live-Adapter | leer |

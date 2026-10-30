@@ -13,6 +13,7 @@ Unternehmensprozess direkt mit den nötigen Bedienschritten.
 | Paperless-ngx | Dokumentenlenkung und Nachweise | [Dokumente im Prozess](user/paperless.md) | [Paperless administrieren](admin/paperless.md) |
 | Keycloak | Anmeldung, Rollen und SSO | [Anmelden und Rollen nutzen](user/keycloak.md) | [Keycloak administrieren](admin/keycloak.md) |
 | Ollama / AI-Assistent | lokale, quellenbasierte Auskunft | [Assistent sicher nutzen](user/ollama.md) | [Ollama administrieren](admin/ollama.md) |
+| Open WebUI | lokale Chat-Oberfläche und MCP-Host für Ollama | [Open WebUI nutzen](user/open-webui.md) | [Open WebUI administrieren](admin/open-webui.md) |
 | Grafana | Betriebs- und Prozessübersichten | [Dashboards nutzen](user/grafana.md) | [Grafana administrieren](admin/grafana.md) |
 | Prometheus | technische Metriken und Alarmgrundlage | [Metriken richtig einordnen](user/prometheus.md) | [Prometheus administrieren](admin/prometheus.md) |
 | PostgreSQL / pgvector | Portalzustand und spätere Vektorsuche | [Datenzugriff und Datenfehler](user/postgresql.md) | [PostgreSQL administrieren](admin/postgresql.md) |

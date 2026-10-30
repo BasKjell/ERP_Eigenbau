@@ -10,6 +10,7 @@
 | Paperless-ngx | Python/Django | GPLv3 | full | 8010 | [Benutzer](../tools/user/paperless.md) · [Admin](../tools/admin/paperless.md) |
 | Keycloak | Java | Apache-2.0 | iam | 8082 | [Benutzer](../tools/user/keycloak.md) · [Admin](../tools/admin/keycloak.md) |
 | Ollama | Go | MIT | ai | 11434 | [Benutzer](../tools/user/ollama.md) · [Admin](../tools/admin/ollama.md) |
+| Open WebUI | Python/TypeScript | Open WebUI License | webui | 3001 | [Benutzer](../tools/user/open-webui.md) · [Admin](../tools/admin/open-webui.md) |
 | Prometheus | Go | Apache-2.0 | ops | 9090 | [Benutzer](../tools/user/prometheus.md) · [Admin](../tools/admin/prometheus.md) |
 | Grafana | Go/TypeScript | AGPLv3 | ops | 3000 | [Benutzer](../tools/user/grafana.md) · [Admin](../tools/admin/grafana.md) |
 | Docker Compose | Go | Apache-2.0 | Laufzeit | - | [Benutzer](../tools/user/docker-compose.md) · [Admin](../tools/admin/docker-compose.md) |
@@ -25,6 +26,7 @@ make demo                                      # Portal + Wiki + pgvector
 make full                                      # zusätzlich ERPNext + Paperless
 docker compose --profile iam up -d keycloak   # SSO-Demo
 docker compose --profile ai up -d ollama      # lokales LLM
+make webui                                     # Web-Chat fuer Host-Ollama
 docker compose --profile ops up -d             # Monitoring
 ```
 

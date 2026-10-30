@@ -25,6 +25,7 @@ Danach:
 - Prozess-Wiki: <http://localhost:8001>
 - API-Dokumentation: <http://localhost:8088/docs>
 - MCP-Endpunkt: <http://localhost:8090/mcp>
+- Open WebUI (lokales Modell): <http://localhost:3001>
 
 Die Demo laeuft ohne Cloud und ohne externes KI-Modell. Ein lokales
 Ollama-Modell kann ueber `host.docker.internal` angebunden werden. Im Portal kann der
@@ -48,6 +49,7 @@ Zusaetzlich erreichbar:
 
 - ERPNext: <http://localhost:8081> (`Administrator`, Passwort aus `.env`)
 - Paperless-ngx: <http://localhost:8010> (Zugang aus `.env`)
+- Open WebUI: <http://localhost:3001> (erster registrierter Benutzer wird Admin)
 
 ERPNext benoetigt beim ersten Start mehrere Minuten. Der Portal-Demodatensatz
 bleibt davon unabhaengig bedienbar. Beim ersten `full`-Start legt der
@@ -69,6 +71,7 @@ Optionale Profile:
 ```bash
 docker compose --profile iam up -d       # Keycloak
 docker compose --profile ai up -d        # Ollama
+make webui                               # Open WebUI fuer Host-Ollama
 docker compose --profile ops up -d       # Prometheus + Grafana
 ```
 
@@ -109,7 +112,9 @@ GitHub-Actions-Pipeline prueft Tests, Dokumentations-Build und Compose-Syntax.
 Der Eigenbau-Code steht unter der MIT-Lizenz. Eingebundene Systeme behalten
 ihre jeweiligen Open-Source-Lizenzen, insbesondere ERPNext (GPLv3),
 Paperless-ngx (GPLv3), PostgreSQL/pgvector, Keycloak (Apache-2.0), Grafana
-(AGPLv3), Prometheus (Apache-2.0), Ollama (MIT) und MkDocs/Material.
+(AGPLv3), Prometheus (Apache-2.0), Ollama (MIT) und MkDocs/Material. Open WebUI
+verwendet die eigene Open WebUI License mit Branding-Bedingungen; diese ist vor
+einem Mehrbenutzer- oder Produktiveinsatz gesondert zu prüfen.
 
 Dieses Repository ist ein Evaluierungs- und Management-PoC, kein ungeprueft
 produktionsreifes ERP. Vor produktivem Einsatz sind insbesondere Datenschutz,
