@@ -12,6 +12,8 @@ werden durch `.gitignore` ausgeschlossen.
 | `ERPNEXT_PORT` | ERPNext | 8081 |
 | `PAPERLESS_PORT` | Paperless | 8010 |
 | `MCP_PORT` | MCP-Endpunkt | 8090 |
+| `DMS_MCP_PORT` | Paperless-MCP-Endpunkt | 8091 |
+| `KNOWLEDGE_MCP_PORT` | Prozess-Wiki-MCP-Endpunkt | 8092 |
 | `OPEN_WEBUI_PORT` | lokale Chat-Oberfläche | 3001 |
 | `MCP_WRITE_ENABLED` | Testdaten-Schreibwerkzeuge aktivieren | true (nur lokale Demo) |
 | `MCP_MAX_WRITE_RECORDS` | maximale Datensätze je Schreibaufruf | 100 |
@@ -25,6 +27,7 @@ werden durch `.gitignore` ausgeschlossen.
 | `ERPNEXT_API_KEY/SECRET` | bevorzugte ERPNext-Tokenanmeldung | leer |
 | `ERPNEXT_USERNAME` | lokale ERPNext-Sitzungsanmeldung | Administrator |
 | `PAPERLESS_API_TOKEN` | Live-Adapter | leer |
+| `PAPERLESS_ADMIN_USER/PASSWORD` | lokaler DMS-MCP-Fallback | Demo-Zugang |
 
 ## Passwörter und Secrets
 

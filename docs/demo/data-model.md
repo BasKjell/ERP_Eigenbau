@@ -5,10 +5,23 @@ Der Datensatz liegt versioniert in
 Start in ein Docker-Volume. **Demo zurücksetzen** stellt exakt diesen Zustand
 wieder her.
 
-Der ERPNext-Seed liest dieselbe Datei, legt daraus jedoch nur Stammdaten,
-Kapazitäten, Anfangsbestände, BOM, Qualitätsvorlage und die Opportunity an. Die
-ERPNext-Belegkette bleibt ein manueller Anwenderablauf und wird durch
-**Demo zurücksetzen** im Portal nicht verändert.
+Der ERPNext-Seed liest dieselbe Datei und ergänzt drei weitere versionierte
+Demoprodukte. Er legt Stammdaten, Kapazitäten, Anfangsbestände, vier BOMs,
+Arbeitsgänge, Qualitätsvorlage, Opportunity und idempotent markierte
+Beispiel-Lagerbewegungen an. Die SCU-100-Auftragsbelegkette bleibt ein manueller
+Anwenderablauf und wird durch **Demo zurücksetzen** im Portal nicht verändert.
+
+## Fertigungsprodukte
+
+| Artikel | Produkt | Beispielmenge gefertigt | Arbeitsgänge |
+|---|---|---:|---|
+| `SCU-100` | Sonar Control Unit | manuell im Prozess | 5 |
+| `IOX-24` | Remote-I/O-Modul 24 Kanal | 3 | 4 |
+| `HMI-070` | Bedienpanel 7 Zoll | 2 | 5 |
+| `GW-EDGE-200` | Industrial Edge Gateway | 1 | 5 |
+
+Die Musterbuchungen liegen am Ausführungstag des Seeds. Dadurch beantwortet
+der ERP-MCP Fragen nach „heute verbautem Material“ mit realen Stock Entries.
 
 ## Kernobjekte
 

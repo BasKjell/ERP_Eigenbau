@@ -24,7 +24,9 @@ Danach:
 - Management-Portal: <http://localhost:8088>
 - Prozess-Wiki: <http://localhost:8001>
 - API-Dokumentation: <http://localhost:8088/docs>
-- MCP-Endpunkt: <http://localhost:8090/mcp>
+- ERPNext-MCP: <http://localhost:8090/mcp>
+- DMS-MCP: <http://localhost:8091/mcp>
+- Prozess-Wiki-MCP: <http://localhost:8092/mcp>
 - Open WebUI (lokales Modell): <http://localhost:3001>
 
 Die Demo laeuft ohne Cloud und ohne externes KI-Modell. Ein lokales
@@ -33,11 +35,12 @@ Prozess schrittweise durchgespielt, der Fehlerfall `SN-10004` ausgeloest und
 behoben sowie der Status von Auftrag `4711` in natuerlicher Sprache abgefragt
 werden.
 
-Der MCP-Server stellt die vier quellenbasierten Lesewerkzeuge sowie kontrollierte
-ERPNext-Testdatenwerkzeuge bereit. Ein lokales Modell kann damit nach Vorschau
-und expliziter Bestätigung Mitarbeiter, Arbeitszeiten, Arbeitsplätze,
-Lieferanten und weitere freigegebene Stammdaten einzeln oder per CSV/JSON
-anlegen. Schreibzugriffe gelten ausschließlich für die lokale Demo.
+Die drei MCP-Server stellen reale ERPNext-Abfragen, eine read-only
+Paperless-Suche, das lokale Prozess-Wiki sowie kontrollierte
+ERPNext-Testdatenwerkzeuge bereit. Fragen nach Stücklisten, aktuellem Bestand,
+heutigem Materialverbrauch oder den Lagerbuchungen eines Artikels werden aus
+ERPNext beantwortet. Schreibzugriffe gelten ausschließlich für die lokale Demo
+und verlangen Vorschau plus explizite Bestätigung.
 
 ## Vollstaendiger Plattform-Stack
 
@@ -53,18 +56,19 @@ Zusaetzlich erreichbar:
 
 ERPNext benoetigt beim ersten Start mehrere Minuten. Der Portal-Demodatensatz
 bleibt davon unabhaengig bedienbar. Beim ersten `full`-Start legt der
-`erpnext-seed`-Container die Firma, Stammdaten, Bestände, Stückliste,
-Arbeitsplätze, Qualitätsvorlage und die Opportunity `OPP-2027-0018` im echten
-ERPNext an. Der Seed ist wiederholbar und kann bei Bedarf manuell gestartet
-werden:
+`erpnext-seed`-Container die Firma, Stammdaten, Bestände, vier Produkte mit
+Stücklisten und Arbeitsgängen, Beispiel-Lagerbewegungen, Qualitätsvorlage und
+die Opportunity `OPP-2027-0018` im echten ERPNext an. Der Seed ist wiederholbar
+und kann bei Bedarf manuell gestartet werden:
 
 ```bash
 docker compose --profile full run --rm erpnext-seed
 ```
 
-Die nachfolgenden Belege werden bewusst im ERPNext-Webclient manuell erzeugt.
-Beispiel-PDFs liegen in `output/pdf/` und werden über den Paperless-Consume-
-Ordner bereitgestellt.
+Die SCU-100-Auftragsbelege werden bewusst im ERPNext-Webclient manuell erzeugt.
+Zusätzliche Beispielbuchungen zeigen Materialzugang, Umlagerung, Fertigung und
+Materialabgang. Beispiel-PDFs liegen in `output/pdf/` und werden einmalig über
+den Paperless-Consume-Ordner bereitgestellt.
 
 Optionale Profile:
 

@@ -43,9 +43,16 @@ starten und `OPEN_WEBUI_OLLAMA_BASE_URL=http://ollama:11434` setzen.
 
 Open WebUI unterstützt Streamable HTTP nativ. Die Verbindung wird nach der
 ersten Anmeldung unter **Admin > Integrations > External Tool Servers** mit
-`http://platform-mcp:8090/mcp`, Typ **MCP (Streamable HTTP)** und Auth **None**
-angelegt. Nur Administratoren dürfen MCP-Server registrieren. Die Freigabe an
-Benutzer oder Gruppen erfolgt anschließend über die Open-WebUI-Zugriffsliste.
+Typ **MCP (Streamable HTTP)** und Auth **None** angelegt:
+
+- `erp` → `http://platform-mcp:8090/mcp`
+- `dms` → `http://dms-mcp:8091/mcp`
+- `wiki` → `http://knowledge-mcp:8092/mcp`
+
+Nur Administratoren dürfen MCP-Server registrieren. Die Freigabe an Benutzer
+oder Gruppen erfolgt anschließend über die Open-WebUI-Zugriffsliste. DMS und
+Wiki sind read-only; nur der ERP-Server besitzt die gesondert bestätigten
+Testdatenwerkzeuge.
 
 Die Testdatenwerkzeuge verlangen weiterhin ihre eigene Vorschau und
 `confirm=true`; Open WebUI ersetzt diese serverseitige Kontrolle nicht.

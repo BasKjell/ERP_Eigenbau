@@ -4,16 +4,25 @@ from mcp.server.mcpserver import MCPServer
 
 from .business_tools import (
     get_order_status as query_order_status,
+)
+from .business_tools import (
     list_late_purchase_orders as query_late_purchase_orders,
+)
+from .business_tools import (
     list_production_orders as query_production_orders,
+)
+from .business_tools import (
     search_documents as query_documents,
 )
 from .config import settings
+from .erp_read import ERPReadService
+from .erpnext_client import ERPNextError
 from .master_data import MasterDataError, MasterDataService
 from .store import ScenarioStore
 
 store = ScenarioStore(settings.data_file, settings.seed_file)
 master_data = MasterDataService(settings)
+erp_read = ERPReadService(settings)
 mcp = MCPServer("Open Manufacturing Platform")
 
 
@@ -39,6 +48,62 @@ def get_order_status(order_id: str = "SO-4711") -> dict[str, object]:
 def search_documents(query: str) -> dict[str, object]:
     """Search approved manufacturing document metadata without returning file contents."""
     return query_documents(store.get(), query)
+
+
+@mcp.tool()
+def list_manufacturing_products(limit: int = 50) -> dict[str, object]:
+    """List submitted active ERPNext BOMs and their manufactured products."""
+    try:
+        return erp_read.list_products(limit=limit)
+    except ERPNextError as exc:
+        return {"tool": "list_manufacturing_products", "status": "error", "error": str(exc)}
+
+
+@mcp.tool()
+def get_bom_details(item_code: str) -> dict[str, object]:
+    """Get one product BOM including components, quantities and operations."""
+    try:
+        return erp_read.get_bom(item_code)
+    except ERPNextError as exc:
+        return {"tool": "get_bom_details", "status": "error", "error": str(exc)}
+
+
+@mcp.tool()
+def get_inventory(item_code: str = "", warehouse: str = "", limit: int = 100) -> dict[str, object]:
+    """Read current ERPNext stock balances, optionally for an item or warehouse."""
+    try:
+        return erp_read.get_inventory(item_code, warehouse, limit)
+    except ERPNextError as exc:
+        return {"tool": "get_inventory", "status": "error", "error": str(exc)}
+
+
+@mcp.tool()
+def list_item_stock_movements(
+    item_code: str,
+    date_from: str = "",
+    date_to: str = "",
+    warehouse: str = "",
+    limit: int = 100,
+) -> dict[str, object]:
+    """List traceable stock-ledger movements for one ERPNext item."""
+    try:
+        return erp_read.list_stock_movements(item_code, date_from, date_to, warehouse, limit)
+    except ERPNextError as exc:
+        return {"tool": "list_item_stock_movements", "status": "error", "error": str(exc)}
+
+
+@mcp.tool()
+def list_materials_consumed(
+    posting_date: str = "",
+    work_order: str = "",
+    item_code: str = "",
+    limit: int = 100,
+) -> dict[str, object]:
+    """List raw materials consumed by submitted manufacturing entries on a date."""
+    try:
+        return erp_read.list_materials_consumed(posting_date, work_order, item_code, limit)
+    except ERPNextError as exc:
+        return {"tool": "list_materials_consumed", "status": "error", "error": str(exc)}
 
 
 @mcp.tool()

@@ -2,9 +2,15 @@
 
 ## Implementierter Umfang
 
-Der lokale MCP-Server läuft unter `http://localhost:8090/mcp`. Er verwendet
-den offiziellen Python-SDK und trennt quellenbasierte Leseabfragen von
-kontrollierten Testdaten-Schreibaktionen.
+Die lokalen MCP-Server verwenden den offiziellen Python-SDK. Jeder Server hat
+eine klar begrenzte Systemverantwortung; ERPNext-Schreibaktionen bleiben von
+den read-only DMS- und Wiki-Zugriffen getrennt.
+
+| Server | Host-Endpunkt | Interner Endpunkt für Open WebUI | Modus |
+|---|---|---|---|
+| ERPNext | `http://localhost:8090/mcp` | `http://platform-mcp:8090/mcp` | lesen + bestätigte Testdaten |
+| Paperless/DMS | `http://localhost:8091/mcp` | `http://dms-mcp:8091/mcp` | nur lesen |
+| Prozess-Wiki | `http://localhost:8092/mcp` | `http://knowledge-mcp:8092/mcp` | nur lesen |
 
 | Werkzeug | Zweck |
 |---|---|
@@ -12,10 +18,22 @@ kontrollierten Testdaten-Schreibaktionen.
 | `list_late_purchase_orders` | verspätete Bestellungen anzeigen |
 | `get_order_status` | Kundenauftragsstatus und Risiken anzeigen |
 | `search_documents` | freigegebene Dokumentmetadaten suchen |
+| `list_manufacturing_products` | aktive ERPNext-Produkte und BOMs anzeigen |
+| `get_bom_details` | Komponenten und Arbeitsgänge einer BOM anzeigen |
+| `get_inventory` | aktuelle ERPNext-Bestände aus `Bin` lesen |
+| `list_item_stock_movements` | Lagerbuchungen eines Artikels aus dem Stock Ledger lesen |
+| `list_materials_consumed` | in Fertigungsbuchungen verbrauchte Materialien je Tag lesen |
 | `list_test_data_types` | erlaubte ERPNext-Typen, Felder, Defaults und Beispiele liefern |
 | `create_test_data` | einzelne oder mehrere Testdatensätze vorschauen und anlegen |
 | `import_test_data` | CSV- oder JSON-Inhalt vorschauen und importieren |
 | `rollback_test_data_batch` | ausschließlich eine auditierte MCP-Testdatencharge löschen |
+
+Der DMS-Server bietet `search_dms_documents`, `get_dms_document`,
+`list_recent_dms_documents` und `list_dms_metadata`. Er gibt Metadaten und
+kurze OCR-Treffer zurück, aber keine Binärdateien oder vollständigen
+Dokumentinhalte. Der Wiki-Server bietet `list_documentation_sections`,
+`search_process_documentation` und `get_documentation_page`; Pfade sind auf
+Markdown-Dateien unter `docs/` begrenzt.
 
 Der Katalog deckt unter anderem Mitarbeiter, Arbeitszeitnachweise,
 Arbeitsplätze und -typen, Werkshallen, Arbeitsgänge, Lieferanten, Kunden,
@@ -37,7 +55,7 @@ flowchart LR
 
 Ollama ist Modellserver, aber kein MCP-Host. Ein Desktop-Client, Codex, ein
 Gateway oder eine andere MCP-fähige Anwendung verbindet das lokale Modell mit
-`http://localhost:8090/mcp`. Das Management-Portal verwendet weiterhin seinen
+den passenden Endpunkten. Das Management-Portal verwendet weiterhin seinen
 eigenen, nur lesenden Assistentenpfad.
 
 ## Schreibvertrag
@@ -73,6 +91,9 @@ standardmäßig 100 Datensätze begrenzt.
   ERPNext-Zugangsdaten und `confirm=true`.
 - Zugangsdaten werden nie an Modell oder MCP-Client zurückgegeben.
 - Systemfelder wie `owner`, beliebige DocTypes, SQL und Shell bleiben gesperrt.
+- ERP-Leseabfragen verwenden feste DocTypes, Felder, Filter und Mengenlimits;
+  der Client kann kein freies SQL oder beliebige REST-Pfade übergeben.
+- DMS- und Wiki-MCP besitzen keine Schreibwerkzeuge.
 - Auditereignisse liegen im Volume unter `/data/mcp-write-audit.jsonl`.
 - Die Administrator-Anmeldung ist nur für die lokale Demo vorgesehen. Vor
   jeder Netzfreigabe sind ein eingeschränktes Servicekonto, Tokenauthentifizierung,
@@ -82,8 +103,14 @@ standardmäßig 100 Datensätze begrenzt.
 
 ```bash
 docker compose --profile full up -d --build
-docker compose up -d --build platform-mcp
-docker compose logs --tail=150 platform-mcp
+make mcp
+docker compose --profile full logs --tail=150 platform-mcp dms-mcp knowledge-mcp
+
+docker run --rm --network erp-eigenbau_platform \
+  -v "$PWD/scripts/check_mcp.py:/check_mcp.py:ro" \
+  erp-eigenbau-platform-mcp python /check_mcp.py \
+  http://platform-mcp:8090/mcp list_materials_consumed \
+  '{"posting_date":"2026-10-30"}'
 ```
 
 Ein Browser-GET ist kein vollständiger MCP-Aufruf. Der Funktionstest erfolgt

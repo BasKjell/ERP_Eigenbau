@@ -11,10 +11,39 @@ danach ausdrücklich bestätigen.
 |---|---|---|
 | Welche Aufträge sind in Produktion? | `list_production_orders` | ERPNext Work Order |
 | Welche Bestellungen sind verspätet? | `list_late_purchase_orders` | ERPNext Purchase Order |
+| Welche Produkte und Stücklisten gibt es? | `list_manufacturing_products`, `get_bom_details` | ERPNext BOM |
+| Wie viel Bestand gibt es von Artikel X? | `get_inventory` | ERPNext Bin |
+| Welche Materialien wurden heute verbaut? | `list_materials_consumed` | ERPNext Stock Entry |
+| Welche Lagerbuchungen gab es für Artikel X? | `list_item_stock_movements` | ERPNext Stock Ledger Entry |
+| Welche Prüfpläne oder Zeichnungen gibt es? | `search_dms_documents` | Paperless-ngx |
+| Wie ist der dokumentierte Prozess? | `search_process_documentation` | Prozess-Wiki |
 | Welche Testdatentypen sind möglich? | `list_test_data_types` | MCP-Freigabekatalog |
 | Mitarbeiter oder Arbeitsplätze anlegen | `create_test_data` | ERPNext |
 | Lieferanten oder andere Listen importieren | `import_test_data` | ERPNext |
 | eine fehlerhafte Testcharge entfernen | `rollback_test_data_batch` | ERPNext + MCP-Audit |
+
+## Bestände und Materialverbrauch fragen
+
+Für zeitbezogene Fragen ein Datum im Format `YYYY-MM-DD` nennen. „Heute“ wird
+vom MCP-Server auf das lokale Tagesdatum aufgelöst. Beispiele:
+
+> Welche Materialien wurden heute in Fertigungsbuchungen verbaut? Gruppiere
+> nach Artikel und nenne die zugehörigen Stock Entries.
+
+> Zeige alle Lagerbuchungen für `CON-M12` vom 2026-10-30, einschließlich Lager,
+> Mengenänderung, Restbestand und Belegnummer.
+
+`list_materials_consumed` zählt ausschließlich gebuchte Fertigungs- und
+Materialverbrauchsbelege; eine reine Umlagerung ins WIP-Lager gilt nicht als
+Verbrauch. `list_item_stock_movements` zeigt dagegen die vollständige
+Artikelspur einschließlich Zugang, Umlagerung, Verbrauch und Abstimmung.
+
+## DMS und Prozess-Wiki
+
+Der DMS-MCP liefert nur Paperless-Metadaten und kurze OCR-Treffer. Binärdateien
+werden im Paperless-Webclient geöffnet. Der Wiki-MCP liest ausschließlich
+Markdown-Seiten unter `docs/`. Bei Antworten soll das Modell Dokument-ID bzw.
+Wiki-Pfad als Quelle nennen.
 
 ## Einzelne Testdaten anlegen
 

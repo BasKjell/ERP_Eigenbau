@@ -22,9 +22,10 @@ fachliche Tools mit serverseitiger Rollenprüfung aufrufen.
 | `create_purchase_request` | ERPNext | schreiben | immer |
 | `release_work_order` | ERPNext | schreiben | immer + Rolle |
 
-Im implementierten PoC sind die vier Lesewerkzeuge
-`list_production_orders`, `list_late_purchase_orders`, `get_order_status` und
-`search_documents` sowie die vier kontrollierten Testdatenwerkzeuge aktiv.
+Im implementierten PoC sind zusätzlich reale ERPNext-Lesewerkzeuge für BOMs,
+Bestände, Stock Ledger und Fertigungsverbrauch aktiv. Separate read-only
+Server durchsuchen Paperless und das Prozess-Wiki. Daneben bleiben die vier
+kontrollierten Testdatenwerkzeuge aktiv.
 Fachliche Buchungen wie Bestellanforderung oder Fertigungsfreigabe bleiben
 Zielbild und sind nicht freigeschaltet. Die Testdatenwerkzeuge aktualisieren
 keine vorhandenen Dokumente und akzeptieren nur einen festen DocType- und

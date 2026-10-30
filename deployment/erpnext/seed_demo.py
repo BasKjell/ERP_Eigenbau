@@ -22,16 +22,11 @@ from pathlib import Path
 from typing import Any
 
 import frappe
-from frappe.utils import getdate, nowdate
-
+from frappe.utils import add_to_date, get_datetime, getdate, now_datetime, nowdate
 
 SITE = os.environ.get("FRAPPE_SITE", "frontend")
-SITES_PATH = os.environ.get(
-    "FRAPPE_SITES_PATH", "/home/frappe/frappe-bench/sites"
-)
-DATA_FILE = Path(
-    os.environ.get("ERP_DEMO_DATA_FILE", "/seed/scenario.json")
-)
+SITES_PATH = os.environ.get("FRAPPE_SITES_PATH", "/home/frappe/frappe-bench/sites")
+DATA_FILE = Path(os.environ.get("ERP_DEMO_DATA_FILE", "/seed/scenario.json"))
 
 CREATED: list[str] = []
 EXISTING: list[str] = []
@@ -45,7 +40,191 @@ COMPONENT_COSTS = {
     "HARNESS-100": 180.0,
     "DISPLAY-7": 700.0,
     "FW-SCU-3": 0.0,
+    "ENC-IOX-24": 55.0,
+    "PCB-IOX-24": 260.0,
+    "TERM-24": 18.0,
+    "FW-IOX-2": 0.0,
+    "CASE-HMI-7": 110.0,
+    "PCB-HMI-7": 380.0,
+    "PSU-24V-40": 75.0,
+    "HARNESS-HMI": 40.0,
+    "FW-HMI-1": 0.0,
+    "CASE-GW-200": 160.0,
+    "PCB-GW-88": 650.0,
+    "SSD-IND-256": 180.0,
+    "HARNESS-GW": 65.0,
+    "FW-GW-4": 0.0,
 }
+
+EXTRA_PRODUCTS: list[dict[str, Any]] = [
+    {
+        "item": "IOX-24",
+        "name": "Remote-I/O-Modul 24 Kanal",
+        "price": 890.0,
+        "components": [
+            {
+                "item": "ENC-IOX-24",
+                "name": "I/O-Aluminiumgehäuse",
+                "qty": 1,
+                "source": "make",
+                "available": 60,
+            },
+            {
+                "item": "PCB-IOX-24",
+                "name": "I/O-Controllerplatine",
+                "qty": 1,
+                "source": "buy",
+                "available": 45,
+            },
+            {
+                "item": "TERM-24",
+                "name": "24-polige Klemmenleiste",
+                "qty": 2,
+                "source": "buy",
+                "available": 120,
+            },
+            {
+                "item": "CON-M12",
+                "name": "M12 Steckverbinder",
+                "qty": 4,
+                "source": "buy",
+                "available": 40,
+            },
+            {
+                "item": "FW-IOX-2",
+                "name": "Firmware IOX v2",
+                "qty": 1,
+                "source": "software",
+                "available": 999,
+            },
+        ],
+        "operations": [
+            ("Mechanische Montage", 20),
+            ("Elektronikmontage", 35),
+            ("Firmware-Station", 15),
+            ("Endpruefung", 20),
+        ],
+    },
+    {
+        "item": "HMI-070",
+        "name": "Bedienpanel 7 Zoll",
+        "price": 1490.0,
+        "components": [
+            {
+                "item": "CASE-HMI-7",
+                "name": "HMI-Frontgehäuse",
+                "qty": 1,
+                "source": "make",
+                "available": 25,
+            },
+            {
+                "item": "PCB-HMI-7",
+                "name": "HMI-Prozessorplatine",
+                "qty": 1,
+                "source": "buy",
+                "available": 30,
+            },
+            {
+                "item": "DISPLAY-7",
+                "name": "Display-Modul 7 Zoll",
+                "qty": 1,
+                "source": "buy",
+                "available": 7,
+            },
+            {
+                "item": "PSU-24V-40",
+                "name": "Netzteil 24 V / 40 W",
+                "qty": 1,
+                "source": "buy",
+                "available": 50,
+            },
+            {
+                "item": "HARNESS-HMI",
+                "name": "HMI-Kabelsatz",
+                "qty": 1,
+                "source": "make",
+                "available": 40,
+            },
+            {
+                "item": "FW-HMI-1",
+                "name": "Firmware HMI v1",
+                "qty": 1,
+                "source": "software",
+                "available": 999,
+            },
+        ],
+        "operations": [
+            ("Mechanische Montage", 25),
+            ("Elektronikmontage", 45),
+            ("Firmware-Station", 20),
+            ("Pruefstand A", 35),
+            ("Endpruefung", 20),
+        ],
+    },
+    {
+        "item": "GW-EDGE-200",
+        "name": "Industrial Edge Gateway",
+        "price": 2390.0,
+        "components": [
+            {
+                "item": "CASE-GW-200",
+                "name": "Gateway-Aluminiumgehäuse",
+                "qty": 1,
+                "source": "make",
+                "available": 18,
+            },
+            {
+                "item": "PCB-GW-88",
+                "name": "Edge-Computer-Platine",
+                "qty": 1,
+                "source": "buy",
+                "available": 20,
+            },
+            {
+                "item": "PSU-24V-80",
+                "name": "Netzteil 24 V",
+                "qty": 1,
+                "source": "buy",
+                "available": 8,
+            },
+            {
+                "item": "CON-M12",
+                "name": "M12 Steckverbinder",
+                "qty": 4,
+                "source": "buy",
+                "available": 40,
+            },
+            {
+                "item": "SSD-IND-256",
+                "name": "Industrie-SSD 256 GB",
+                "qty": 1,
+                "source": "buy",
+                "available": 22,
+            },
+            {
+                "item": "HARNESS-GW",
+                "name": "Gateway-Kabelsatz",
+                "qty": 1,
+                "source": "make",
+                "available": 30,
+            },
+            {
+                "item": "FW-GW-4",
+                "name": "Firmware Gateway v4",
+                "qty": 1,
+                "source": "software",
+                "available": 999,
+            },
+        ],
+        "operations": [
+            ("Mechanische Montage", 35),
+            ("Elektronikmontage", 55),
+            ("Firmware-Station", 30),
+            ("Pruefstand A", 45),
+            ("Endpruefung", 25),
+        ],
+    },
+]
 
 
 def log(message: str) -> None:
@@ -348,8 +527,7 @@ def ensure_items(
             "item_code": product,
             "item_name": order["product_name"],
             "description": (
-                f"{order['product_name']}, Revision {order['revision']} "
-                "(ausschliesslich Demodaten)"
+                f"{order['product_name']}, Revision {order['revision']} (ausschliesslich Demodaten)"
             ),
             "item_group": product_group,
             "stock_uom": "Nos",
@@ -358,9 +536,7 @@ def ensure_items(
             "is_purchase_item": 0,
             "has_serial_no": 1,
             "include_item_in_manufacturing": 1,
-            "item_defaults": [
-                {"company": company, "default_warehouse": stores}
-            ],
+            "item_defaults": [{"company": company, "default_warehouse": stores}],
         },
     )
 
@@ -386,18 +562,14 @@ def ensure_items(
                 "include_item_in_manufacturing": 1,
                 "default_material_request_type": source_to_request_type[row["source"]],
                 "valuation_rate": COMPONENT_COSTS[row["item"]],
-                "item_defaults": [
-                    {"company": company, "default_warehouse": stores}
-                ],
+                "item_defaults": [{"company": company, "default_warehouse": stores}],
             },
         )
 
     return product, scenario["bom"]
 
 
-def ensure_prices(
-    scenario: dict[str, Any], currency: str, bom_rows: list[dict[str, Any]]
-) -> None:
+def ensure_prices(scenario: dict[str, Any], currency: str, bom_rows: list[dict[str, Any]]) -> None:
     ensure_price_list("Standard Selling", currency, selling=True)
     ensure_price_list("Standard Buying", currency, selling=False)
 
@@ -428,6 +600,116 @@ def ensure_prices(
         )
 
 
+def ensure_additional_products(company: str, currency: str, stores: str) -> list[dict[str, Any]]:
+    """Create extra demo products and their shared components."""
+    product_group = ensure_tree_node(
+        "Item Group",
+        "Demo Fertigerzeugnisse",
+        label_field="item_group_name",
+        parent_field="parent_item_group",
+        root_name="All Item Groups",
+    )
+    component_group = ensure_tree_node(
+        "Item Group",
+        "Demo Komponenten",
+        label_field="item_group_name",
+        parent_field="parent_item_group",
+        root_name="All Item Groups",
+    )
+    source_to_request_type = {
+        "buy": "Purchase",
+        "make": "Manufacture",
+        "software": "",
+    }
+    seen_components: set[str] = set()
+    for product in EXTRA_PRODUCTS:
+        insert_missing(
+            "Item",
+            product["item"],
+            {
+                "item_code": product["item"],
+                "item_name": product["name"],
+                "description": f"{product['name']} (ausschliesslich Demodaten)",
+                "item_group": product_group,
+                "stock_uom": "Nos",
+                "is_stock_item": 1,
+                "is_sales_item": 1,
+                "is_purchase_item": 0,
+                "has_serial_no": 0,
+                "include_item_in_manufacturing": 1,
+                "item_defaults": [{"company": company, "default_warehouse": stores}],
+            },
+        )
+        insert_missing_by_filter(
+            "Item Price",
+            {"item_code": product["item"], "price_list": "Standard Selling"},
+            {
+                "item_code": product["item"],
+                "price_list": "Standard Selling",
+                "price_list_rate": product["price"],
+                "currency": currency,
+                "selling": 1,
+            },
+        )
+        for row in product["components"]:
+            if row["item"] in seen_components or frappe.db.exists("Item", row["item"]):
+                seen_components.add(row["item"])
+                continue
+            seen_components.add(row["item"])
+            is_stock = row["source"] != "software"
+            insert_missing(
+                "Item",
+                row["item"],
+                {
+                    "item_code": row["item"],
+                    "item_name": row["name"],
+                    "description": f"{row['name']} (Demokomponente)",
+                    "item_group": component_group,
+                    "stock_uom": "Nos",
+                    "is_stock_item": int(is_stock),
+                    "is_sales_item": 0,
+                    "is_purchase_item": int(row["source"] == "buy"),
+                    "include_item_in_manufacturing": 1,
+                    "default_material_request_type": source_to_request_type[row["source"]],
+                    "valuation_rate": COMPONENT_COSTS[row["item"]],
+                    "item_defaults": [{"company": company, "default_warehouse": stores}],
+                },
+            )
+            if row["source"] == "buy":
+                insert_missing_by_filter(
+                    "Item Price",
+                    {"item_code": row["item"], "price_list": "Standard Buying"},
+                    {
+                        "item_code": row["item"],
+                        "price_list": "Standard Buying",
+                        "price_list_rate": COMPONENT_COSTS[row["item"]],
+                        "currency": currency,
+                        "buying": 1,
+                    },
+                )
+    return EXTRA_PRODUCTS
+
+
+def product_operations(
+    product: dict[str, Any], base_operations: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    by_name = {str(row["operation"]): row for row in base_operations}
+    operations: list[dict[str, Any]] = []
+    for sequence, (name, minutes) in enumerate(product["operations"], start=1):
+        if name not in by_name:
+            raise RuntimeError(f"Operation {name} is unavailable for {product['item']}")
+        operations.append(
+            {
+                "sequence_id": sequence,
+                "operation": name,
+                "workstation": by_name[name]["workstation"],
+                "time_in_mins": minutes,
+                "fixed_time": 0,
+            }
+        )
+    return operations
+
+
 def warehouse_for(company: str, field: str, warehouse_name: str) -> str:
     value = frappe.db.get_value("Company", company, field)
     if value:
@@ -438,9 +720,7 @@ def warehouse_for(company: str, field: str, warehouse_name: str) -> str:
         "name",
     )
     if not value:
-        value = frappe.db.get_value(
-            "Warehouse", {"company": company, "is_group": 0}, "name"
-        )
+        value = frappe.db.get_value("Warehouse", {"company": company, "is_group": 0}, "name")
     if not value:
         raise RuntimeError(f"No leaf warehouse exists for {company}")
     if frappe.get_meta("Company").get_field(field):
@@ -463,9 +743,7 @@ def ensure_workstations_and_operations(scenario: dict[str, Any]) -> list[dict[st
                 ),
                 "production_capacity": row["capacity"],
                 "status": "Production",
-                "working_hours": [
-                    {"start_time": start_time, "end_time": end_time}
-                ],
+                "working_hours": [{"start_time": start_time, "end_time": end_time}],
             },
         ).name
         operation = insert_missing(
@@ -537,9 +815,7 @@ def ensure_quality_template(product: str) -> None:
         },
     )
     if frappe.get_meta("Item").get_field("quality_inspection_template"):
-        frappe.db.set_value(
-            "Item", product, "quality_inspection_template", template.name
-        )
+        frappe.db.set_value("Item", product, "quality_inspection_template", template.name)
 
 
 def ensure_bom(
@@ -594,30 +870,29 @@ def ensure_bom(
     return doc.name
 
 
-def ensure_opening_stock(
-    company: str, bom_rows: list[dict[str, Any]], stores: str
-) -> None:
-    item_codes = [row["item"] for row in bom_rows if row["source"] != "software"]
-    if frappe.db.exists(
-        "Stock Ledger Entry",
-        {"company": company, "item_code": ["in", item_codes], "is_cancelled": 0},
-    ):
-        NOTES.append(
-            "Opening stock was not changed because demo-item ledger entries already exist"
+def ensure_opening_stock(company: str, bom_rows: list[dict[str, Any]], stores: str) -> None:
+    stock_rows = []
+    seen: set[str] = set()
+    for row in bom_rows:
+        item_code = row["item"]
+        if item_code in seen or row["source"] == "software" or row["available"] <= 0:
+            continue
+        seen.add(item_code)
+        if frappe.db.exists(
+            "Stock Ledger Entry",
+            {"company": company, "item_code": item_code, "is_cancelled": 0},
+        ):
+            continue
+        stock_rows.append(
+            {
+                "item_code": item_code,
+                "warehouse": stores,
+                "qty": row["available"],
+                "valuation_rate": COMPONENT_COSTS[item_code],
+            }
         )
-        return
-
-    stock_rows = [
-        {
-            "item_code": row["item"],
-            "warehouse": stores,
-            "qty": row["available"],
-            "valuation_rate": COMPONENT_COSTS[row["item"]],
-        }
-        for row in bom_rows
-        if row["source"] != "software" and row["available"] > 0
-    ]
     if not stock_rows:
+        NOTES.append("Opening stock already exists for all demo components")
         return
 
     opening_account = frappe.db.get_value(
@@ -651,6 +926,7 @@ def ensure_opening_stock(
                 # not a legally relevant opening balance.
                 "purpose": "Stock Reconciliation",
                 "posting_date": nowdate(),
+                "posting_time": "06:00:00",
                 "set_posting_time": 1,
                 "expense_account": opening_account,
                 "items": stock_rows,
@@ -663,9 +939,187 @@ def ensure_opening_stock(
     CREATED.append(f"Stock Reconciliation: {doc.name}")
 
 
-def ensure_opportunity(
-    scenario: dict[str, Any], company: str, customer: str, product: str
+def ensure_stock_entry(
+    marker: str,
+    company: str,
+    stock_entry_type: str,
+    items: list[dict[str, Any]],
+    *,
+    posting_time: str,
+    bom_no: str = "",
+) -> str:
+    remarks = f"[ERP-EIGENBAU-DEMO:{marker}] automatisch erzeugte Demobuchung"
+    existing = frappe.db.get_value(
+        "Stock Entry",
+        {"remarks": remarks, "docstatus": ["<", 2]},
+        "name",
+    )
+    if existing:
+        EXISTING.append(f"Stock Entry: {existing}")
+        return str(existing)
+    values: dict[str, Any] = {
+        "company": company,
+        "stock_entry_type": stock_entry_type,
+        "purpose": stock_entry_type,
+        "posting_date": nowdate(),
+        "posting_time": posting_time,
+        "set_posting_time": 1,
+        "remarks": remarks,
+        "items": items,
+    }
+    if bom_no:
+        values.update(
+            {
+                "from_bom": 1,
+                "bom_no": bom_no,
+                "fg_completed_qty": next(
+                    float(row["qty"]) for row in items if row.get("is_finished_item")
+                ),
+            }
+        )
+    doc = frappe.get_doc(filtered_values("Stock Entry", values))
+    doc.flags.ignore_permissions = True
+    doc.insert(ignore_permissions=True)
+    doc.submit()
+    # Make the ledger row visible to the next dependent stock movement.
+    frappe.db.commit()
+    CREATED.append(f"Stock Entry: {doc.name}")
+    return doc.name
+
+
+def stock_items_for_product(
+    product: dict[str, Any], quantity: float, source_warehouse: str, target_warehouse: str
+) -> list[dict[str, Any]]:
+    rows = [
+        {
+            "item_code": component["item"],
+            "qty": float(component["qty"]) * quantity,
+            "s_warehouse": source_warehouse,
+            "uom": "Nos",
+            "stock_uom": "Nos",
+            "conversion_factor": 1,
+            "basic_rate": COMPONENT_COSTS[component["item"]],
+        }
+        for component in product["components"]
+        if component["source"] != "software"
+    ]
+    rows.append(
+        {
+            "item_code": product["item"],
+            "qty": quantity,
+            "t_warehouse": target_warehouse,
+            "uom": "Nos",
+            "stock_uom": "Nos",
+            "conversion_factor": 1,
+            "is_finished_item": 1,
+        }
+    )
+    return rows
+
+
+def ensure_demo_stock_movements(
+    company: str,
+    products: list[dict[str, Any]],
+    bom_names: dict[str, str],
+    stores: str,
+    work_in_progress: str,
+    finished_goods: str,
 ) -> None:
+    latest_time = frappe.db.get_value(
+        "Stock Ledger Entry",
+        {"posting_date": nowdate(), "is_cancelled": 0},
+        "posting_time",
+        order_by="posting_time desc",
+    )
+    ledger_time = get_datetime(f"{nowdate()} {latest_time}") if latest_time else now_datetime()
+    base_time = max(now_datetime(), ledger_time)
+
+    def demo_time(offset_minutes: int) -> str:
+        return add_to_date(base_time, minutes=offset_minutes).strftime("%H:%M:%S")
+
+    ensure_stock_entry(
+        "RECEIPT-PCB-MAIN",
+        company,
+        "Material Receipt",
+        [
+            {
+                "item_code": "PCB-MAIN-42",
+                "qty": 25,
+                "t_warehouse": stores,
+                "uom": "Nos",
+                "stock_uom": "Nos",
+                "conversion_factor": 1,
+                "basic_rate": COMPONENT_COSTS["PCB-MAIN-42"],
+            }
+        ],
+        posting_time=demo_time(0),
+    )
+
+    iox = next(product for product in products if product["item"] == "IOX-24")
+    transfer_rows = []
+    for component in iox["components"]:
+        if component["source"] == "software":
+            continue
+        transfer_rows.append(
+            {
+                "item_code": component["item"],
+                "qty": float(component["qty"]) * 3,
+                "s_warehouse": stores,
+                "t_warehouse": work_in_progress,
+                "uom": "Nos",
+                "stock_uom": "Nos",
+                "conversion_factor": 1,
+            }
+        )
+    ensure_stock_entry(
+        "TRANSFER-IOX-24",
+        company,
+        "Material Transfer",
+        transfer_rows,
+        posting_time=demo_time(1),
+    )
+    ensure_stock_entry(
+        "MANUFACTURE-IOX-24",
+        company,
+        "Manufacture",
+        stock_items_for_product(iox, 3, work_in_progress, finished_goods),
+        posting_time=demo_time(2),
+        bom_no=bom_names["IOX-24"],
+    )
+
+    for marker, item_code, quantity, offset_minutes in (
+        ("MANUFACTURE-HMI-070", "HMI-070", 2, 3),
+        ("MANUFACTURE-GW-EDGE-200", "GW-EDGE-200", 1, 4),
+    ):
+        product = next(row for row in products if row["item"] == item_code)
+        ensure_stock_entry(
+            marker,
+            company,
+            "Manufacture",
+            stock_items_for_product(product, quantity, stores, finished_goods),
+            posting_time=demo_time(offset_minutes),
+            bom_no=bom_names[item_code],
+        )
+
+    ensure_stock_entry(
+        "ISSUE-DAMAGED-ENCLOSURE",
+        company,
+        "Material Issue",
+        [
+            {
+                "item_code": "CASE-GW-200",
+                "qty": 1,
+                "s_warehouse": stores,
+                "uom": "Nos",
+                "stock_uom": "Nos",
+                "conversion_factor": 1,
+            }
+        ],
+        posting_time=demo_time(5),
+    )
+
+
+def ensure_opportunity(scenario: dict[str, Any], company: str, customer: str, product: str) -> None:
     order = scenario["order"]
     insert_missing(
         "Opportunity Type",
@@ -718,25 +1172,50 @@ def seed() -> None:
     customer, _, _ = ensure_parties(scenario)
 
     stores = warehouse_for(company, "default_warehouse", "Stores")
-    finished_goods = warehouse_for(
-        company, "default_fg_warehouse", "Finished Goods"
-    )
-    warehouse_for(company, "default_wip_warehouse", "Work In Progress")
+    finished_goods = warehouse_for(company, "default_fg_warehouse", "Finished Goods")
+    work_in_progress = warehouse_for(company, "default_wip_warehouse", "Work In Progress")
     set_single_if_present("Stock Settings", {"default_warehouse": stores})
 
     product, bom_rows = ensure_items(scenario, company, stores)
     ensure_prices(scenario, currency, bom_rows)
+    extra_products = ensure_additional_products(company, currency, stores)
     operations = ensure_workstations_and_operations(scenario)
     ensure_quality_template(product)
-    ensure_bom(
+    bom_names = {
+        product: ensure_bom(
+            company,
+            product,
+            bom_rows,
+            operations,
+            stores,
+            finished_goods,
+        )
+    }
+    for extra_product in extra_products:
+        bom_names[extra_product["item"]] = ensure_bom(
+            company,
+            extra_product["item"],
+            extra_product["components"],
+            product_operations(extra_product, operations),
+            stores,
+            finished_goods,
+        )
+    all_bom_rows = list(bom_rows)
+    for extra_product in extra_products:
+        all_bom_rows.extend(extra_product["components"])
+    ensure_opening_stock(company, all_bom_rows, stores)
+    # ERPNext v16 calculates following stock entries from committed ledger rows.
+    # Persist setup/opening stock before the separate, idempotently marked demo
+    # movements so negative-stock validation sees the newly seeded balances.
+    frappe.db.commit()
+    ensure_demo_stock_movements(
         company,
-        product,
-        bom_rows,
-        operations,
+        extra_products,
+        bom_names,
         stores,
+        work_in_progress,
         finished_goods,
     )
-    ensure_opening_stock(company, bom_rows, stores)
     ensure_opportunity(scenario, company, customer, product)
 
     frappe.db.set_default("setup_complete", "1")

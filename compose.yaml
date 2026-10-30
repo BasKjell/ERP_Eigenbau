@@ -72,6 +72,7 @@ services:
     restart: unless-stopped
     command: ["python", "-m", "app.mcp_server"]
     environment:
+      TZ: ${TZ:-Europe/Berlin}
       DEMO_DATA_FILE: /data/scenario.json
       DEMO_SEED_FILE: /app/seed/scenario.json
       DOCUMENT_DIR: /app/documents
@@ -87,7 +88,7 @@ services:
       PAPERLESS_BASE_URL: ${PAPERLESS_BASE_URL:-http://paperless-webserver:8000}
       PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
     ports:
-      - "${MCP_PORT:-8090}:8090"
+      - "127.0.0.1:${MCP_PORT:-8090}:8090"
     volumes:
       - demo-state:/data
       - ./output/pdf:/app/documents:ro
@@ -96,6 +97,50 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8090), 2).close()"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [platform]
+
+  dms-mcp:
+    build:
+      context: ./services/platform_api
+      target: base
+    profiles: [full]
+    restart: unless-stopped
+    command: ["python", "-m", "app.dms_mcp_server"]
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      PAPERLESS_BASE_URL: ${PAPERLESS_BASE_URL:-http://paperless-webserver:8000}
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
+      PAPERLESS_USERNAME: ${PAPERLESS_ADMIN_USER:-admin}
+      PAPERLESS_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:-admin-demo-change-me}
+    ports:
+      - "127.0.0.1:${DMS_MCP_PORT:-8091}:8091"
+    depends_on:
+      paperless-webserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8091), 2).close()"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [platform]
+
+  knowledge-mcp:
+    build:
+      context: ./services/platform_api
+      target: base
+    restart: unless-stopped
+    command: ["python", "-m", "app.knowledge_mcp_server"]
+    environment:
+      DOCUMENTATION_DIR: /docs
+    ports:
+      - "127.0.0.1:${KNOWLEDGE_MCP_PORT:-8092}:8092"
+    volumes:
+      - ./docs:/docs:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8092), 2).close()"]
       interval: 10s
       timeout: 3s
       retries: 10
@@ -177,10 +222,21 @@ services:
     image: alpine:3.22.2
     profiles: [full]
     restart: "no"
-    command: ["sh", "-c", "cp -n /seed/*.pdf /consume/ 2>/dev/null || true"]
+    command:
+      - "sh"
+      - "-c"
+      - >
+        if [ -f /state/sample-pdfs-v1.done ]; then
+          echo 'Paperless demo PDFs already seeded';
+        else
+          cp -n /seed/*.pdf /consume/ 2>/dev/null || true;
+          touch /state/sample-pdfs-v1.done;
+          echo 'Paperless demo PDFs queued once';
+        fi
     volumes:
       - ./output/pdf:/seed:ro
       - paperless-consume:/consume
+      - paperless-seed-state:/state
     depends_on:
       paperless-webserver:
         condition: service_healthy
@@ -442,6 +498,7 @@ volumes:
   paperless-media:
   paperless-export:
   paperless-consume:
+  paperless-seed-state:
   erpnext-db-data-v16:
   erpnext-redis-queue:
   erpnext-sites-v16:

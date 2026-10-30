@@ -51,6 +51,51 @@ class ERPNextClient:
         rows = result.get("data", [])
         return str(rows[0]["name"]) if rows else None
 
+    def list_documents(
+        self,
+        doctype: str,
+        *,
+        fields: list[str],
+        filters: list[list[object]] | None = None,
+        order_by: str = "modified desc",
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Read a bounded DocType list through Frappe's authenticated REST API."""
+        page_length = max(1, min(int(limit), 200))
+        normalized_filters = []
+        for item in filters or []:
+            if len(item) != 3:
+                raise ERPNextError("ERPNext filters must contain field, operator and value")
+            normalized_filters.append([doctype, *item])
+        query = urllib.parse.urlencode(
+            {
+                "fields": json.dumps(fields),
+                "filters": json.dumps(normalized_filters),
+                "order_by": order_by,
+                "limit_page_length": page_length,
+            }
+        )
+        result = self._request(
+            "GET", f"/api/resource/{urllib.parse.quote(doctype, safe='')}?{query}"
+        )
+        rows = result.get("data", [])
+        if not isinstance(rows, list):
+            raise ERPNextError("ERPNext returned an invalid document list")
+        return [row for row in rows if isinstance(row, dict)]
+
+    def get_document(self, doctype: str, name: str) -> dict[str, Any]:
+        """Read one named document including its child tables."""
+        result = self._request(
+            "GET",
+            "/api/resource/"
+            f"{urllib.parse.quote(doctype, safe='')}/"
+            f"{urllib.parse.quote(name, safe='')}",
+        )
+        data = result.get("data")
+        if not isinstance(data, dict):
+            raise ERPNextError("ERPNext returned an invalid document")
+        return data
+
     def create_document(self, doctype: str, values: dict[str, Any]) -> dict[str, Any]:
         result = self._request(
             "POST",

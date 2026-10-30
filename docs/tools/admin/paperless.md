@@ -12,6 +12,19 @@ curl --fail http://localhost:8010/api/health/
 docker compose logs --tail=200 paperless-webserver paperless-seed
 ```
 
+Die fünf Repository-Beispiel-PDFs werden über das Volume
+`paperless-seed-state` nur einmal in den Consume-Ordner gelegt. Falls ein alter
+Stack bereits Duplikate enthält, zeigt `scripts/dedupe_paperless_demo.py`
+zunächst ausschließlich eine Vorschau; `--confirm` löscht nur weitere Kopien
+der fünf bekannten Demodateien und behält jeweils das älteste Dokument.
+
+```bash
+docker compose --profile full run --rm --no-deps \
+  -v "$PWD/scripts/dedupe_paperless_demo.py:/dedupe.py:ro" \
+  dms-mcp python /dedupe.py
+# nach Prüfung denselben Aufruf mit: python /dedupe.py --confirm
+```
+
 ## Konfiguration
 
 - `PAPERLESS_SECRET_KEY` und Admin-Passwort vor geteiltem Betrieb ändern.

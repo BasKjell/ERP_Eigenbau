@@ -3,7 +3,7 @@
 ERPNext ist das führende Fachsystem für Kundenauftrag, Material, Fertigung,
 Lager, Lieferung, Rechnung und die dazugehörigen Buchungen.
 
-## Vorbereiteter SCU-100-Demofall
+## Vorbereitete Produkte und Demobuchungen
 
 Das Compose-Profil `full` führt den idempotenten ERPNext-Seed beim ersten Start
 aus. Manuell lässt er sich aus dem Repository-Verzeichnis erneut ausführen:
@@ -17,10 +17,23 @@ werden nicht überschrieben. Erzeugt werden unter anderem:
 
 - Firma **Open Manufacturing Demo GmbH** mit Geschäftsjahren 2026 und 2027,
 - Kunde **NordMarine Systems GmbH** und zwei Lieferanten,
-- Produkt **SCU-100** samt Komponenten und freigegebener BOM,
-- Bestände entsprechend dem Demofall; nur `PCB-MAIN-42` fehlt vollständig,
+- vier Produkte mit freigegebenen BOMs und Arbeitsgängen:
+  **SCU-100**, **IOX-24**, **HMI-070** und **GW-EDGE-200**,
+- Anfangsbestände für Komponenten sowie ein Beispielzugang für `PCB-MAIN-42`,
 - fünf Workstations, Qualitätsmerkmale und Prüfvorlage,
 - Opportunity **OPP-2027-0018** über fünf Geräte zu je 12.500 EUR.
+
+Zusätzlich werden idempotent gebuchte Beispiele angelegt:
+
+- Material Receipt für 25 `PCB-MAIN-42`,
+- Material Transfer der IOX-Komponenten ins WIP-Lager,
+- Manufacture für 3 `IOX-24`, 2 `HMI-070` und 1 `GW-EDGE-200`,
+- Material Issue für ein beschädigtes `CASE-GW-200`.
+
+Die Belege tragen in den Bemerkungen den Marker
+`[ERP-EIGENBAU-DEMO:…]`. Stücklisten stehen unter **Manufacturing > Bill of
+Materials**, Bestände unter **Stock > Reports > Stock Balance** und die
+Beispielbewegungen unter **Stock > Stock Entry** bzw. **Stock Ledger**.
 
 Nach der Anmeldung unter [localhost:8081](http://localhost:8081) beginnt der
 manuelle Ablauf bei **CRM > Opportunity > OPP-2027-0018**. Falls ein Workspace

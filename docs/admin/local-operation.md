@@ -6,7 +6,7 @@
 - mindestens 6 GB freier RAM für den Demo-Stack
 - etwa 16 GB freier RAM und 20 GB Speicher für das `full`-Profil empfohlen
 - freie Ports 8088, 8001, 8081 und 8010; für optionale Profile zusätzlich
-  8082, 11434, 3001, 9090 und 3000
+  8082, 8091, 8092, 11434, 3001, 9090 und 3000
 
 ## Erster Start
 
@@ -65,6 +65,8 @@ prüfen.
 | AI antwortet deterministisch | `AI_MODE` und Ollama prüfen | Modell laden, API neu starten |
 | Open WebUI zeigt keine Modelle | Host-Ollama und `OPEN_WEBUI_OLLAMA_BASE_URL` prüfen | `ollama list`, danach Open WebUI neu starten |
 | MCP fehlt in Open WebUI | Admin > Integrations prüfen | Streamable HTTP mit `http://platform-mcp:8090/mcp` einrichten |
+| DMS-MCP liefert Authfehler | Paperless-Zugang oder Token prüfen | `dms-mcp` neu starten; Servicekonto verwenden |
+| Wiki-MCP findet keine Seite | Mount `/docs` und Suchbegriff prüfen | `knowledge-mcp` neu erstellen |
 
 ## Backup-Mindestumfang
 

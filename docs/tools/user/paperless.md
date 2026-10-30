@@ -33,3 +33,8 @@ ersetzt.
 Details: [Dokumente finden und verwenden](../../user-guides/dms.md),
 [Qualitätsprozess](../../processes/order-to-cash/quality.md) und
 [Paperless-Administration](../admin/paperless.md).
+
+Für Fragen in Open WebUI kann der read-only DMS-MCP verwendet werden, zum
+Beispiel: „Finde den freigegebenen Prüfplan für SCU-100 und nenne Dokument-ID,
+Revision und OCR-Treffer.“ Die Binärdatei und der Freigabestatus werden danach
+im Paperless-Webclient kontrolliert.

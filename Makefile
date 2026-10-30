@@ -7,7 +7,7 @@ help:
 	@echo "  make seed-erp  Legt den SCU-100-Demofall idempotent in ERPNext an"
 	@echo "  make ai        Startet zusaetzlich Ollama (Modell separat laden)"
 	@echo "  make webui     Startet Open WebUI fuer das Ollama-Modell auf dem Mac"
-	@echo "  make mcp       Startet den lokalen MCP-Server fuer Abfragen und Testdaten"
+	@echo "  make mcp       Startet ERP-, DMS- und Wiki-MCP-Server"
 	@echo "  make test      Fuehrt Python-Tests aus"
 	@echo "  make validate  Prueft Compose und baut die Dokumentation"
 	@echo "  make reset     Setzt den Demo-Datensatz zurueck"
@@ -29,7 +29,7 @@ webui:
 	docker compose --profile webui up -d open-webui
 
 mcp:
-	docker compose up -d --build platform-mcp
+	docker compose --profile full up -d --build platform-mcp dms-mcp knowledge-mcp
 
 docs:
 	docker compose up docs

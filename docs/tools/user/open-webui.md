@@ -16,21 +16,27 @@ Der erste registrierte Benutzer wird Administrator der lokalen Instanz.
 Chats und Einstellungen liegen lokal im Docker-Volume `open-webui-data`. Die
 Modellgewichte bleiben in der vorhandenen Ollama-Installation auf dem Mac.
 
-## ERPNext-MCP einmalig verbinden
+## MCP-Server einmalig verbinden
 
 Diese Einrichtung ist nur für den Administrator sichtbar:
 
 1. **Settings > Admin > Integrations** öffnen.
 2. Unter **External Tool Servers** eine Verbindung hinzufügen.
 3. Typ **MCP (Streamable HTTP)** wählen.
-4. Als Server-ID zum Beispiel `erp` und als URL
-   `http://platform-mcp:8090/mcp` eintragen.
+4. Die folgenden drei Verbindungen anlegen:
+
+   | Server-ID | URL | Zweck |
+   |---|---|---|
+   | `erp` | `http://platform-mcp:8090/mcp` | Stücklisten, Bestand, Buchungen, Testdaten |
+   | `dms` | `http://dms-mcp:8091/mcp` | Paperless-Dokumente und OCR-Suche |
+   | `wiki` | `http://knowledge-mcp:8092/mcp` | Prozess- und Werkzeugdokumentation |
+
 5. Authentifizierung **None** wählen und speichern.
 6. Im Chat das Werkzeug bzw. den verbundenen Server für `qwen3:8b`
    aktivieren.
 
-`localhost:8090` ist an dieser Stelle falsch: Aus dem Open-WebUI-Container ist
-der MCP-Dienst unter seinem Compose-Namen `platform-mcp` erreichbar.
+`localhost` ist an dieser Stelle falsch: Aus dem Open-WebUI-Container sind die
+MCP-Dienste unter ihren Compose-Namen erreichbar.
 
 ## Testdaten sicher anlegen
 

@@ -16,6 +16,11 @@ Die lokale Integrations-API kapselt das unter:
 GET /api/documents/search?q=SCU-100
 ```
 
+Für lokale Assistenten steht derselbe read-only Zugriff als Streamable-HTTP-MCP
+unter `http://localhost:8091/mcp` bereit. Open WebUI verwendet intern
+`http://dms-mcp:8091/mcp`. Der Server kann suchen, einzelne Metadaten lesen,
+neue Dokumente auflisten und Tags/Dokumenttypen/Korrespondenten abfragen.
+
 ## Metadatenkonvention
 
 | Information | Paperless-Abbildung | Beispiel |

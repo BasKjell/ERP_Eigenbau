@@ -1,21 +1,21 @@
 # Plattform-MCP administrieren
 
-## Dienst
+## Dienste
 
 | Merkmal | Wert |
 |---|---|
-| Compose-Service | `platform-mcp` |
+| Compose-Service | `platform-mcp` / `dms-mcp` / `knowledge-mcp` |
 | Transport | Streamable HTTP, stateless |
-| Endpunkt | `http://localhost:${MCP_PORT:-8090}/mcp` |
+| Endpunkte | `8090` ERP, `8091` DMS, `8092` Wiki |
 | SDK | offizieller Python MCP SDK 2.3.0 |
-| Lesezugriff | vier begrenzte Demo-/Dokumentwerkzeuge |
+| Lesezugriff | feste ERPNext-, Paperless- und Wiki-Werkzeuge |
 | Schreibzugriff | allowlisted ERPNext-Testdaten mit Vorschau und Bestätigung |
 | Audit | `demo-state:/data/mcp-write-audit.jsonl` |
 
 ```bash
-docker compose --profile full up -d
-docker compose up -d --build platform-mcp
-docker compose logs --tail=150 platform-mcp
+make mcp
+docker compose --profile full ps platform-mcp dms-mcp knowledge-mcp
+docker compose --profile full logs --tail=150 platform-mcp dms-mcp knowledge-mcp
 ```
 
 ## Konfiguration
@@ -29,6 +29,10 @@ docker compose logs --tail=150 platform-mcp
 | `MCP_WRITE_ENABLED` | Schreibwerkzeuge global schalten | `true` |
 | `MCP_MAX_WRITE_RECORDS` | Mengenlimit pro Aufruf | `100` |
 | `MCP_DEFAULT_COMPANY` | Default für firmenbezogene Daten | Demo-Firma |
+| `DMS_MCP_PORT` | lokaler Paperless-MCP-Port | `8091` |
+| `KNOWLEDGE_MCP_PORT` | lokaler Wiki-MCP-Port | `8092` |
+| `PAPERLESS_API_TOKEN` | bevorzugte DMS-Tokenanmeldung | leer |
+| `PAPERLESS_ADMIN_USER/PASSWORD` | lokale Demo-Anmeldung als Fallback | Demo-Zugang |
 
 Außerhalb des lokalen PoC `MCP_WRITE_ENABLED=false` setzen. Für einen
 kontrollierten Testbetrieb ein eigenes ERPNext-Servicekonto mit minimalen
@@ -66,12 +70,18 @@ docker compose --profile full start erpnext-backend erpnext-scheduler erpnext-qu
 
 Ein normaler Browser-GET ist kein MCP-Test. Ein MCP-Client muss:
 
-1. alle acht Werkzeuge listen,
+1. alle ERP-, DMS- und Wiki-Werkzeuge listen,
 2. den Katalog abrufen,
 3. einen Datensatz ohne `confirm` nur als Vorschau erhalten,
 4. denselben Datensatz bestätigt in ERPNext anlegen,
 5. eine Dublette überspringen,
 6. die Batch-ID zunächst nur vorschauen und anschließend zurückrollen.
+
+Zusätzlich müssen `get_bom_details`, `get_inventory`,
+`list_item_stock_movements` und `list_materials_consumed` gegen reale
+ERPNext-Belege geprüft werden. Der DMS-Test sucht einen bekannten OCR-Begriff;
+der Wiki-Test sucht eine Prozessregel. Das Hilfsskript `scripts/check_mcp.py`
+listet oder ruft Werkzeuge über Streamable HTTP auf.
 
 Vor Netzfreigabe kommen TLS, Keycloak/OAuth, Audience-Prüfung, Rollen, Rate
 Limits und zentrale unveränderliche Auditlogs hinzu. Zugangsdaten bleiben

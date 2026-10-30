@@ -27,8 +27,14 @@ docker compose --profile full run --rm erpnext-seed
 ```
 
 Das Skript liegt unter `deployment/erpnext/seed_demo.py` und liest den gleichen
-versionierten Szenariodatensatz wie das Management-Portal. Es überschreibt
-weder vorhandene Stammdaten noch bereits gebuchte Lagerbewegungen.
+versionierten Szenariodatensatz wie das Management-Portal. Es ergänzt drei
+weitere Fertigungsprodukte und legt Beispielbewegungen mit eindeutigen
+`ERP-EIGENBAU-DEMO`-Markern an. Vorhandene Stammdaten werden nicht
+überschrieben; bereits markierte Lagerbewegungen werden übersprungen.
+
+Eine erneute Ausführung muss `Created: 0` für die Fachobjekte melden. Die
+Lagerbuchungen sind echte, eingereichte Stock Entries und werden deshalb nicht
+durch einen Portal-Reset gelöscht.
 
 ## Fachkonfiguration
 

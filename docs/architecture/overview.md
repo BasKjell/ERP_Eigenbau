@@ -9,6 +9,10 @@ flowchart TB
   USER --> WIKI[MkDocs Wiki]
 
   PORTAL --> API[Python Integration Layer / FastAPI]
+  USER --> MCP[ERP-, DMS- und Wiki-MCP]
+  MCP --> ERP
+  MCP --> DMS
+  MCP --> WIKI
   API --> ERP[ERPNext / Frappe]
   API --> DMS[Paperless-ngx]
   API --> AI[Ollama - optional]
