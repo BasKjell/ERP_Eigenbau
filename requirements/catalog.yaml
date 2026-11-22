@@ -115,6 +115,7 @@ requirements:
     acceptance_criteria:
       - Der erste Schritt jedes Laufs ist die Bewertung durch AG-MGMT-01.
       - Meldet AG-MGMT-01 Bedenken, entsteht eine Eskalation an den Product Owner; der Lauf wartet.
+    derives: [REQ-AGT-003, REQ-AGT-008]
     verification:
       - services/agent_orchestrator/tests/test_engine.py::test_ceo_agent_concerns_escalate_to_product_owner
       - services/agent_orchestrator/tests/test_registry_contract.py::test_registry_has_all_roles_ceo_and_gates
@@ -236,6 +237,7 @@ requirements:
     acceptance_criteria:
       - Die Startseite enthält die Agentenzentrale; die Übersicht liefert alle zwölf Rollen mit Zustand.
       - Ein Auftrag, der auf einen Menschen wartet, zeigt die wartende Rolle.
+    derives: [REQ-AGT-008, REQ-AGT-012]
     verification:
       - services/platform_api/tests/test_flow_agents.py::test_agents_page_and_dms_page_are_served
       - services/agent_orchestrator/tests/test_engine.py::test_overview_shows_agents_interactions_and_inbox
@@ -249,6 +251,7 @@ requirements:
     text: Eine Karte zeigt Übergaben, Rückläufe, Fragen an Menschen, Entscheidungen und Werkzeugaufrufe zwischen Agenten, Gates und Entscheidungsrollen; neue Ereignisse werden animiert.
     acceptance_criteria:
       - Nach einem Lauf enthält die Übersicht die Kanten Geschäftsführung → Anforderungen und Anforderungen → Anforderungsprüfung.
+    derives: [REQ-AGT-003]
     verification:
       - services/agent_orchestrator/tests/test_engine.py::test_overview_shows_agents_interactions_and_inbox
 
@@ -262,6 +265,7 @@ requirements:
     acceptance_criteria:
       - Eine Einreichung ohne Product-Owner-Rolle oder mit nicht freigegebenem Änderungsbereich wird abgelehnt.
       - Ablehnungen des Orchestrators (z. B. fehlende Befugnis) erscheinen im Portal.
+    derives: [REQ-AGT-008, REQ-AGT-003]
     verification:
       - services/agent_orchestrator/tests/test_engine.py::test_submit_requires_product_owner_role_and_valid_scope
       - services/platform_api/tests/test_flow_agents.py::test_rejections_from_the_orchestrator_reach_the_portal
@@ -341,6 +345,7 @@ requirements:
     text: FLOWDOC bietet unter /dms eine eigene Oberfläche für Suchen, Filtern, Sortieren, Vorschau, Statuswechsel, Notizen und Ablage. Paperless-ngx bleibt führendes System für Ablage, Texterkennung und Rechte.
     acceptance_criteria:
       - /dms ist im Portal und im App-Launcher erreichbar; Paperless bleibt nur als Administrationszugang verlinkt.
+    derives: [REQ-DOC-002]
     verification:
       - services/platform_api/tests/test_flow_agents.py::test_agents_page_and_dms_page_are_served
 

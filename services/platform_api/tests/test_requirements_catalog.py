@@ -43,11 +43,13 @@ def test_check_reports_missing_tests_and_bad_entries(tmp_path: Path) -> None:
     broken["requirements"][0]["verification"] = ["services/platform_api/tests/test_dms.py::test_gibt_es_nicht"]
     broken["requirements"][1]["acceptance_criteria"] = []
     broken["requirements"][2]["id"] = broken["requirements"][3]["id"]
+    broken["requirements"][6]["derives"] = ["REQ-DOC-007"]
     problems = check(broken, ROOT)
     if ROOT is not None:
         assert any("existiert nicht" in p for p in problems)
     assert any("Akzeptanzkriterium" in p for p in problems)
     assert any("doppelt" in p for p in problems)
+    assert any("derives" in p for p in problems)
     with pytest.raises(CatalogError):
         sync(broken, store)
 
@@ -62,6 +64,8 @@ def test_sync_is_idempotent_and_versions_changes_without_overwriting_approvals()
     assert item["project"] == "FLOW-PLATFORM" and item["status"] == "review"
     links = [r for r in work["relationships"] if r["source_id"] == "REQ-DOC-003"]
     assert links and all(r["relationship_type"] == "verifies" for r in links)
+    derived = {(r["source_id"], r["target_id"]) for r in work["relationships"] if r["relationship_type"] == "derives"}
+    assert ("REQ-PRT-001", "REQ-AGT-008") in derived and ("REQ-DOC-001", "REQ-DOC-002") in derived
 
     def approve(state: dict) -> None:
         next(r for r in state["work"]["requirements"] if r["id"] == "REQ-DOC-003")["status"] = "approved"

@@ -70,6 +70,9 @@ def check(catalog: dict[str, Any], repo: Path | None = None) -> list[str]:
         criteria = item.get("acceptance_criteria")
         if not isinstance(criteria, list) or not criteria or not all(str(c).strip() for c in criteria):
             problems.append(f"{rid}: mindestens ein Akzeptanzkriterium erforderlich")
+        derives = item.get("derives", [])
+        if not isinstance(derives, list) or (derives and item.get("type") != "Stakeholder"):
+            problems.append(f"{rid}: derives nur für Stakeholder-Anforderungen")
         verification = item.get("verification")
         if not isinstance(verification, list) or not verification:
             problems.append(f"{rid}: keine Verifikation")
@@ -83,6 +86,12 @@ def check(catalog: dict[str, Any], repo: Path | None = None) -> list[str]:
                 path = repo / match["path"]
                 if not path.is_file() or f"def {match['name']}(" not in path.read_text(encoding="utf-8"):
                     problems.append(f"{rid}: Test {ref} existiert nicht")
+    ids = {str(item.get("id")) for item in catalog["requirements"]}
+    systems = {str(item.get("id")) for item in catalog["requirements"] if item.get("type") == "System"}
+    for item in catalog["requirements"]:
+        for target in item.get("derives") or []:
+            if target not in ids or target not in systems:
+                problems.append(f"{item.get('id')}: derives {target} ist keine Systemanforderung im Katalog")
     return problems
 
 
@@ -100,6 +109,7 @@ def sync(catalog: dict[str, Any], store: ScenarioStore) -> dict[str, int]:
         raise CatalogError("; ".join(problems))
     project = str(catalog.get("project") or "FLOW-PLATFORM")
     counts = {"requirements_new": 0, "requirements_updated": 0, "tests_new": 0, "links_new": 0}
+    types = {item["id"]: item["type"] for item in catalog["requirements"]}
 
     def apply(state: dict[str, Any]) -> None:
         work = state["work"]
@@ -156,6 +166,16 @@ def sync(catalog: dict[str, Any], store: ScenarioStore) -> dict[str, int]:
                     work["relationships"].append({
                         "id": link_id, "source_id": item["id"], "source_type": item["type"], "target_id": test_id,
                         "target_type": "TestCase", "relationship_type": "verifies", "description": "Katalog",
+                        "suspect": False, "suspect_reason": None, "created_at": now, "created_by": ACTOR,
+                    })
+                    counts["links_new"] += 1
+        for item in catalog["requirements"]:
+            for target in item.get("derives") or []:
+                link_id = _stable("REL-CAT", f"{item['id']}=>{target}")
+                if not any(r.get("id") == link_id for r in work["relationships"]):
+                    work["relationships"].append({
+                        "id": link_id, "source_id": item["id"], "source_type": item["type"], "target_id": target,
+                        "target_type": types[target], "relationship_type": "derives", "description": "Katalog",
                         "suspect": False, "suspect_reason": None, "created_at": now, "created_by": ACTOR,
                     })
                     counts["links_new"] += 1
