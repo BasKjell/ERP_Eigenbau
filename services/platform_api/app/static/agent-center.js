@@ -133,7 +133,7 @@
       this.renderMetrics(data);
       this.renderMap(data, previous);
       this.renderInbox(data);
-      this.renderFeed(data);
+      this.renderFeed(data, previous);
       this.renderRuns(data);
       if (this.selected) this.showDetail(this.selected);
       if (this.full) this.renderFull(data);
@@ -325,9 +325,9 @@
       }
     }
 
-    renderFeed(data) {
+    renderFeed(data, previous = 0) {
       const events = [...(data.events || [])].reverse().slice(0, this.full ? 60 : 16);
-      this.$("[data-feed]").innerHTML = events.length ? events.map((e) => `<div class="ac-event ${esc(e.kind)}"><time>${esc(time(e.at))}</time><div><span class="route">${esc(routeText(e, data))}</span> · ${esc(e.message)}</div></div>`).join("") : '<div class="ac-empty">Noch keine Aktivität.</div>';
+      this.$("[data-feed]").innerHTML = events.length ? events.map((e) => `<div class="ac-event ${esc(e.kind)}${previous && e.id > previous ? " new" : ""}"><time>${esc(time(e.at))}</time><div><span class="route">${esc(routeText(e, data))}</span> · ${esc(e.message)}</div></div>`).join("") : '<div class="ac-empty">Noch keine Aktivität.</div>';
     }
 
     renderRuns(data) {
