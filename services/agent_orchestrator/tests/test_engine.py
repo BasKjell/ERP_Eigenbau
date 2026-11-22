@@ -314,3 +314,14 @@ def test_resumed_update_uses_the_confirmed_version_after_a_conflict(make_engine)
     assert [u["expected_version"] for u in updates[:2]] == [1, 2]
     assert open_decision(engine, run["id"])["gate"] == "G4"
 
+
+def test_render_names_the_role_specific_contract_fields(make_engine) -> None:  # noqa: ANN001
+    engine = make_engine()
+    run = submit(engine)
+    tester_step = engine.registry.steps[engine.registry.step_index("akzeptanztests")]
+    text = engine._render(run, tester_step, engine.registry.agent("akzeptanztest"), {"auftrag": {}})
+    assert '"type": "testfall"' in text and "criterion" in text and "nie nacharbeit" in text
+    review_step = engine.registry.steps[engine.registry.step_index("codepruefung")]
+    review = engine._render(run, review_step, engine.registry.agent("codepruefung"), {"auftrag": {}})
+    assert "leere Liste" in review
+

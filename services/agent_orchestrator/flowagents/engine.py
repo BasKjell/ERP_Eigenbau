@@ -17,7 +17,7 @@ import time
 from collections import Counter
 from typing import Any
 
-from .contract import ContractError, Handoff, extract_json, validate
+from .contract import ARTIFACTS, REVIEW_ONLY, ContractError, Handoff, extract_json, validate
 from .providers import AgentReply, AgentRequest, Provider, ProviderError
 from .registry import Agent, Registry, Step
 from .rm import RM, RMConflict, RMError
@@ -347,6 +347,7 @@ class Engine:
             lines.append("Freigegebene Pfade: " + (", ".join(context.get("allowed_paths") or []) or "keine"))
         if context.get("findings_to_fix"):
             lines.append("Es liegen Befunde vor, die du in dieser Runde beheben musst (siehe findings_to_fix).")
+        lines.append(_schema_hint(agent.role, step.kind))
         lines += ["<<<ARBEITSDATEN", data, "ARBEITSDATEN>>>",
                   "Liefere jetzt deine Übergabe als ein JSON-Objekt gemäß Ergebnisvertrag."]
         return "\n".join(lines)
@@ -894,6 +895,20 @@ class Engine:
             "events": self.store.events(run_id=run_id, limit=300),
             "manifest_gaps": self.verify_manifest(run_id),
         }
+
+
+def _schema_hint(role: str, kind: str) -> str:
+    """Pflichtfelder aus dem Ergebnisvertrag, damit schon der erste Versuch vertragskonform ist."""
+    if role in REVIEW_ONLY:
+        return ('Ergebnisvertrag: "artifacts" ist eine leere Liste; Befunde stehen in "findings" mit '
+                "severity, location, impact (optional recommendation). status fertig oder nacharbeit.")
+    artifact_type, required, optional, _ = ARTIFACTS[role]
+    fields = ", ".join(required)
+    extra = f"; optional: {', '.join(optional)}" if optional else ""
+    status = "fertig, entscheidung_offen oder abgebrochen (nie nacharbeit)" if kind == "create" else \
+        "fertig, nacharbeit oder entscheidung_offen"
+    return (f'Ergebnisvertrag: jedes Artefakt hat "type": "{artifact_type}" und die Pflichtfelder {fields}{extra}. '
+            f"Keine weiteren Felder. status: {status}.")
 
 
 def _limit(agent: Agent) -> int | None:
