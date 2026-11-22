@@ -19,6 +19,7 @@ from .rm import FlowworkRM, OfflineRM
 from .sandbox import DockerCheck, LocalCheck, Sandbox
 from .store import Store
 from .sync import PlatformSync
+from .uicheck import UiRunner
 
 DEMO_SECRET_HINT = "change-before-network-use"
 PROVIDER_NAMES = ("gateway", "simulated", "codex", "claude")
@@ -149,11 +150,16 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
         preview = Preview(image=str(preview_settings["image"]), port=int(preview_settings.get("port", 8098)),
                           network=str(preview_settings["network"]),
                           env={str(k): str(v) for k, v in (preview_settings.get("env") or {}).items()})
+    ui_runner = None
+    ui_settings = settings.get("ui_check") or {}
+    if preview is not None and ui_settings.get("enabled", False):
+        ui_runner = UiRunner(image=str(ui_settings.get("image", "flow-agents-ui-runner:1")),
+                             timeout_seconds=int(ui_settings.get("timeout_seconds", 240)))
     budgets = {name: {k: int(v) for k, v in spec.items()} for name, spec in (settings.get("budgets") or {}).items()}
     engine = Engine(registry, store, providers, profile_providers, rm, sandbox,
                     scopes=dict(settings.get("scopes") or {}), demo_mode=bool(settings.get("demo_mode")),
                     adoption=adoption, preview=preview, budgets=budgets,
-                    escalation={**escalation, "roles": escalation_roles})
+                    escalation={**escalation, "roles": escalation_roles}, ui_runner=ui_runner)
     listen = str(settings.get("listen", "127.0.0.1:8095"))
     host, _, port = listen.rpartition(":")
     api_secret = _secret(settings, "api_secret_env", f"local-agents-api-secret-{DEMO_SECRET_HINT}")

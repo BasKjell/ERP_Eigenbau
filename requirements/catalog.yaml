@@ -324,6 +324,21 @@ requirements:
       - services/agent_orchestrator/tests/test_engine.py::test_unavailable_worker_falls_back_to_the_local_model
       - services/agent_orchestrator/tests/test_engine.py::test_escalation_must_keep_creator_and_reviewer_independent
 
+  - id: REQ-AGT-022
+    title: Klickprüfung der Oberfläche vor der Fachabnahme
+    type: System
+    priority: Soll
+    status: review
+    source: Auftrag Bas 2026-11-22 (lokale KI soll sich durch Oberflächen klicken können)
+    text: Der Akzeptanztest-Agent kann je Testfall einen Klickpfad in einer geprüften Sprache liefern. An G4 führt der Orchestrator diese Pfade mit einem headless Browser gegen die Vorschau aus (Demo-Modus, internes Netz ohne Internet, nur Adressen der Vorschau, nur eingebaute Testdateien) und legt Ergebnis und Bildschirmfotos der Fachabnahme bei. Das Modell bedient den Browser nicht selbst.
+    acceptance_criteria:
+      - Klickpfade mit fremden Adressen, unbekannten Aktionen, CSS-Selektoren oder eigenen Dateien werden am Ergebnisvertrag abgewiesen.
+      - An G4 laufen die Klickpfade gegen die Vorschau; das Ergebnis steht in der Entscheidung und als Artefakt ui_pruefung.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_click_paths_are_validated_strictly
+      - services/agent_orchestrator/tests/test_engine.py::test_acceptance_contract_rejects_an_invalid_click_path
+      - services/agent_orchestrator/tests/test_engine.py::test_g4_runs_click_paths_against_the_preview_and_attaches_the_result
+
   # --- Landingpage / Agentenzentrale -------------------------------------------------------------
   - id: REQ-PRT-001
     title: Landingpage zeigt, was die Agenten gerade tun

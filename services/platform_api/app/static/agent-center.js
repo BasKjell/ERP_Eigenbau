@@ -36,6 +36,7 @@
   window.FlowAgents = { previewUrl, changeUrl, esc };
 
   const KIND_LABEL_DE = {
+    ui_pruefung: "Klickprüfung im Browser",
     auftrag: "Fachauftrag", geschaeftsbewertung: "Bewertung Geschäftsführung", anforderungen: "Anforderungen",
     anforderungsbefund: "Prüfbefund Anforderungen", baseline: "Arbeitsbaseline", architektur: "Architektur",
     sicherheitsbefund: "Sicherheitsbefund", plan: "Arbeitspakete", akzeptanztests: "Akzeptanztests",
@@ -77,6 +78,14 @@
       else { out.push(["del", a[i]]); i += 1; }
     }
     return out.map(([kind, line]) => `<div class="dl ${kind}">${kind === "add" ? "+" : kind === "del" ? "−" : "\u00a0"} ${esc(line)}</div>`).join("");
+  }
+
+  function uiCheckLine(check) {
+    if (!check) return "";
+    if (check.status === "laeuft") return `<small>Klickprüfung läuft: ${esc(check.total)} Testfälle im Prüfbrowser …</small>`;
+    if (check.status === "fehler") return `<small>Klickprüfung nicht möglich: ${esc(check.error)}</small>`;
+    const ok = check.passed === check.total;
+    return `<small><span class="ac-chip ${ok ? "lime" : "red"}">Klickprüfung ${esc(check.passed)}/${esc(check.total)}</span>${ok ? "" : ` fehlgeschlagen: ${esc((check.failed || []).join(", "))}`} – Bildschirmfotos unter „Änderung ansehen“</small>`;
   }
 
   function renderFocus(detail, focus) {
@@ -390,7 +399,7 @@ class AgentCenter {
       const box = this.$("[data-inbox]");
       const focused = box.contains(document.activeElement) && document.activeElement.tagName === "TEXTAREA";
       if (focused) return; // Eingabe nicht durch die Aktualisierung zerstören
-      const signature = JSON.stringify([decisions.map((d) => [d.id, d.can, d.context?.preview_url]), data.available]);
+      const signature = JSON.stringify([decisions.map((d) => [d.id, d.can, d.context?.preview_url, d.context?.ui_check?.status]), data.available]);
       if (signature === this.inboxSignature) return;
       this.inboxSignature = signature;
       if (!decisions.length) {
@@ -404,6 +413,7 @@ class AgentCenter {
           <p>${esc(d.question)}</p>
           <p class="ac-links">${previewUrl(d) ? `<a class="ac-btn small primary" href="${esc(previewUrl(d))}" target="_blank" rel="noopener">Ergebnis in der Vorschau ↗</a> ` : ""}<a class="ac-btn small ${previewUrl(d) ? "" : "primary"}" href="${esc(changeUrl(d))}" data-change="${esc(d.run_id)}" data-focus-kinds="${esc((d.focus || []).join(","))}">Änderung ansehen</a>${d.gate === "G1" ? ' <a class="ac-btn small" href="/work?view=baselines" target="_blank" rel="noopener">Baseline in FLOWWORK ↗</a>' : ""}</p>
           ${d.context?.preview_error ? `<small>Vorschau nicht verfügbar: ${esc(d.context.preview_error)}</small>` : ""}
+          ${uiCheckLine(d.context?.ui_check)}
           <small>${esc(d.run_id)}${d.digest ? ` · gebunden an ${esc(d.digest.slice(0, 23))}…` : ""}</small>
           ${d.can ? `<textarea placeholder="Begründung (bei Ablehnung Pflicht)" maxlength="2000"></textarea>
           <div class="row"><button class="ac-btn small primary" type="button" data-outcome="annehmen">Annehmen</button><button class="ac-btn small danger" type="button" data-outcome="ablehnen">Ablehnen</button><a class="ac-btn small" href="/agents?run=${encodeURIComponent(d.run_id)}">Details</a></div><div class="error" data-error></div>`
@@ -622,6 +632,8 @@ class AgentCenter {
         return `${c.state ? `<p><span class="ac-chip lime">${esc(c.state)}</span> FLOWWORK ${esc(c.rm_id || "")}</p>` : ""}${items.map((r) => `<div class="req"><b>${esc(r.key)} · ${esc(r.title)}</b> <span class="ac-chip">${esc(r.priority)}</span><p>${esc(r.text)}</p><ul>${(r.acceptance_criteria || []).map((ac) => `<li>${esc(ac)}</li>`).join("")}</ul>${r.negative_case ? `<small>Negativfall: ${esc(r.negative_case)}</small>` : ""}</div>`).join("")}`;
       case "implementierung":
         return `<p>Digest <code>${esc(c.digest)}</code> · Basis <code>${esc((c.base || "").slice(0, 12))}</code></p><pre class="diff">${esc(c.diff || "")}</pre>`;
+      case "ui_pruefung":
+        return `<p><span class="ac-chip ${c.passed === c.total ? "lime" : "red"}">${esc(c.passed)} von ${esc(c.total)} Testfällen bestanden</span> ${esc(c.seconds)} s · Prüfbrowser gegen die Vorschau</p>${(c.scenarios || []).map((s) => `<div class="req"><b>${esc(s.key)} · ${esc(s.title)}</b> <span class="ac-chip ${s.passed ? "lime" : "red"}">${s.passed ? "bestanden" : "fehlgeschlagen"}</span><ol>${(s.steps || []).map((st) => `<li>${st.ok ? "✓" : "✗"} ${esc(st.do)}${st.note ? ` – <small>${esc(st.note)}</small>` : ""}</li>`).join("")}</ol>${(s.screenshots || []).map((img) => `<figure class="ui-shot"><img alt="${esc(img.name)}" loading="lazy" style="max-width:100%;border:1px solid var(--line, #ccc);border-radius:8px" src="data:image/jpeg;base64,${esc(img.data)}"><figcaption><small>${esc(img.name)}</small></figcaption></figure>`).join("")}</div>`).join("")}`;
       case "integration":
         return `<p><span class="ac-chip ${c.passed ? "lime" : "red"}">${c.passed ? "bestanden" : "nicht bestanden"}</span> ${esc(c.seconds)} s · Digest <code>${esc(c.digest)}</code></p><pre class="diff">${esc(c.summary || "")}</pre>`;
       default:

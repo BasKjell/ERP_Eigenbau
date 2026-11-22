@@ -11,6 +11,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from .uicheck import UiCheckError, validate_steps
+
 STATUSES = ("fertig", "nacharbeit", "entscheidung_offen", "abgebrochen")
 SEVERITIES = ("hoch", "mittel", "niedrig")
 BLOCKING = frozenset({"hoch", "mittel"})
@@ -38,7 +40,7 @@ ARTIFACTS: dict[str, tuple[str, dict[str, type], dict[str, type], int]] = {
     "akzeptanztest": (
         "testfall",
         {"key": str, "title": str, "criterion": str, "steps": LIST},
-        {"preconditions": str, "negative": bool},
+        {"preconditions": str, "negative": bool, "ui": LIST},
         20,
     ),
     "entwicklung": ("dateiaenderung", {"key": str, "title": str, "content": str}, {}, 6),
@@ -229,6 +231,11 @@ def _check_items(role: str, artifact: dict[str, Any], label: str) -> None:
         steps = artifact["steps"]
         if not steps or not all(isinstance(s, dict) and {"action", "expected"} <= set(s) for s in steps):
             raise ContractError(f"{label}: jeder Schritt braucht action und expected")
+        if artifact.get("ui"):
+            try:
+                validate_steps(artifact["ui"], f"{label}.ui")
+            except UiCheckError as exc:
+                raise ContractError(str(exc)) from None
     elif role == "nachweise" and artifact["state"] not in {"belegt", "luecke"}:
         raise ContractError(f"{label}: state muss belegt oder luecke sein")
     elif role == "geschaeftsfuehrung" and artifact["recommendation"] not in {"weiter", "mit Auflagen", "anhalten"}:

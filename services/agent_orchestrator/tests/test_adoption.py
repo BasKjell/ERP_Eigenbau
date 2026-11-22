@@ -49,7 +49,7 @@ def test_accepted_fachabnahme_becomes_a_local_branch_without_touching_the_checko
     task = engine.overview()["decisions"][0]
     assert task["auftrag"]["id"] == "A-001" and task["auftrag"]["title"].startswith("Verfahrensanweisungen")
     assert task["context"]["preview_url"] == "http://localhost:8098/dms"
-    assert task["focus"] == ["implementierung", "dokumentation", "prozessbewertung", "nachweise"]
+    assert task["focus"] == ["ui_pruefung", "implementierung", "dokumentation", "prozessbewertung", "nachweise"]
     engine.decide(decision["id"], KEY_USER, "annehmen", "passt")
     assert preview.stopped >= 1
     result = engine.store.latest_artifact(run["id"], "uebernahme")["content"]

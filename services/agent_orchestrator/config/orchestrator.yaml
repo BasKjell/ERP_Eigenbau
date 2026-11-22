@@ -256,3 +256,10 @@ escalation:
   fallback_local: true
   max_scope_chars: 200000
 
+# Klickprüfung an G4: Klickpfade der Akzeptanztests laufen in einem headless Chromium
+# (Image aus deployment/ui-runner) gegen die Vorschau, im internen Netz flow-agents-ui ohne Internet.
+ui_check:
+  enabled: true
+  image: flow-agents-ui-runner:1
+  timeout_seconds: 240
+

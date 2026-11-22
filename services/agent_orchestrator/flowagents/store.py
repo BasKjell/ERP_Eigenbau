@@ -403,3 +403,12 @@ class Store:
             ).fetchone()
         return int(row[0])
 
+    def update_decision_context(self, decision_id: str, patch: dict[str, Any]) -> None:
+        """Ergänzt den Kontext einer offenen Entscheidung (z. B. Ergebnis der Klickprüfung)."""
+        with self._lock, self.db:
+            row = self.db.execute("SELECT context, status FROM decisions WHERE id=?", (decision_id,)).fetchone()
+            if row is None or row["status"] != "offen":
+                return
+            context = {**json.loads(row["context"]), **patch}
+            self.db.execute("UPDATE decisions SET context=? WHERE id=?", (canonical(context), decision_id))
+

@@ -12,6 +12,7 @@ from __future__ import annotations
 import difflib
 import json
 import re
+import subprocess
 import threading
 import time
 from collections import Counter
@@ -25,6 +26,7 @@ from .registry import Agent, Registry, Step
 from .rm import RM, RMConflict, RMError
 from .sandbox import Sandbox, SandboxError, validate_path
 from .store import OPEN_RUN_STATES, Store, digest_of
+from .uicheck import UiCheckError, UiRunner, scenarios_from
 
 ORCHESTRATOR = ("orchestrator", "FLOW-ORCHESTRATOR")
 GATE_BACK_TO = {"G1": "anforderungen", "G2": "architektur", "G3": "entwicklung", "G4": "entwicklung"}
@@ -52,6 +54,7 @@ class Engine:
         preview: Preview | None = None,
         budgets: dict[str, dict[str, int]] | None = None,
         escalation: dict[str, Any] | None = None,
+        ui_runner: UiRunner | None = None,
     ) -> None:
         missing = {profile for profile in {a.model_profile for a in registry.agents.values()}
                    if profile_providers.get(profile) not in providers}
@@ -63,6 +66,7 @@ class Engine:
         self.scopes = scopes or {}
         self.adoption, self.preview, self.budgets = adoption, preview, budgets or {}
         self.escalation = escalation or {}
+        self.ui_runner = ui_runner
         if self.sandbox is not None:
             for scope in self.scopes.values():
                 for path in scope.get("paths", []):
@@ -426,6 +430,8 @@ class Engine:
         ]
         if agent.role == "entwicklung":
             lines.append("Freigegebene Pfade: " + (", ".join(context.get("allowed_paths") or []) or "keine"))
+        if agent.role == "akzeptanztest":
+            lines.append(UI_HINT)
         if agent.role in {"entwicklung", "planung", "architektur"}:
             lines.append("Braucht die Änderung Dateien außerhalb der freigegebenen Pfade, setze status "
                          "entscheidung_offen und nenne in questions genau diese Dateien – liefere keine Teillösung.")
@@ -619,10 +625,18 @@ class Engine:
                                      f"Kandidat zur Abnahme unter {context['preview_url']} gestartet")
                 except (SandboxError, KeyError, OSError) as exc:
                     context["preview_error"] = str(exc)[:300]
+            scenarios = []
+            if step.id == "G4" and context.get("preview_url") and self.ui_runner is not None:
+                scenarios = scenarios_from(self.store.latest_artifact(run["id"], "akzeptanztests"))
+                if scenarios:
+                    context["ui_check"] = {"status": "laeuft", "total": len(scenarios)}
             self.store.update_run(run["id"], status="wartet", reason=f"{step.id} wartet auf {step.decider}")
-            self.store.open_decision(run["id"], step.id, step.id, step.decider or "tech-lead",
-                                     f"{step.id} · {step.label}", self._gate_question(run, step),
-                                     context, digest, actor=step.id)
+            decision = self.store.open_decision(run["id"], step.id, step.id, step.decider or "tech-lead",
+                                                f"{step.id} · {step.label}", self._gate_question(run, step),
+                                                context, digest, actor=step.id)
+            if scenarios:
+                threading.Thread(target=self._ui_check, args=(run["id"], decision["id"], scenarios, digest),
+                                 daemon=True, name=f"ui-check-{run['id']}").start()
             return
         self.store.event(run["id"], "gate", step.id, step.id, f"{step.id} im genehmigten Standardweg erfüllt",
                          {"digest": digest})
@@ -710,6 +724,27 @@ class Engine:
             "G5": "Produktionsfreigabe protokollieren? Die Auslieferung erfolgt außerhalb des Agentennetzes.",
         }
         return texts.get(step.id, step.label)
+
+    def _ui_check(self, run_id: str, decision_id: str, scenarios: list[dict[str, Any]], digest: str) -> None:
+        """Klickpfade der Akzeptanztests gegen die Vorschau (läuft neben der offenen Fachabnahme)."""
+        assert self.ui_runner is not None and self.preview is not None
+        self.store.event(run_id, "start", "orchestrator", "akzeptanztest",
+                         f"Klickprüfung: {len(scenarios)} Testfälle im Prüfbrowser gegen die Vorschau")
+        try:
+            self.ui_runner.prepare_network(self.preview.NAME)
+            report = self.ui_runner.run(scenarios)
+        except (UiCheckError, OSError, subprocess.SubprocessError) as exc:
+            self.store.update_decision_context(decision_id, {"ui_check": {"status": "fehler", "error": str(exc)[:300]}})
+            self.store.event(run_id, "fehler", "orchestrator", "akzeptanztest", f"Klickprüfung nicht möglich: {exc}"[:300])
+            return
+        stored = self.store.add_artifact(run_id, "ui_pruefung", "orchestrator", "G4", report, {"digest": digest})
+        summary = {"status": "fertig", "passed": report["passed"], "total": report["total"],
+                   "artifact_version": stored["version"],
+                   "failed": [s["key"] for s in report["scenarios"] if not s["passed"]]}
+        self.store.update_decision_context(decision_id, {"ui_check": summary})
+        self.store.event(run_id, "ergebnis", "orchestrator", "mensch:key-user",
+                         f"Klickprüfung: {report['passed']} von {report['total']} Testfällen bestanden",
+                         {"failed": summary["failed"]})
 
     def _gate_context(self, run: dict[str, Any], step: Step) -> dict[str, Any]:
         summaries = {}
@@ -1029,7 +1064,7 @@ class Engine:
         "G1": ["anforderungen", "baseline", "anforderungsbefund"],
         "G2": ["architektur", "sicherheitsbefund"],
         "G3": ["implementierung", "integration", "codebefund"],
-        "G4": ["implementierung", "dokumentation", "prozessbewertung", "nachweise"],
+        "G4": ["ui_pruefung", "implementierung", "dokumentation", "prozessbewertung", "nachweise"],
         "G5": ["nachweise", "uebernahme", "implementierung"],
     }
 
@@ -1063,6 +1098,17 @@ class Engine:
             "events": self.store.events(run_id=run_id, limit=300),
             "manifest_gaps": self.verify_manifest(run_id),
         }
+
+
+UI_HINT = (
+    'Wenn ein Testfall über die Oberfläche prüfbar ist, ergänze optional "ui": einen Klickpfad, den der '
+    "Orchestrator an G4 im Browser gegen die Vorschau ausführt. Schritte: "
+    '{"do":"goto","path":"/dms"}, {"do":"click","text":"…"} oder {"do":"click","role":"button","name":"…"}, '
+    '{"do":"fill","label":"…","value":"…"}, {"do":"select","label":"…","value":"…"}, '
+    '{"do":"upload","label":"…","fixture":"beispiel.stl|beispiel.pdf|beispiel.png|beispiel.txt"}, '
+    '{"do":"expect_text","text":"…"}, {"do":"expect_visible","label":"…"}, {"do":"screenshot","name":"…"}. '
+    "Nutze sichtbare Beschriftungen aus den Anforderungen, keine CSS-Selektoren, höchstens 25 Schritte."
+)
 
 
 def _schema_hint(role: str, kind: str) -> str:

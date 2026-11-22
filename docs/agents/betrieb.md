@@ -80,6 +80,21 @@ ollama create flow-qwen3-coder-32k -f deployment/ollama/flow-coder.Modelfile
 
 Prüfen mit `ollama ps`: Spalte PROCESSOR muss „100% GPU“ zeigen.
 
+## Klickprüfung im Browser (G4)
+
+Der Akzeptanztest-Agent schreibt zu Testfällen optional einen Klickpfad (`goto`, `click`, `fill`,
+`select`, `upload`, `expect_text`, `expect_visible`, `screenshot`; Sprache in
+`flowagents/uicheck.py`). Sobald an G4 die Vorschau steht, führt der Orchestrator die Pfade mit
+Playwright/Chromium aus und hängt Ergebnis und Bildschirmfotos an die Fachabnahme („Änderung
+ansehen“ → „Klickprüfung im Browser“). Das Modell selbst steuert keinen Browser.
+
+- Prüfbrowser: Image `flow-agents-ui-runner:1`, einmalig bauen mit
+  `docker build -t flow-agents-ui-runner:1 deployment/ui-runner`.
+- Isolation: eigenes internes Netz `flow-agents-ui` (nur Vorschau und Prüfbrowser, kein Internet),
+  read-only, `--cap-drop ALL`; der Browser lädt nur Adressen der Vorschau; Uploads nur mit
+  eingebauten Testdateien (`beispiel.stl`, `.pdf`, `.png`, `.txt`).
+- Abschalten: `ui_check.enabled: false`.
+
 ## Abo-Worker (Codex/Claude) für komplexe Änderungen
 
 Freigeschaltet mit der Umgebung aus Trading_Ai (Details und Regeln: Sicherheitskonzept §7).

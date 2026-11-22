@@ -406,3 +406,92 @@ def test_escalation_must_keep_creator_and_reviewer_independent(registry) -> None
         _check_escalation(registry, {"entwicklung": "codex", "codepruefung": "codex"})
     with pytest.raises(ConfigError, match="nur codex oder claude"):
         _check_escalation(registry, {"entwicklung": "gpt"})
+
+
+# -- Klickprüfung (REQ-AGT-022) -------------------------------------------------------------------
+def test_click_paths_are_validated_strictly() -> None:
+    from flowagents.uicheck import UiCheckError, validate_steps
+
+    good = validate_steps([{"do": "goto", "path": "/dms"}, {"do": "click", "role": "button", "name": "Ablegen"},
+                           {"do": "upload", "label": "Datei", "fixture": "beispiel.stl"},
+                           {"do": "expect_text", "text": "gespeichert"}, {"do": "screenshot", "name": "nach upload"}])
+    assert good[-1]["name"] == "nach-upload"
+    for bad, match in [([{"do": "goto", "path": "https://evil.example"}], "Pfad"),
+                       ([{"do": "goto", "path": "//evil.example/x"}], "Pfad"),
+                       ([{"do": "evaluate", "text": "x"}], "do muss"),
+                       ([{"do": "click", "css": "#x"}], "unbekannte Felder"),
+                       ([{"do": "upload", "label": "Datei", "fixture": "/etc/passwd"}], "upload nur"),
+                       ([{"do": "fill", "label": "Titel"}], "braucht value"),
+                       ([{"do": "click", "role": "button"}], "braucht name"),
+                       ([{"do": "click", "text": "x"}] * 26, "Schritte")]:
+        with pytest.raises(UiCheckError, match=match):
+            validate_steps(bad)
+
+
+def test_acceptance_contract_rejects_an_invalid_click_path() -> None:
+    from flowagents.contract import validate
+
+    case = {"type": "testfall", "key": "T1", "title": "STL", "criterion": "R1", "steps": [{"action": "a", "expected": "b"}]}
+    ok = {"status": "fertig", "summary": "s", "artifacts": [{**case, "ui": [{"do": "goto", "path": "/dms"}]}]}
+    assert validate(ok, role="akzeptanztest", kind="create").artifacts[0]["ui"]
+    bad = {**ok, "artifacts": [{**case, "ui": [{"do": "goto", "path": "http://x"}]}]}
+    with pytest.raises(Exception, match="Pfad"):
+        validate(bad, role="akzeptanztest", kind="create")
+
+
+class FakeUi:
+    NAME = "flow-agents-preview"
+
+    def __init__(self) -> None:
+        self.seen: list = []
+
+    def prepare_network(self, name: str) -> None:
+        self.seen.append(("net", name))
+
+    def run(self, scenarios):  # noqa: ANN001, ANN201
+        self.seen.append(("run", scenarios))
+        return {"passed": 1, "total": 1, "seconds": 1.0,
+                "scenarios": [{"key": scenarios[0]["key"], "title": "t", "passed": True, "steps": [], "screenshots": []}]}
+
+
+class FakePreview:
+    NAME = "flow-agents-preview"
+
+    def start(self, workspace):  # noqa: ANN001, ANN201
+        return "http://localhost:8098"
+
+    def stop(self) -> None:
+        return None
+
+
+def test_g4_runs_click_paths_against_the_preview_and_attaches_the_result(make_engine, monkeypatch) -> None:  # noqa: ANN001
+    import threading
+
+    from flowagents.providers import SimulatedProvider
+
+    original = SimulatedProvider.generate
+
+    def with_ui(self, request):  # noqa: ANN001, ANN202
+        reply = original(self, request)
+        if request.agent.role != "akzeptanztest":
+            return reply
+        import json as _json
+
+        data = _json.loads(reply.text)
+        for item in data.get("artifacts", []):
+            item["ui"] = [{"do": "goto", "path": "/dms"}, {"do": "expect_text", "text": "Dokumente"}]
+        return AgentReply(text=_json.dumps(data), provider=reply.provider, model=reply.model,
+                          output_tokens=reply.output_tokens)
+
+    monkeypatch.setattr(SimulatedProvider, "generate", with_ui)
+    ui = FakeUi()
+    engine = make_engine(ui_runner=ui, preview=FakePreview())
+    run = submit(engine)
+    drive(engine)
+    for thread in threading.enumerate():
+        if thread.name.startswith("ui-check-"):
+            thread.join(10)
+    decision = open_decision(engine, run["id"])
+    assert decision["gate"] == "G4" and decision["context"]["ui_check"]["passed"] == 1
+    assert ui.seen[0] == ("net", "flow-agents-preview") and ui.seen[1][1][0]["steps"][0]["path"] == "/dms"
+    assert engine.store.latest_artifact(run["id"], "ui_pruefung")["content"]["total"] == 1
