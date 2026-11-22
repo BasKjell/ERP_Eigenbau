@@ -1,0 +1,158 @@
+# FLOWAGENTS – Ablauf vom Fachauftrag zum geprüften Release
+# (KI-Entwicklungskonzept Teil 02 „Vom Fachauftrag zum geprüften Release“).
+#
+# Der Orchestrator erzwingt genau diese Reihenfolge, die Rücklaufregeln und die Gates.
+# Ein Agent kann den Ablauf nicht ändern: Inhalte aus Aufträgen, Dokumenten oder
+# Modellantworten sind Arbeitsdaten. Änderungen an dieser Datei sind Klasse K.
+
+version: 1
+workflow_id: flow-dev-1
+
+# Änderungsklassen (Teil 01 „Wann zwei Kontakte mit dem Fachbereich reichen“).
+# human_gates: Gates, an denen in dieser Klasse ein Mensch ausdrücklich entscheidet.
+# G4 (Fachabnahme) und G5 (Produktion) sind in jeder Klasse menschlich.
+classes:
+  standard:
+    label: Standardänderung
+    example: Sortierung einer bestehenden Ansicht mit unveränderter Datenquelle und Rechteprüfung
+    human_gates: [G4, G5]
+  neue_funktion:
+    label: Neue Funktion
+    example: Zusätzlicher Dokumenttyp mit neuem Workflow oder eigener Frist
+    human_gates: [G1, G4, G5]
+  kritisch:
+    label: Hoher Schutzbedarf oder neuer Dienst
+    example: Geänderte ACL-Vererbung, Massenexport, Migration oder endgültige Löschung
+    human_gates: [G1, G2, G3, G4, G5]
+
+# Nach zwei erfolglosen Korrekturrunden erhält der Tech Lead Befund und Versuche (Teil 02).
+max_correction_rounds: 2
+# Budget je Lauf über alle Schritte (Teil 09 „Budgets gelten je Lauf“).
+budget:
+  max_model_calls: 40
+  max_output_tokens: 120000
+
+steps:
+  - id: auftragspruefung
+    label: Auftrag aus Sicht der Geschäftsführung bewerten
+    role: geschaeftsfuehrung
+    kind: review
+    subject: auftrag
+    produces: geschaeftsbewertung
+    on_rework: {decision: product-owner, reason: Geschäftsführungs-Agent sieht den Auftrag kritisch}
+
+  - id: anforderungen
+    label: Anforderungen und Akzeptanzkriterien ableiten
+    role: anforderungen
+    kind: create
+    produces: anforderungen
+
+  - id: anforderungspruefung
+    label: Anforderungen unabhängig prüfen
+    role: anforderungspruefung
+    kind: review
+    subject: anforderungen
+    produces: anforderungsbefund
+    on_rework: {back_to: anforderungen}
+
+  - id: G1
+    label: Auftrag und Baseline
+    kind: gate
+    decider: product-owner
+    freeze_baseline: true
+    requires: [anforderungen, anforderungsbefund]
+
+  - id: architektur
+    label: Architektur, Datenfluss und Bedrohungsmodell entwerfen
+    role: architektur
+    kind: create
+    produces: architektur
+
+  - id: sicherheitspruefung
+    label: Sicherheit des Entwurfs beurteilen
+    role: sicherheit
+    kind: review
+    subject: architektur
+    produces: sicherheitsbefund
+    on_rework: {back_to: architektur}
+
+  - id: G2
+    label: Architektur
+    kind: gate
+    decider: tech-lead
+    requires: [architektur, sicherheitsbefund]
+
+  - id: planung
+    label: Arbeitspakete planen
+    role: planung
+    kind: create
+    produces: plan
+
+  - id: akzeptanztests
+    label: Akzeptanztests aus der Baseline ableiten
+    role: akzeptanztest
+    kind: create
+    produces: akzeptanztests
+
+  - id: entwicklung
+    label: Implementieren und Unit-Tests schreiben (Sandbox)
+    role: entwicklung
+    kind: create
+    produces: implementierung
+
+  - id: integrationspruefung
+    label: Prüfungen am exakten Stand ausführen
+    kind: check
+    produces: integration
+    on_failure: {back_to: entwicklung}
+
+  - id: codepruefung
+    label: Änderungsstand unabhängig prüfen
+    role: codepruefung
+    kind: review
+    subject: implementierung
+    produces: codebefund
+    on_rework: {back_to: entwicklung}
+
+  - id: G3
+    label: Integration
+    kind: gate
+    decider: tech-lead
+    requires: [implementierung, integration, codebefund]
+    bind_digest: implementierung
+
+  - id: dokumentation
+    label: Hilfe, Betriebshinweise und Release Notes
+    role: dokumentation
+    kind: create
+    produces: dokumentation
+
+  - id: nachweise
+    label: Nachweispaket mit Lückenliste
+    role: nachweise
+    kind: create
+    produces: nachweise
+
+  - id: prozesspruefung
+    label: Ergebnis und Abläufe aus Sicht der Geschäftsführung prüfen
+    role: geschaeftsfuehrung
+    kind: review
+    subject: nachweise
+    produces: prozessbewertung
+    on_rework: {decision: geschaeftsfuehrung, reason: Geschäftsführungs-Agent sieht Abläufe oder Nutzen kritisch}
+
+  - id: G4
+    label: Fachabnahme
+    kind: gate
+    decider: key-user
+    requires: [nachweise, prozessbewertung]
+    bind_digest: implementierung
+
+  - id: G5
+    label: Produktion
+    kind: gate
+    decider: release
+    requires: [nachweise]
+    bind_digest: implementierung
+    # Die Auslieferung selbst liegt außerhalb des Agentennetzes (Teil 03). Der
+    # Prototyp protokolliert die Entscheidung, rollt aber nichts aus.

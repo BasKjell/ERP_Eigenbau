@@ -1,0 +1,365 @@
+# FLOWAGENTS – verbindliches Agentenregister (KI-U-02, KI-Entwicklungskonzept Teil 01/09)
+#
+# Ein Agent, der hier nicht steht, dessen Status nicht aktiv ist oder dessen Freigabe
+# abgelaufen ist, erhält kein Werkzeug. Der Orchestrator und der RM-Adapter (FLOWWORK)
+# lesen diese Datei beide und setzen sie serverseitig durch. Änderungen sind Klasse K
+# (AGENTS.md §3): Merge Request, Alt-/Neuvergleich und erneute Evaluation.
+#
+# Status: Arbeitsentwurf. Owner sind Rollen, keine Personen [FIRMENANGABE U-02/U-05].
+
+version: 1
+register_id: FLOW-AGENTS-2026-11
+updated: "2026-11-22"
+policy_version: "flow-policy-1"
+
+# Modellprofile aus KI-Entwicklungskonzept Teil 09. Agenten nennen nur das Profil,
+# nie ein konkretes Modell. Die Zuordnung Profil -> Gateway-Alias -> Modell liegt in
+# deployment/agentgateway/config.yaml (FLOWGATE) und ist an die Evaluation gebunden.
+# "family" ist die Modellfamilie für die Unabhängigkeitsregel (Ersteller != Prüfer).
+model_profiles:
+  builder:
+    gateway_alias: flow-builder
+    family: qwen
+    description: Erstellt Entwürfe (Anforderungen, Architektur)
+  coder:
+    gateway_alias: flow-coder
+    family: qwen
+    description: Erstellt Code und Unit-Tests
+  pruefer:
+    gateway_alias: flow-reviewer
+    family: gemma
+    description: Prüft fremde Artefakte, schreibt nur Befunde
+  assistenz:
+    gateway_alias: flow-assist
+    family: qwen
+    description: Planung, Dokumentation, Nachweise
+  leitung:
+    gateway_alias: flow-reviewer
+    family: gemma
+    description: Geschäftsführungs-Sicht auf Nutzen und Abläufe
+
+# Menschliche Entscheidungsrollen und ihre vorläufige Keycloak-Zuordnung.
+# [FIRMENANGABE U-07] Eigene Realm-Rollen (flow-po, flow-techlead, flow-release, flow-isb)
+# sind vor dem Pilot anzulegen; bis dahin gelten die vorhandenen Rollen.
+human_roles:
+  product-owner:
+    label: Product Owner
+    keycloak_roles: [requirements-user, work-admin]
+  tech-lead:
+    label: Tech Lead
+    keycloak_roles: [work-admin, it-user]
+  key-user:
+    label: Key User (Fachabnahme)
+    keycloak_roles: [requirements-user, work-user]
+  release:
+    label: Release-Verantwortung
+    keycloak_roles: [it-user]
+  geschaeftsfuehrung:
+    label: Geschäftsführung
+    keycloak_roles: [management-user]
+
+# Werkzeuge (logische Namen aus Teil 08/09). Allgemeine Freigabe-, Merge-, Lösch-,
+# Administrations- und Deploymentwerkzeuge gehören zu keiner Agentenrolle.
+tools:
+  rm.search: Anforderungen, Baselines und Tests im Projekt suchen
+  rm.get: Einzelnes RM-Objekt mit Version lesen
+  rm.create_draft: Anforderungsentwurf mit Idempotenzschlüssel anlegen
+  rm.update_draft: Eigenen Entwurf mit expected_version ändern
+  rm.comment: Kommentar an ID und Version binden
+  rm.ask_owner: Gebündelte Frage an den fachlichen Eigentümer
+  rm.link_trace: Beziehung Aufgabe/Testfall -> Anforderung anlegen
+  rm.get_baseline: Snapshot, Versionsliste und Digest lesen
+  rm.create_test: Akzeptanztestfall aus der Baseline anlegen
+  knowledge.search: Freigegebene Wissenssuche (FLOWDOCS)
+  repo.read: Freigegebene Quelltexte lesen
+  repo.write_branch: Nur den zugewiesenen Aufgabenbranch schreiben (Sandbox)
+  ci.read: Bereinigte CI- und Scanberichte lesen
+  sbom.read: SBOM ausgelieferter Versionen lesen
+  ticket.create: Ticket im Projekt anlegen
+
+# Welche Artefaktarten eine Rolle lesen darf (Teil 04, Tabelle „Inhalte“).
+# Der Orchestrator gibt einer Rolle ausschließlich diese Artefakte in den Kontext.
+artifact_kinds:
+  - auftrag
+  - geschaeftsbewertung
+  - anforderungen
+  - anforderungsbefund
+  - baseline
+  - architektur
+  - sicherheitsbefund
+  - plan
+  - implementierung
+  - akzeptanztests
+  - codebefund
+  - integration
+  - dokumentation
+  - nachweise
+  - prozessbewertung
+
+agents:
+  - id: AG-ENG-01
+    role: anforderungen
+    number: 1
+    name: Anforderungs-Agent
+    umbrella: AG-ENGINEERING
+    owner: Product Owner
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: builder
+    kind: create
+    mission: Leitet prüfbare Anforderungen und Akzeptanzkriterien aus Auftrag und Katalog ab.
+    tools: [rm.search, rm.get, rm.create_draft, rm.update_draft, rm.ask_owner, knowledge.search]
+    reads: [auftrag, geschaeftsbewertung, anforderungsbefund, baseline]
+    data_classes: [intern]
+    limits: {max_drafts_per_run: 12}
+    reviewed_by: anforderungspruefung
+    escalation: Fehlende Frist, Rollenvererbung, Löschregel oder widersprüchliche Quelle
+    evidence: Entwurfs-IDs, Versionen, Quellen und offene Fragen
+    prompt: prompts/01-anforderungen.md
+
+  - id: AG-ENG-02
+    role: anforderungspruefung
+    number: 2
+    name: Anforderungsprüfungs-Agent
+    umbrella: AG-ENGINEERING
+    owner: Product Owner
+    deputy: offen
+    status: testbetrieb
+    autonomy: A0
+    approved_until: "2027-05-31"
+    model_profile: pruefer
+    kind: review
+    mission: Prüft Herkunft, Testbarkeit und Lücken jeder Anforderung. Kann weder ändern noch freigeben.
+    tools: [rm.search, rm.get, rm.comment, rm.get_baseline]
+    reads: [auftrag, anforderungen, baseline, dokumentation]
+    data_classes: [intern]
+    limits: {}
+    escalation: Offene Pflichtentscheidung blockiert G1
+    evidence: Befunde je ID und Version, Empfehlung bereit/nacharbeit
+    prompt: prompts/02-anforderungspruefung.md
+
+  - id: AG-ENG-03
+    role: architektur
+    number: 3
+    name: Architektur-Agent
+    umbrella: AG-ENGINEERING
+    owner: Tech Lead
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: builder
+    kind: create
+    mission: Liefert Datenflüsse, Architekturentscheidung, Bedrohungsmodell und Betriebskonzept.
+    tools: [rm.search, rm.get, rm.get_baseline, knowledge.search]
+    reads: [auftrag, anforderungen, baseline, sicherheitsbefund]
+    data_classes: [intern]
+    limits: {}
+    reviewed_by: sicherheit
+    escalation: Neue Vertrauensgrenze, Datenklasse oder Komponente -> Tech Lead
+    evidence: Architekturentscheidung mit Alternativen, Bedrohungen und Wiederanlaufzielen
+    prompt: prompts/03-architektur.md
+
+  - id: AG-ENG-04
+    role: sicherheit
+    number: 4
+    name: Sicherheits-Agent
+    umbrella: AG-ENGINEERING
+    owner: Informationssicherheit
+    deputy: offen
+    status: testbetrieb
+    autonomy: A0
+    approved_until: "2027-05-31"
+    model_profile: pruefer
+    kind: review
+    mission: Bewertet Entwurf, Diff und Scannerbefunde mit Beleg. Hohe strittige Befunde gehen an die IT-Sicherheit.
+    tools: [rm.get, rm.get_baseline, rm.comment, ci.read, repo.read]
+    reads: [auftrag, anforderungen, baseline, architektur, implementierung, integration]
+    data_classes: [intern]
+    limits: {}
+    escalation: Hoher Befund oder möglicher Fehlalarm -> benannte Sicherheitsrolle
+    evidence: Befund mit Fundstelle, Auswirkung, Schwere und Abnahmevorschlag
+    prompt: prompts/04-sicherheit.md
+
+  - id: AG-ENG-05
+    role: planung
+    number: 5
+    name: Planungs-Agent (Entwicklung)
+    umbrella: AG-ENGINEERING
+    owner: Tech Lead
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: assistenz
+    kind: create
+    mission: Zerlegt die fixierte Baseline in Aufgaben mit Abhängigkeiten und Testbezug.
+    tools: [rm.get_baseline, rm.search, rm.link_trace, ticket.create]
+    reads: [auftrag, anforderungen, baseline, architektur]
+    data_classes: [intern]
+    limits: {max_tasks_per_run: 15}
+    escalation: Offene Entscheidung oder fehlende Abhängigkeit
+    evidence: Aufgaben je Akzeptanzkriterium
+    prompt: prompts/05-planung.md
+
+  - id: AG-ENG-06
+    role: entwicklung
+    number: 6
+    name: Entwicklungs-Agent
+    umbrella: AG-ENGINEERING
+    owner: Tech Lead
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: coder
+    kind: create
+    mission: Liefert Code und Unit-Tests ausschließlich im eigenen Aufgabenbranch der Sandbox.
+    tools: [rm.get_baseline, repo.read, repo.write_branch, ci.read]
+    reads: [auftrag, anforderungen, baseline, architektur, plan, codebefund, sicherheitsbefund]
+    data_classes: [intern]
+    limits: {max_changed_files: 6}
+    reviewed_by: codepruefung
+    escalation: Änderung an geschützten Tests, Richtlinien oder Freigaberegeln
+    evidence: Commit, geänderte Dateien, Testergebnis
+    prompt: prompts/06-entwicklung.md
+
+  - id: AG-ENG-07
+    role: akzeptanztest
+    number: 7
+    name: Akzeptanztest-Agent
+    umbrella: AG-ENGINEERING
+    owner: Qualitätssicherung
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: pruefer
+    kind: create
+    mission: Entwirft aus den Kriterien unabhängige Testfälle. Kein Zugriff auf die Implementierung.
+    tools: [rm.get_baseline, rm.create_test, rm.link_trace]
+    reads: [auftrag, baseline]
+    data_classes: [intern]
+    limits: {max_tests_per_run: 20}
+    escalation: Unklarer Sollwert -> Anforderungsprüfung und Product Owner
+    evidence: Testfall-IDs je Kriterium
+    prompt: prompts/07-akzeptanztest.md
+
+  - id: AG-ENG-08
+    role: codepruefung
+    number: 8
+    name: Codeprüfungs-Agent
+    umbrella: AG-ENGINEERING
+    owner: Tech Lead
+    deputy: offen
+    status: testbetrieb
+    autonomy: A0
+    approved_until: "2027-05-31"
+    model_profile: pruefer
+    kind: review
+    mission: Prüft Korrektheit, Risiken und Testabdeckung des exakten Änderungsstands. Kein Merge.
+    tools: [repo.read, ci.read, rm.get_baseline, rm.comment]
+    reads: [auftrag, baseline, architektur, implementierung, akzeptanztests, integration]
+    data_classes: [intern]
+    limits: {}
+    escalation: Rechteabfrage, Fehlerbehandlung, neue Bibliothek oder Kontrollpfad geändert
+    evidence: Befunde mit Datei, Schwere und Reproduktion, Empfehlung zum exakten Stand
+    prompt: prompts/08-codepruefung.md
+
+  - id: AG-ENG-09
+    role: dokumentation
+    number: 9
+    name: Dokumentations-Agent
+    umbrella: AG-ENGINEERING
+    owner: Service Owner
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: assistenz
+    kind: create
+    mission: Erstellt rollenbezogene Hilfe, Betriebshinweise und Release Notes.
+    tools: [rm.get_baseline, knowledge.search, ci.read]
+    reads: [auftrag, anforderungen, baseline, architektur, akzeptanztests, integration]
+    data_classes: [intern]
+    limits: {}
+    reviewed_by: anforderungspruefung
+    escalation: Kritische Anleitung -> Probe in Staging durch Betrieb
+    evidence: Geänderte Kapitel mit Anforderung und Release
+    prompt: prompts/09-dokumentation.md
+
+  - id: AG-ENG-10
+    role: nachweise
+    number: 10
+    name: Nachweis-Agent
+    umbrella: AG-ENGINEERING
+    owner: Qualitätsmanagement
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: assistenz
+    kind: create
+    mission: Ordnet Primärbelege zu und macht Lücken sichtbar. Signiert keine Freigabe.
+    tools: [rm.get_baseline, rm.search, ci.read]
+    reads: [auftrag, baseline, anforderungsbefund, sicherheitsbefund, codebefund, integration, akzeptanztests, dokumentation]
+    data_classes: [intern]
+    limits: {}
+    escalation: Fehlender Primärbeleg sperrt den Release
+    evidence: Nachweisübersicht mit Digest je Beleg und Lückenliste
+    prompt: prompts/10-nachweise.md
+
+  - id: AG-ENG-11
+    role: schwachstellen
+    number: 11
+    name: Schwachstellen-Agent
+    umbrella: AG-ENGINEERING
+    owner: Service Owner
+    deputy: offen
+    status: idee
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: assistenz
+    kind: create
+    mission: Ordnet Meldungen den SBOMs ausgelieferter Versionen zu. Läuft getrennt vom Entwicklungsfluss.
+    tools: [sbom.read, rm.search, ticket.create]
+    reads: [nachweise]
+    data_classes: [intern]
+    limits: {}
+    escalation: Betroffene Komponente in ausgeliefertem Release -> Service Owner
+    evidence: Komponente, Version, betroffene Releases, Ticket
+    prompt: prompts/11-schwachstellen.md
+
+  - id: AG-MGMT-01
+    role: geschaeftsfuehrung
+    number: 12
+    name: Geschäftsführungs-Agent
+    umbrella: AG-MANAGEMENT
+    owner: Geschäftsführung
+    deputy: offen
+    status: testbetrieb
+    autonomy: A0
+    approved_until: "2027-05-31"
+    model_profile: leitung
+    kind: review
+    mission: >-
+      Prüft aus Sicht der Geschäftsführung, ob Auftrag und Ergebnis zu Zielbild, Nutzen,
+      Aufwand, Risiko und Abläufen des Unternehmens passen. Bewertet, erteilt aber keine
+      Freigabe (A4 bleibt beim Menschen).
+    tools: [rm.search, rm.get, rm.get_baseline, rm.comment]
+    reads: [auftrag, geschaeftsbewertung, anforderungen, baseline, architektur, plan, akzeptanztests, integration, dokumentation, nachweise]
+    data_classes: [intern]
+    limits: {}
+    escalation: Zielkonflikt, unklarer Nutzen, neuer Prozess oder Mehraufwand für Beschäftigte -> Geschäftsführung
+    evidence: Bewertung mit Begründung, Nutzenhypothese, Risiken und Empfehlung
+    prompt: prompts/12-geschaeftsfuehrung.md
+
+# Produktive Fachagenten aus der Referenzumgebung (KI-U-02, Startbestand, Freigabe offen).
+# Sie laufen nicht über den Entwicklungsfluss, erscheinen aber in der Agentenzentrale.
+productive_agents:
+  - {id: AG-SUPPLIER, name: Lieferanten-Agent, owner: Leitung Einkauf, autonomy: A2, status: testbetrieb, scope: "Risiken erkennen, Anfrage entwerfen, bestätigte Erinnerung senden"}
+  - {id: AG-ENGINEERING, name: Engineering-Agent, owner: Leitung Entwicklung, autonomy: A1, status: testbetrieb, scope: "Dach für die Entwicklungsrollen AG-ENG-01 bis AG-ENG-11"}
+  - {id: AG-PLANNING, name: Planungs-Agent, owner: Leitung Operations, autonomy: A2, status: testbetrieb, scope: "Szenarien rechnen und bestätigte Umplanung übertragen"}
+  - {id: AG-QUALITY, name: Qualitäts-Agent, owner: Leitung Qualität, autonomy: A1, status: testbetrieb, scope: "Prüfkontext sammeln und Entscheidung vorbereiten"}
