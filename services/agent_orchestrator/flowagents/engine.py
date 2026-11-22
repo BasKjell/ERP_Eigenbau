@@ -442,7 +442,7 @@ class Engine:
         ]
         if agent.role == "entwicklung":
             lines.append("Freigegebene Pfade: " + (", ".join(context.get("allowed_paths") or []) or "keine"))
-        if agent.role == "akzeptanztest":
+        if agent.role == "akzeptanztest" and _has_ui(run["auftrag"].get("paths") or []):
             lines.append(UI_HINT)
         if agent.role in {"entwicklung", "planung", "architektur"}:
             lines.append("Braucht die Änderung Dateien außerhalb der freigegebenen Pfade, setze status "
@@ -1137,8 +1137,22 @@ def _schema_hint(role: str, kind: str) -> str:
     extra = f"; optional: {', '.join(optional)}" if optional else ""
     status = "fertig, entscheidung_offen oder abgebrochen (nie nacharbeit)" if kind == "create" else \
         "fertig, nacharbeit oder entscheidung_offen"
+    shape = SHAPE_HINTS.get(role, "")
     return (f'Ergebnisvertrag: jedes Artefakt hat "type": "{artifact_type}" und die Pflichtfelder {fields}{extra}. '
-            f"Keine weiteren Felder. status: {status}.")
+            f"Keine weiteren Felder. status: {status}.{shape}")
+
+
+SHAPE_HINTS = {
+    "akzeptanztest": (' Form von "steps": [{"action": "Was die Person tut", "expected": "Was sie danach sieht"}] '
+                      "– jeder Schritt ein Objekt mit genau diesen beiden Texten, auch bei Dokumentation "
+                      '(z. B. action "Seite Wareneingang öffnen", expected "Diagramm und Zuständigkeiten sichtbar").'),
+}
+UI_SUFFIXES = (".html", ".js", ".css", ".tsx", ".jsx", ".vue")
+
+
+def _has_ui(paths: list[str]) -> bool:
+    """Klickpfade lohnen nur, wenn der Auftrag Oberflächendateien ändert."""
+    return any(str(path).endswith(UI_SUFFIXES) for path in paths)
 
 
 def _limit(agent: Agent) -> int | None:

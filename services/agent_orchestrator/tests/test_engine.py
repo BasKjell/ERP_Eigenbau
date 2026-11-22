@@ -325,6 +325,18 @@ def test_render_names_the_role_specific_contract_fields(make_engine) -> None:  #
     review_step = engine.registry.steps[engine.registry.step_index("codepruefung")]
     review = engine._render(run, review_step, engine.registry.agent("codepruefung"), {"auftrag": {}})
     assert "leere Liste" in review
+    assert '"action": "Was die Person tut"' in text, "Form der Testschritte steht im Hinweis"
+
+
+def test_click_path_hint_only_for_ui_scopes(make_engine) -> None:  # noqa: ANN001
+    engine = make_engine()
+    run = submit(engine)
+    step = engine.registry.steps[engine.registry.step_index("akzeptanztests")]
+    agent = engine.registry.agent("akzeptanztest")
+    docs = {**run, "auftrag": {**run["auftrag"], "paths": ["docs/processes/goods-receipt.md"]}}
+    assert "Klickpfad" not in engine._render(docs, step, agent, {"auftrag": {}})
+    ui = {**run, "auftrag": {**run["auftrag"], "paths": ["services/platform_api/app/static/dms.js"]}}
+    assert "Klickpfad" in engine._render(ui, step, agent, {"auftrag": {}})
 
 
 def test_model_usage_is_recorded_per_role_and_run(make_engine) -> None:  # noqa: ANN001
@@ -438,6 +450,18 @@ def test_acceptance_contract_rejects_an_invalid_click_path() -> None:
     bad = {**ok, "artifacts": [{**case, "ui": [{"do": "goto", "path": "http://x"}]}]}
     with pytest.raises(Exception, match="Pfad"):
         validate(bad, role="akzeptanztest", kind="create")
+
+
+def test_acceptance_steps_accept_german_field_names_but_name_the_shape() -> None:
+    from flowagents.contract import ContractError, validate
+
+    case = {"type": "testfall", "key": "T1", "title": "Doku", "criterion": "R1",
+            "steps": [{"schritt": "Seite öffnen", "erwartet": "Diagramm sichtbar"}]}
+    handoff = validate({"status": "fertig", "summary": "s", "artifacts": [case]}, role="akzeptanztest", kind="create")
+    assert handoff.artifacts[0]["steps"] == [{"action": "Seite öffnen", "expected": "Diagramm sichtbar"}]
+    bad = {**case, "steps": ["Seite öffnen"]}
+    with pytest.raises(ContractError, match=r"steps\[1\].*gefunden: str.*Form"):
+        validate({"status": "fertig", "summary": "s", "artifacts": [bad]}, role="akzeptanztest", kind="create")
 
 
 class FakeUi:

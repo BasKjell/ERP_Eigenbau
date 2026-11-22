@@ -216,6 +216,26 @@ def validate(raw: dict[str, Any], *, role: str, kind: str, limit: int | None = N
     return Handoff(status, summary, artifacts, findings, questions)
 
 
+STEP_ALIASES = {"action": ("action", "aktion", "schritt", "step", "handlung", "beschreibung"),
+                "expected": ("expected", "erwartet", "erwartung", "ergebnis", "expected_result", "result")}
+
+
+def _normalize_steps(steps: list[Any]) -> list[Any]:
+    """Übliche deutsche Feldnamen auf den Vertrag abbilden; Inhalt und Anzahl bleiben unverändert."""
+    clean = []
+    for step in steps:
+        if isinstance(step, dict) and not {"action", "expected"} <= set(step):
+            mapped = {}
+            for target, names in STEP_ALIASES.items():
+                value = next((step[n] for n in names if isinstance(step.get(n), str) and step[n].strip()), None)
+                if value is not None:
+                    mapped[target] = value
+            if len(mapped) == 2:
+                step = mapped
+        clean.append(step)
+    return clean
+
+
 def _check_items(role: str, artifact: dict[str, Any], label: str) -> None:
     if role == "anforderungen":
         criteria = artifact["acceptance_criteria"]
@@ -228,9 +248,14 @@ def _check_items(role: str, artifact: dict[str, Any], label: str) -> None:
             if not isinstance(threat, dict) or not {"threat", "control"} <= set(threat):
                 raise ContractError(f"{label}: jede Bedrohung braucht threat und control")
     elif role == "akzeptanztest":
-        steps = artifact["steps"]
-        if not steps or not all(isinstance(s, dict) and {"action", "expected"} <= set(s) for s in steps):
-            raise ContractError(f"{label}: jeder Schritt braucht action und expected")
+        steps = artifact["steps"] = _normalize_steps(artifact["steps"])
+        for index, step in enumerate(steps, 1):
+            if not isinstance(step, dict) or not {"action", "expected"} <= set(step):
+                found = sorted(step) if isinstance(step, dict) else type(step).__name__
+                raise ContractError(f'{label}.steps[{index}]: jeder Schritt braucht action und expected '
+                                    f'(gefunden: {found}); Form {{"action": "…", "expected": "…"}}')
+        if not steps:
+            raise ContractError(f"{label}: mindestens ein Schritt mit action und expected")
         if artifact.get("ui"):
             try:
                 validate_steps(artifact["ui"], f"{label}.ui")
