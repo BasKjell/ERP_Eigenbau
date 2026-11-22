@@ -86,6 +86,7 @@ nav:
       - Agentenplattform FLOWAGENTS: agents/index.md
       - Betrieb: agents/betrieb.md
       - Sicherheit und Nachweise: agents/sicherheit.md
+      - Modellbewertung: agents/modellbewertung.md
   - Werkzeuge:
       - Katalog und Matrix: tools/index.md
       - Benutzeranleitungen:
