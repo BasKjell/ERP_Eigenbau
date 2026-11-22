@@ -1,0 +1,421 @@
+# Versionierte Quelle der Plattformanforderungen (Projekt FLOW-PLATFORM).
+#
+# FLOWWORK ist das führende Register (Jama-Nachbau). Diese Datei wird mit `make requirements-sync`
+# idempotent nach FLOWWORK übertragen; `make requirements-check` prüft Struktur und Rückverfolgbarkeit
+# (jede Verifikation verweist auf einen existierenden Test). Status „review“ heißt: als Entwurf
+# umgesetzt und getestet, fachliche Freigabe durch Bas steht aus. Freigaben setzt nur ein Mensch.
+#
+# Quellen: KI-Entwicklungskonzept (KI-EK, Teil 01–10), Unternehmenskonzept (KI-U-xx),
+# Auftrag Bas 2026-11-22 (AUF-BAS-2026-11-22: Agentenstruktur übernehmen, Landingpage mit
+# Agentenaktivität, Requirements in FLOWWORK, DMS mit eigener Oberfläche, BSI-konformer Ansatz).
+
+schema: flow-requirements-1
+project: FLOW-PLATFORM
+version: 1
+updated: "2026-11-22"
+
+requirements:
+  # --- Agentenplattform -----------------------------------------------------------------------
+  - id: REQ-AGT-001
+    title: Verbindliches Agentenregister
+    type: System
+    priority: Muss
+    status: review
+    source: KI-U-02 Agentenregister; AUF-BAS-2026-11-22
+    text: Jeder Agent steht mit ID, Owner, Stufe, Ablaufdatum, Modellprofil, Werkzeugen, lesbaren Artefakten, Eskalation und Nachweis im versionierten Register. Ein Agent ohne gültigen Eintrag erhält kein Werkzeug.
+    acceptance_criteria:
+      - Ein Register mit unbekanntem Werkzeug, A4-Stufe oder fehlender Rollenanweisung wird beim Laden abgelehnt.
+      - Ein Agent mit abgelaufener Freigabe oder Status „idee“ ist nicht aktiv.
+    verification:
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_registry_has_all_roles_ceo_and_gates
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_agent_level_a4_and_g4_automation_are_rejected
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_expired_approval_makes_agent_inactive
+      - services/platform_api/tests/test_flow_agents.py::test_registry_missing_locks_all_agent_operations
+
+  - id: REQ-AGT-002
+    title: Ersteller und Prüfer sind unabhängig
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Teil 01 „Elf Aufgaben“; AGENTS.md §2
+    text: Für jedes Artefakt gehören Ersteller und Prüfer zu unterschiedlichen Rollen und Modellfamilien. Der Akzeptanztest-Agent hat keinen Zugriff auf die Implementierung.
+    acceptance_criteria:
+      - Ein Register, in dem ein Prüfer dieselbe Modellfamilie wie der Ersteller hat, wird abgelehnt.
+      - Ein Register, das dem Akzeptanztest-Agenten die Implementierung freigibt, wird abgelehnt.
+    verification:
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_reviewers_are_independent_from_creators
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_same_family_reviewer_is_rejected
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_acceptance_tester_may_not_read_implementation
+
+  - id: REQ-AGT-003
+    title: Ablauf vom Fachauftrag zum Release mit G1 bis G5
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Teil 02 „Vom Fachauftrag zum geprüften Release“
+    text: Der Orchestrator führt jeden Fachauftrag durch die Rollen und Gates laut workflow.yaml. Die Änderungsklasse bestimmt, an welchen Gates ein Mensch entscheidet; G4 und G5 sind immer menschlich.
+    acceptance_criteria:
+      - Eine Standardänderung erreicht nach automatisch protokollierten G1 bis G3 die Fachabnahme G4.
+      - Eine neue Funktion wartet an G1 auf den Product Owner; eine Ablehnung führt mit Begründung zum Anforderungs-Agenten zurück.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_35_standard_change_runs_to_fachabnahme_and_release
+      - services/agent_orchestrator/tests/test_engine.py::test_new_function_waits_for_product_owner_at_g1
+      - services/agent_orchestrator/tests/test_engine.py::test_g1_rejection_sends_findings_back_to_requirements_agent
+
+  - id: REQ-AGT-004
+    title: Maschinenlesbare Übergabe wird strikt geprüft
+    type: Software
+    priority: Muss
+    status: review
+    source: KI-EK Teil 07 „Maschinenlesbare Übergabe“
+    text: Nur eine schema- und zustandskonforme Übergabe setzt den Ablauf fort. Unbekannte Felder, fehlende Pflichtfelder oder widersprüchlicher Status sperren die Übergabe; nach einer Wiederholung blockiert der Lauf sicher.
+    acceptance_criteria:
+      - „nacharbeit“ ohne blockierenden Befund und „fertig“ mit blockierendem Befund werden abgelehnt.
+      - Zwei ungültige Antworten hintereinander erzeugen eine Blockade in der Entscheidungs-Inbox ohne Artefakt.
+    verification:
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_contract_violations_block_the_handoff
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_extract_json_ignores_thinking_and_fences
+      - services/agent_orchestrator/tests/test_engine.py::test_provider_failure_or_invalid_handoff_blocks_safely
+
+  - id: REQ-AGT-005
+    title: Rücklauf mit begrenzten Korrekturrunden
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Teil 02 „Einstufung und Rücklauf“
+    text: Ein Prüfbefund geht an den Ersteller zurück. Nach zwei erfolglosen Korrekturrunden erhält der Tech Lead Befund und Versuche zur Entscheidung.
+    acceptance_criteria:
+      - Ein Prüfbefund führt zu genau einer neuen Version des geprüften Artefakts.
+      - Eine dauerhaft rote Integrationsprüfung erzeugt nach drei Versuchen eine Entscheidung „Korrekturlimit“ für den Tech Lead.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_review_rework_loop_then_pass
+      - services/agent_orchestrator/tests/test_engine.py::test_28_red_integration_goes_back_to_developer_and_limits_rounds
+
+  - id: REQ-AGT-006
+    title: Prüfung und Abnahme sind an den Digest gebunden
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Teil 02 „Was bei einer Änderung verfällt“; Tests 28–30
+    text: Codeprüfung, Integrationsprüfung, Fachabnahme und Produktionsfreigabe gelten nur für exakt einen Änderungsstand. Der Orchestrator prüft das Nachweispaket selbst.
+    acceptance_criteria:
+      - Ein nach der Abnahme geänderter Kandidat lässt die offene Abnahme verfallen; das Gate blockiert, bis Prüfungen zum neuen Digest vorliegen.
+      - Ohne bestandenen Prüfbericht ist keine Fachabnahme möglich.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_29_changed_candidate_invalidates_fachabnahme
+      - services/agent_orchestrator/tests/test_engine.py::test_30_manifest_gap_blocks_fachabnahme
+
+  - id: REQ-AGT-007
+    title: Geschäftsführungs-Agent bewertet Auftrag und Ergebnis
+    type: Stakeholder
+    priority: Muss
+    status: review
+    source: AUF-BAS-2026-11-22 „Agent als Geschäftsführer“; KI-U-00 Arbeitsplatz 2028
+    text: Ein eigener Agent bewertet jeden Fachauftrag zu Beginn und das Ergebnis vor der Fachabnahme aus Sicht der Geschäftsführung (Nutzen, Aufwand für Beschäftigte, Abläufe, Risiko). Erhebliche Bedenken gehen als Entscheidung an einen Menschen; der Agent gibt nichts frei.
+    acceptance_criteria:
+      - Der erste Schritt jedes Laufs ist die Bewertung durch AG-MGMT-01.
+      - Meldet AG-MGMT-01 Bedenken, entsteht eine Eskalation an den Product Owner; der Lauf wartet.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_ceo_agent_concerns_escalate_to_product_owner
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_registry_has_all_roles_ceo_and_gates
+
+  - id: REQ-AGT-008
+    title: Entscheidungs-Inbox mit Rollenprüfung
+    type: System
+    priority: Muss
+    status: review
+    source: KI-U-00 Entscheidungs-Inbox; KI-EK Test 16
+    text: Rückfragen, Eskalationen und Gates erscheinen in der Entscheidungs-Inbox. Nur Personen mit der zugeordneten FLOWID-Rolle können entscheiden; die Entscheidung wird mit Person, Zeit und Begründung protokolliert.
+    acceptance_criteria:
+      - Eine Person ohne passende Rolle kann eine offene Entscheidung nicht annehmen; der Status bleibt offen.
+      - Eine Rückfrage eines Agenten wird beantwortet und die Antwort fließt in den nächsten Versuch ein.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_16_person_without_role_cannot_decide
+      - services/agent_orchestrator/tests/test_engine.py::test_agent_question_goes_to_inbox_and_answer_is_used
+      - services/agent_orchestrator/tests/test_sync.py::test_sync_pulls_actions_and_publishes_state
+
+  - id: REQ-AGT-009
+    title: Entwicklung nur in freigegebenen Bereichen einer Sandbox
+    type: Software
+    priority: Muss
+    status: review
+    source: KI-EK Teil 03, Tests 06, 07, 11
+    text: Der Entwicklungs-Agent ändert nur Dateien des im Fachauftrag gewählten Änderungsbereichs. Geschützte Pfade (Register, CI, Rechte, Orchestrator) sind gesperrt. Prüfungen laufen in einem Container ohne Netzwerk und ohne Zugangsdaten.
+    acceptance_criteria:
+      - Eine Änderung außerhalb des Bereichs oder an einem geschützten Pfad wird abgelehnt.
+      - Der Sandbox-Export enthält keine .env-Dateien.
+    verification:
+      - services/agent_orchestrator/tests/test_boundaries.py::test_07_protected_and_unsafe_paths_are_rejected
+      - services/agent_orchestrator/tests/test_boundaries.py::test_06_changes_outside_the_approved_scope_are_rejected
+
+  - id: REQ-AGT-010
+    title: Kurzlebige, rollen- und laufgebundene Tokens
+    type: Interface
+    priority: Muss
+    status: review
+    source: KI-EK Teil 04/09, Tests 03–05
+    text: Werkzeugaufrufe an FLOWWORK und Modellaufrufe an FLOWGATE nutzen je Rolle eigene Berechtigungen. Tokens sind höchstens zehn Minuten gültig, an Lauf und Zielressource gebunden; FLOWGATE erlaubt je Rollenschlüssel nur das Modellprofil der Rolle.
+    acceptance_criteria:
+      - Fehlende, abgelaufene, zu lange gültige oder für eine andere Zielressource ausgestellte Tokens werden abgelehnt.
+      - Eine Rolle, die ein fremdes Modell anfordert, erhält HTTP 403 von FLOWGATE.
+    verification:
+      - services/agent_orchestrator/tests/test_boundaries.py::test_04_missing_or_expired_token_is_rejected
+      - services/agent_orchestrator/tests/test_boundaries.py::test_05_token_for_another_audience_is_rejected
+      - services/agent_orchestrator/tests/test_boundaries.py::test_03_gateway_uses_role_key_and_profile_alias_only
+      - services/platform_api/tests/test_flow_agents.py::test_04_missing_or_expired_token_is_rejected
+      - services/platform_api/tests/test_flow_agents.py::test_05_token_for_another_audience_is_rejected
+
+  - id: REQ-AGT-011
+    title: Keine Selbstfreigabe durch Agenten
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Teil 09 „Erlaubte Werkzeuge“, Tests 02, 09, 10
+    text: Keine Agentenrolle besitzt Freigabe-, Merge-, Lösch-, Administrations- oder Deploymentwerkzeuge. Jede Rolle darf nur ihre Werkzeuge laut Register nutzen.
+    acceptance_criteria:
+      - Ein Register mit Freigabe-, Merge- oder Deploymentwerkzeug wird abgelehnt.
+      - Der Entwicklungs-Agent kann keinen Anforderungsentwurf anlegen; der Versuch erscheint im Audit.
+    verification:
+      - services/agent_orchestrator/tests/test_registry_contract.py::test_approval_merge_and_deploy_tools_are_forbidden
+      - services/platform_api/tests/test_flow_agents.py::test_02_developer_cannot_create_requirement_drafts
+      - services/platform_api/tests/test_flow_agents.py::test_agent_id_must_match_role_and_inactive_roles_are_locked
+
+  - id: REQ-AGT-012
+    title: Stopp-Schalter und Laufbudget
+    type: System
+    priority: Muss
+    status: review
+    source: KI-U-00 Leitplanken; KI-EK Tests 14, 15
+    text: Der Plattformbetrieb kann einzelne Agenten oder den gesamten Ablauf anhalten; wartende Aufträge halten mit an. Ein erschöpftes Laufbudget verhindert weitere Modellaufrufe.
+    acceptance_criteria:
+      - Ein pausierter Agent arbeitet keinen Schritt ab; nach Fortsetzen läuft der Auftrag weiter.
+      - Bei erschöpftem Budget entsteht eine Blockade ohne weiteren Modellaufruf.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_15_paused_agent_holds_waiting_runs
+      - services/agent_orchestrator/tests/test_engine.py::test_global_stop_switch_and_control_rights
+      - services/agent_orchestrator/tests/test_engine.py::test_14_budget_exhaustion_blocks_further_model_calls
+
+  - id: REQ-AGT-013
+    title: Orchestrator ohne eingehende Verbindung aus dem Plattformnetz
+    type: Interface
+    priority: Muss
+    status: review
+    source: KI-EK Teil 03 „Vertrauensgrenzen“; Architekturentscheidung ADR-008
+    text: Der Orchestrator öffnet keinen von Containern erreichbaren Port. Er holt Aktionen bei der Plattform-API ab und meldet seinen Zustand dorthin; der Abgleich ist mit eigenem Dienst-Token gesichert.
+    acceptance_criteria:
+      - Abgleich-Endpunkte lehnen fehlende, gefälschte oder zu lange gültige Tokens ab.
+      - Eine im Portal eingereichte Aktion trägt die angemeldete Person und erhält das Ergebnis des Orchestrators.
+    verification:
+      - services/platform_api/tests/test_flow_agents.py::test_sync_endpoints_require_the_orchestrator_token
+      - services/platform_api/tests/test_flow_agents.py::test_portal_actions_are_queued_with_the_person_and_answered_by_the_orchestrator
+      - services/agent_orchestrator/tests/test_sync.py::test_sync_reports_unreachable_portal_without_crashing
+
+  - id: REQ-AGT-014
+    title: Abo-CLI-Worker technisch gesperrt bis zur Freigabe
+    type: System
+    priority: Muss
+    status: review
+    source: Trading_Ai T-020/T-027; AGENTS.md §5
+    text: Die aus Trading_Ai übernommenen Codex-/Claude-Worker laufen nur mit ausdrücklicher Freigabe, unveränderlichem Image, internem Netz mit eigenem Egress-Proxy und schreibgeschütztem Anmeldevolume.
+    acceptance_criteria:
+      - Ohne execution_enabled lehnt der Worker jeden Aufruf ab.
+      - Gemeinsame Volumes, Host-Netz oder ein Image ohne Digest werden beim Start abgelehnt.
+    verification:
+      - services/agent_orchestrator/tests/test_boundaries.py::test_cli_workers_are_technically_locked_by_default
+      - services/agent_orchestrator/tests/test_boundaries.py::test_cli_worker_settings_fail_closed
+      - services/agent_orchestrator/tests/test_boundaries.py::test_cli_worker_container_is_isolated
+
+  # --- Landingpage / Agentenzentrale -------------------------------------------------------------
+  - id: REQ-PRT-001
+    title: Landingpage zeigt, was die Agenten gerade tun
+    type: Stakeholder
+    priority: Muss
+    status: review
+    source: AUF-BAS-2026-11-22 „auf der Landingpage sehen, was die Agenten machen“
+    text: FLOWPORTAL zeigt auf der Startseite den Zustand jedes Agenten (arbeitet, als Nächstes, wartet, pausiert), laufende Aufträge mit Schritt und Fortschritt sowie ein Live-Protokoll.
+    acceptance_criteria:
+      - Die Startseite enthält die Agentenzentrale; die Übersicht liefert alle zwölf Rollen mit Zustand.
+      - Ein Auftrag, der auf einen Menschen wartet, zeigt die wartende Rolle.
+    verification:
+      - services/platform_api/tests/test_flow_agents.py::test_agents_page_and_dms_page_are_served
+      - services/agent_orchestrator/tests/test_engine.py::test_overview_shows_agents_interactions_and_inbox
+
+  - id: REQ-PRT-002
+    title: Interaktion der Agenten ist sichtbar
+    type: Stakeholder
+    priority: Muss
+    status: review
+    source: AUF-BAS-2026-11-22 „wie die gerade miteinander interagieren“
+    text: Eine Karte zeigt Übergaben, Rückläufe, Fragen an Menschen, Entscheidungen und Werkzeugaufrufe zwischen Agenten, Gates und Entscheidungsrollen; neue Ereignisse werden animiert.
+    acceptance_criteria:
+      - Nach einem Lauf enthält die Übersicht die Kanten Geschäftsführung → Anforderungen und Anforderungen → Anforderungsprüfung.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_overview_shows_agents_interactions_and_inbox
+
+  - id: REQ-PRT-003
+    title: Fachauftrag und Entscheidungen aus dem Portal
+    type: Stakeholder
+    priority: Muss
+    status: review
+    source: KI-EK Teil 01 „zwei Kontakte mit dem Fachbereich“
+    text: Ein Product Owner reicht im Portal einen Fachauftrag mit Zweck, Nutzergruppe, Verhalten, Erfolgsbeispiel, Klasse und Änderungsbereich ein und entscheidet in der Inbox.
+    acceptance_criteria:
+      - Eine Einreichung ohne Product-Owner-Rolle oder mit nicht freigegebenem Änderungsbereich wird abgelehnt.
+      - Ablehnungen des Orchestrators (z. B. fehlende Befugnis) erscheinen im Portal.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_submit_requires_product_owner_role_and_valid_scope
+      - services/platform_api/tests/test_flow_agents.py::test_rejections_from_the_orchestrator_reach_the_portal
+
+  - id: REQ-PRT-004
+    title: Keine erfundene Aktivität
+    type: Software
+    priority: Muss
+    status: review
+    source: AGENTS.md §4 Kennzeichnung
+    text: Meldet sich der Orchestrator nicht, zeigt das Portal nur das Register mit dem Hinweis „nicht verbunden“ und nimmt keine Aufträge an.
+    acceptance_criteria:
+      - Ohne Abgleich ist available=false, die Läufe sind leer und Aufträge werden mit 503 abgelehnt.
+    verification:
+      - services/platform_api/tests/test_flow_agents.py::test_overview_falls_back_to_registry_when_orchestrator_is_silent
+
+  # --- Requirements in FLOWWORK -------------------------------------------------------------------
+  - id: REQ-REQ-001
+    title: Agenten-Entwürfe landen versioniert in FLOWWORK
+    type: Interface
+    priority: Muss
+    status: review
+    source: KI-EK Teil 08 „Vertrag des MCP Adapters“; AUF-BAS-2026-11-22 „Requirements im Jama-Nachbau“
+    text: Der Anforderungs-Agent legt Entwürfe über rm.create_draft mit Idempotenzschlüssel an. Gleicher Schlüssel und gleiche Nutzlast liefern dasselbe Objekt; abweichende Nutzlast erzeugt einen Konflikt.
+    acceptance_criteria:
+      - Ein Entwurf erscheint im FLOWWORK-Dashboard mit Projekt, Lauf und Status draft.
+      - Wiederholung nach Zeitüberschreitung erzeugt genau einen Entwurf.
+    verification:
+      - services/platform_api/tests/test_flow_agents.py::test_requirements_agent_creates_versioned_draft_in_flowwork
+      - services/platform_api/tests/test_flow_agents.py::test_26_create_draft_is_idempotent_and_detects_conflicting_payloads
+
+  - id: REQ-REQ-002
+    title: Änderungen nur gegen die erwartete Version
+    type: Interface
+    priority: Muss
+    status: review
+    source: KI-EK Test 27
+    text: rm.update_draft verlangt expected_version; Kommentare binden ID und Version.
+    acceptance_criteria:
+      - Zwei Änderungen gegen dieselbe Version führen zu genau einer Aktualisierung und einem Versionskonflikt.
+    verification:
+      - services/platform_api/tests/test_flow_agents.py::test_27_concurrent_updates_against_same_version_conflict
+      - services/platform_api/tests/test_flow_agents.py::test_comments_bind_to_current_version_only
+
+  - id: REQ-REQ-003
+    title: Agenten erteilen in FLOWWORK keine Freigaben
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Test 09
+    text: Über den RM-Adapter gibt es keine Freigabeoperation; Agenten-Tokens werden an den übrigen FLOWWORK-Endpunkten abgewiesen.
+    acceptance_criteria:
+      - Der Versuch, Status „approved“ über den Adapter oder die FLOWWORK-API zu setzen, ändert den Status nicht.
+    verification:
+      - services/platform_api/tests/test_flow_agents.py::test_09_agents_cannot_approve_requirements
+
+  - id: REQ-REQ-004
+    title: Arbeitsbaseline nur durch den Orchestrator
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Teil 08 „Zwei Arten von Baseline“
+    text: Nach erfüllter Prüfung friert ausschließlich der Orchestrator die Arbeitsbaseline ein; geänderte Anforderungsversionen werden abgelehnt. „Fachlich freigegeben“ entscheidet der Product Owner an G1.
+    acceptance_criteria:
+      - Eine Agentenrolle kann keine Baseline anlegen; eine veraltete Version erzeugt einen Konflikt.
+    verification:
+      - services/platform_api/tests/test_flow_agents.py::test_baseline_freeze_is_reserved_for_orchestrator_and_checks_versions
+      - services/platform_api/tests/test_flow_agents.py::test_acceptance_tests_are_linked_within_the_same_project
+
+  # --- DMS mit eigener Oberfläche ------------------------------------------------------------------
+  - id: REQ-DOC-001
+    title: Eigene DMS-Oberfläche über die Paperless-API
+    type: Stakeholder
+    priority: Muss
+    status: review
+    source: AUF-BAS-2026-11-22 „DMS mit komplett eigener Oberfläche“; ADR-007
+    text: FLOWDOC bietet unter /dms eine eigene Oberfläche für Suchen, Filtern, Sortieren, Vorschau, Statuswechsel, Notizen und Ablage. Paperless-ngx bleibt führendes System für Ablage, Texterkennung und Rechte.
+    acceptance_criteria:
+      - /dms ist im Portal und im App-Launcher erreichbar; Paperless bleibt nur als Administrationszugang verlinkt.
+    verification:
+      - services/platform_api/tests/test_flow_agents.py::test_agents_page_and_dms_page_are_served
+
+  - id: REQ-DOC-002
+    title: Abfrage im Namen der angemeldeten Person
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Teil 04, Test 18
+    text: Im OIDC-Betrieb fragt FLOWDOC Paperless ausschließlich im Namen der angemeldeten Person ab. Weder Titel noch Trefferzahl oder Vorschau verraten Dokumente ohne Leserecht. Es gibt keinen Rückfall auf das technische Konto.
+    acceptance_criteria:
+      - Zwei Personen mit unterschiedlichen Rechten sehen nur ihre Dokumente und Trefferzahlen.
+      - Ohne Anmeldung liefert FLOWDOC im OIDC-Modus 401.
+    verification:
+      - services/platform_api/tests/test_dms.py::test_18_search_runs_in_the_name_of_the_person
+      - services/platform_api/tests/test_dms.py::test_oidc_mode_never_falls_back_to_the_technical_account
+
+  - id: REQ-DOC-003
+    title: Sortierung nach Titel und weiteren Feldern
+    type: Software
+    priority: Muss
+    status: review
+    source: KI-EK Teil 02 Beispiel A-17
+    text: Die Ansicht sortiert sichtbare Dokumente auf Wunsch nach Titel auf- und absteigend, nach Datum, Dokumenttyp und Korrespondent. Rechte und Freigabestatus gelten unverändert.
+    acceptance_criteria:
+      - Bei den Titeln Beta und Alpha erscheint Alpha zuerst.
+      - Eine unbekannte Sortierung wird abgelehnt.
+    verification:
+      - services/platform_api/tests/test_dms.py::test_a17_sort_by_title_and_status_filter
+
+  - id: REQ-DOC-004
+    title: Statusfilter und Statusworkflow
+    type: Software
+    priority: Muss
+    status: review
+    source: docs/user-guides/dms.md Statusmodell
+    text: Dokumente lassen sich nach Entwurf, In Prüfung und Freigegeben filtern. Statuswechsel sind nur aus dem passenden Ausgangsstatus möglich; Paperless prüft das Änderungsrecht.
+    acceptance_criteria:
+      - „Zur Prüfung geben“ ist nur aus „Entwurf“ möglich; ein zweiter Versuch wird abgelehnt.
+    verification:
+      - services/platform_api/tests/test_dms.py::test_status_transition_respects_source_status_and_paperless_rights
+      - services/platform_api/tests/test_dms.py::test_a17_sort_by_title_and_status_filter
+
+  - id: REQ-DOC-005
+    title: Vorschau, Download und Notizen
+    type: Software
+    priority: Soll
+    status: review
+    source: AUF-BAS-2026-11-22
+    text: FLOWDOC zeigt Vorschau, Metadaten, erkannten Text und Notizen; nicht sichtbare Dokumente liefern 404.
+    acceptance_criteria:
+      - Ein sichtbares Dokument liefert Vorschau und Notizen, ein nicht sichtbares 404.
+    verification:
+      - services/platform_api/tests/test_dms.py::test_detail_preview_and_hidden_documents
+
+  - id: REQ-DOC-006
+    title: Geprüfte Ablage neuer Dokumente
+    type: Software
+    priority: Muss
+    status: review
+    source: AUF-BAS-2026-11-22
+    text: Die Ablage akzeptiert nur zulässige Dateitypen bis 25 MB, übergibt im Namen der Person an Paperless und meldet den Verarbeitungsstand.
+    acceptance_criteria:
+      - Eine .exe-Datei oder eine leere Datei wird abgelehnt; eine PDF-Datei erzeugt eine Verarbeitungs-ID.
+    verification:
+      - services/platform_api/tests/test_dms.py::test_upload_is_validated_and_delegated
+
+  - id: REQ-DOC-007
+    title: Demo-Modus sichtbar gekennzeichnet
+    type: Software
+    priority: Muss
+    status: review
+    source: AGENTS.md §5
+    text: Ohne Anmeldung (lokaler Demo-Modus) nutzt FLOWDOC das technische Konto und kennzeichnet dies in jeder Antwort.
+    acceptance_criteria:
+      - Im Demo-Modus lautet access „technisches Konto (Demo)“; ohne Zugang liefert FLOWDOC 503.
+    verification:
+      - services/platform_api/tests/test_dms.py::test_demo_mode_uses_and_labels_the_technical_account

@@ -23,9 +23,13 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
 
 FROM base AS test
 USER root
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app AGENT_REGISTRY_DIR=/app/agents REQUIREMENTS_CATALOG=/app/requirements/catalog.yaml
 COPY requirements-dev.txt .
 RUN pip install --no-cache-dir -r requirements-dev.txt
+# Agentenregister und Requirements-Katalog liegen im Repository-Wurzelverzeichnis
+# (docker build --build-context repo=. …, siehe Makefile).
+COPY --from=repo agents /app/agents
+COPY --from=repo requirements /app/requirements
 COPY tests ./tests
 RUN ruff check app tests \
     && pytest --cov=app --cov-branch --cov-report=term-missing --cov-fail-under=75

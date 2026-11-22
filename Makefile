@@ -1,4 +1,4 @@
-.PHONY: agents-up agents-down agents-restart agents-status agents-logs agents-test agents-check agents-sandbox-image help demo full work sso sso-all seed-erp seed-dms seed-dms-project dms-vector-index demo-data-setup demo-data-delete demo-data-delete-preview dms-dashboard management-dashboard docs test test-dms-reporting test-management-reporting test-integration audit-links check lint validate stop reset logs ai ai-gateway webui mcp
+.PHONY: requirements-check requirements-sync agents-up agents-down agents-restart agents-status agents-logs agents-test agents-check agents-sandbox-image help demo full work sso sso-all seed-erp seed-dms seed-dms-project dms-vector-index demo-data-setup demo-data-delete demo-data-delete-preview dms-dashboard management-dashboard docs test test-dms-reporting test-management-reporting test-integration audit-links check lint validate stop reset logs ai ai-gateway webui mcp
 
 help:
 	@echo "ERP Eigenbau - verfuegbare Befehle"
@@ -24,6 +24,8 @@ help:
 	@echo "  make agents-status    Zeigt Laeufe, Entscheidungen und Agentenzustand"
 	@echo "  make agents-test      Prueft Agentenregister, Orchestrator und Grenzen"
 	@echo "  make agents-sandbox-image  Baut das Offline-Pruefimage fuer die Integrationspruefung"
+	@echo "  make requirements-check  Prueft requirements/catalog.yaml und die Testverweise"
+	@echo "  make requirements-sync   Uebertraegt den Requirements-Katalog nach FLOWWORK"
 	@echo "  make test      Fuehrt Python-Tests aus"
 	@echo "  make test-dms-reporting  Prueft Termin-View und DB-Berechtigungen"
 	@echo "  make test-management-reporting  Prueft Management-Views und DB-Berechtigungen"
@@ -101,7 +103,7 @@ docs:
 	AUTH_MODE=oidc docker compose --profile iam up docs docs-shell keycloak keycloak-shell keycloak-sync
 
 test:
-	docker build -t erp-eigenbau-api-test --target test services/platform_api
+	docker build --build-context repo=. -t erp-eigenbau-api-test --target test services/platform_api
 	python3 scripts/test_demo_data_api.py
 
 test-integration:
@@ -116,10 +118,10 @@ test-dms-reporting:
 test-management-reporting:
 	./scripts/test_management_reporting.sh
 
-check: test validate test-dms-reporting test-management-reporting test-integration
+check: test agents-test requirements-check validate test-dms-reporting test-management-reporting test-integration
 
 lint:
-	docker build -t erp-eigenbau-api-test --target test services/platform_api
+	docker build --build-context repo=. -t erp-eigenbau-api-test --target test services/platform_api
 
 validate:
 	python3 scripts/generate_iam_demo.py --check
@@ -159,7 +161,15 @@ agents-logs:
 	./scripts/flow_agents.sh logs
 
 agents-check:
-	cd services/agent_orchestrator && python3 -m flowagents check-registry --repo-root ../..
+	cd services/agent_orchestrator && ../../$(PYTHON) -m flowagents check-registry --repo-root ../..
 
 agents-test:
-	cd services/agent_orchestrator && python3 -m ruff check flowagents worker tests && python3 -m pytest -q tests
+	cd services/agent_orchestrator && ../../$(PYTHON) -m ruff check flowagents worker tests && ../../$(PYTHON) -m pytest -q tests
+
+PYTHON ?= $(shell test -x .venv/bin/python && echo .venv/bin/python || echo python3)
+
+requirements-check:
+	PYTHONPATH=services/platform_api $(PYTHON) -m app.requirements_catalog check --catalog requirements/catalog.yaml --repo .
+
+requirements-sync:
+	docker compose exec -T platform-api python -m app.requirements_catalog sync --catalog /app/requirements/catalog.yaml

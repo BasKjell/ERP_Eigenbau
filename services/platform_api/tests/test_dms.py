@@ -1,4 +1,4 @@
-"""FLOWDOC – eigene DMS-Oberfläche über die Paperless-API (REQ-DMS-001 bis REQ-DMS-008)."""
+"""FLOWDOC – eigene DMS-Oberfläche über die Paperless-API (REQ-DOC-001 bis REQ-DOC-007)."""
 
 from __future__ import annotations
 
