@@ -84,6 +84,8 @@ nav:
       - FLOWDOC eigene Oberfläche: user-guides/flowdoc.md
   - Agenten:
       - Agentenplattform FLOWAGENTS: agents/index.md
+      - Bedienungsanleitung: agents/bedienung.md
+      - Sicherheitskonzept: agents/sicherheitskonzept.md
       - Betrieb: agents/betrieb.md
       - Sicherheit und Nachweise: agents/sicherheit.md
       - Modellbewertung: agents/modellbewertung.md
