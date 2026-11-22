@@ -19,7 +19,8 @@ nachgetragen.
 | Anforderungen | qwen3:8b (builder) | Prüfbare Kriterien erst nach menschlicher G1-Ablehnung; meldete Überarbeitung als „nacharbeit“ | Vertrag lehnt „nacharbeit“ für Ersteller ab (`d975da5`) |
 | Anforderungsprüfung | gemma3:12b (pruefer) | Ließ „leicht verständlich“ als Kriterium durch; wiederholte später einen bereits behobenen Befund, weil die G1-Begründung im Kontext stand | Kontext auf eigene Rückfragen begrenzt (`e3ad000`); G1 bleibt bei neuen Funktionen menschlich |
 | Architektur, Sicherheit, Planung, Akzeptanztests | qwen3:8b / gemma3:12b | jeweils ein ungültiger erster Versuch (fehlende Pflichtfelder), zweiter gültig | Pflichtfelder im Auftrag |
-| Entwicklung | qwen3-coder:30b (coder) | erster Versuch ohne Dateiinhalt | Pflichtfelder im Auftrag |
+| Entwicklung | qwen3-coder:30b (coder) | erster Versuch ohne Dateiinhalt; Hilfetext mit erfundenem Verhalten („Filter wird automatisch gesetzt“), nach zwei G4-Ablehnungen noch ein falscher Satz | Fachabnahme G4 bleibt menschlich; Budget stoppte den Lauf |
+| Codeprüfung | gemma3:12b (pruefer) | erkannte die fachlich falsche Aussage nicht | Prüfer für Doku braucht Zugriff auf die tatsächliche Oberfläche bzw. Referenzfälle |
 
 Folgerung: Die lokalen Prüfer sind nachgiebig und anfällig für Kontextwiederholung. Vor einem
 Pilot braucht jede Rolle einen Evaluationssatz mit Referenzfällen (korrekte Arbeit, fehlende Quelle,

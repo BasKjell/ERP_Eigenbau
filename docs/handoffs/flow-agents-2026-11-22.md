@@ -34,8 +34,8 @@ Docker-Test-Target war vorher rot.
 
 ## Nachweise (lokal ausgeführt am 2026-11-22)
 
-- `make agents-test`: Ruff sauber, 63 Tests grün (Orchestrator).
-- Plattform: `pytest services/platform_api/tests` 167 Tests grün; `docker build --target test`
+- `make agents-test`: Ruff sauber, 65 Tests grün (Orchestrator); `make agents-smoke` 8/8 gegen die laufende Kette.
+- Plattform: `pytest services/platform_api/tests` grün; `docker build --target test`
   (Ruff + Coverage ≥ 75 %) grün.
 - `make requirements-check`: 29 Anforderungen, 63 Testverweise gültig.
 - `mkdocs build --strict`, `validate_app_shell.py`, `validate_open_webui_config.py`, `docker compose config`: grün.
@@ -43,6 +43,21 @@ Docker-Test-Target war vorher rot.
 - Live-Lauf A-001 mit lokalen Modellen (Ergebnis siehe Abschnitt „Live-Lauf“).
 - **Nicht ausgeführt:** GitHub-CI (Branch nicht gepusht), `make test-integration` gegen alle
   Live-Systeme, Abo-Worker (gesperrt).
+
+## Live-Lauf A-001 (lokale Modelle über FLOWGATE, Klasse „neue Funktion“)
+
+Auftrag: Bedienhilfe für die Titel-Sortierung in FLOWDOC (Bereich `dms-doku`).
+Durchlaufen: Geschäftsführungs-Agent → Anforderungen ↔ Prüfung → G1 (abgelehnt im Portal, dann
+nach zwei Prüfrunden und Korrekturlimit freigegeben) → Architektur → Sicherheit → G2 → Planung →
+Akzeptanztests → Entwicklung → Integrationsprüfung offline (bestanden, 14 s) → Codeprüfung → G3 →
+Dokumentation → Nachweise → Geschäftsführungs-Agent → G4. Die Fachabnahme wurde zweimal begründet
+abgelehnt, weil die Hilfe den Statusfilter falsch beschrieb (Codeprüfung hatte das nicht erkannt).
+Danach war das Laufbudget (40 Modellaufrufe) erschöpft; der Lauf **wartet auf den Tech Lead**
+(`ENT-F70F0B65`). In FLOWWORK liegen REQ-DMS-001…003, Baselines BL-DMS-001/002, Testfälle und Tickets.
+
+Gegriffene Schutzmechanismen: Ergebnisvertrag mit Wiederholung, menschliche G1-/G4-Ablehnung als
+Befund, Korrekturlimit, Register-Umstellung nach Prompt-Änderung, Wiederanlauf nach Neustart,
+Digest-Bindung, Laufbudget. Gefundene und behobene Fehler: siehe `docs/agents/modellbewertung.md`.
 
 ## Prüfschwerpunkte für Codex (Klasse K)
 
