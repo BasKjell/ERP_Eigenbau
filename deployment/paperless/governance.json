@@ -27,6 +27,7 @@
         "documents.view_document",
         "documents.view_documenttype",
         "documents.view_note",
+        "documents.view_paperlesstask",
         "documents.view_savedview",
         "documents.view_storagepath",
         "documents.view_tag"
@@ -102,6 +103,7 @@
         "documents.view_document",
         "documents.view_documenttype",
         "documents.view_note",
+        "documents.view_paperlesstask",
         "documents.view_savedview",
         "documents.view_savedviewfilterrule",
         "documents.view_storagepath",

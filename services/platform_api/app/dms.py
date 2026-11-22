@@ -21,6 +21,14 @@ import uuid
 from typing import Any
 
 from .config import Settings
+from .dms_files import (
+    EXTERNAL_TYPES,
+    FileStore,
+    FileStoreError,
+    cover_sheet,
+    inspect_stl,
+    reference_in,
+)
 from .paperless_client import PaperlessClient, PaperlessError, _multipart_body
 
 ORDERINGS = {
@@ -35,7 +43,7 @@ TRANSITIONS = {
     "zurueckweisen": ("Status/In Prüfung", "Status/Entwurf"),
 }
 MAX_UPLOAD = 25 * 1024 * 1024
-ALLOWED_UPLOAD = {".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".txt", ".docx", ".xlsx", ".odt"}
+ALLOWED_UPLOAD = {".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".txt", ".docx", ".xlsx", ".odt", *EXTERNAL_TYPES}
 
 
 class DmsError(RuntimeError):
@@ -45,8 +53,9 @@ class DmsError(RuntimeError):
 
 
 class DmsService:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, file_store: FileStore | None = None) -> None:
         self.settings = settings
+        self.files = file_store or FileStore(os.getenv("DMS_FILE_STORE", "/data/flowdoc-files"))
         self.base_url = settings.paperless_base_url.rstrip("/")
         self.public_url = settings.paperless_public_url.rstrip("/")
         self.header = os.getenv("PAPERLESS_REMOTE_USER_HEADER", "X-Flow-Sso-User")
@@ -90,6 +99,8 @@ class DmsService:
                 raise DmsError("Keine Berechtigung im DMS für diese Aktion", 403) from None
             if exc.code == 404:
                 raise DmsError("Dokument nicht gefunden", 404) from None
+            if exc.code == 400:
+                raise DmsError(f"FLOWDOC hat die Anfrage abgelehnt: {_rejection(exc)}", 422) from None
             raise DmsError(f"FLOWDOC antwortete mit HTTP {exc.code}", 502) from None
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
             raise DmsError(f"FLOWDOC nicht erreichbar ({type(exc).__name__})", 503) from None
@@ -155,12 +166,29 @@ class DmsService:
             "transitions": [name for name, (source, _) in TRANSITIONS.items() if detail["status"] == source],
             "source_url": f"{self.public_url}/documents/{int(document_id)}/details",
         })
+        reference = reference_in(str(row.get("content") or ""))
+        if reference:
+            detail["original_file"] = {"name": reference["name"], "sha256": reference["sha256"]}
         return detail
 
     def binary(self, person: dict[str, Any] | None, document_id: int, kind: str) -> tuple[bytes, str]:
+        if kind == "original":
+            return self.original(person, document_id)
         if kind not in {"thumb", "preview", "download"}:
             raise DmsError("Unbekannte Darstellung", 404)
         return self._call("GET", f"/api/documents/{int(document_id)}/{kind}/", person, raw=True)
+
+    def original(self, person: dict[str, Any] | None, document_id: int) -> tuple[bytes, str]:
+        """Originaldatei zu einem Begleitblatt – nur wer das Begleitblatt sehen darf, bekommt sie."""
+        row = self._call("GET", f"/api/documents/{int(document_id)}/", person)
+        reference = reference_in(str((row or {}).get("content") or ""))
+        if not reference:
+            raise DmsError("Zu diesem Dokument gibt es keine Originaldatei im Dateispeicher", 404)
+        try:
+            data = self.files.get(reference["sha256"], reference["suffix"])
+        except FileStoreError as exc:
+            raise DmsError(str(exc), 409) from None
+        return data, f"model/stl; name={reference['name']}"
 
     # -- Schreiben (nur ausdrückliche Benutzeraktionen) -----------------------------------------
     def upload(
@@ -176,6 +204,20 @@ class DmsService:
         title = title.strip() or clean.rsplit(".", 1)[0]
         if len(title) > 160:
             raise DmsError("Titel ist zu lang", 422)
+        stored: dict[str, str] | None = None
+        if suffix in EXTERNAL_TYPES:
+            # Paperless verarbeitet das Format nicht: Original in den Dateispeicher, Begleitblatt nach FLOWDOC.
+            try:
+                details = inspect_stl(content)
+                digest = self.files.put(content, suffix)
+            except FileStoreError as exc:
+                raise DmsError(str(exc), 422) from None
+            _, access = self._auth(person)
+            uploaded_by = str((person or {}).get("username") or access)
+            content = cover_sheet(title=title, filename=clean, digest=digest, size=len(content),
+                                  details=details, uploaded_by=uploaded_by)
+            stored = {"sha256": digest, "name": clean}
+            clean = f"{clean}.pdf"
         fields: dict[str, str] = {"title": title}
         if document_type:
             fields["document_type"] = str(int(document_type))
@@ -189,15 +231,24 @@ class DmsService:
         task_id = task if isinstance(task, str) else (task or {}).get("task_id")
         if not task_id:
             raise DmsError("FLOWDOC lieferte keine Verarbeitungs-ID")
-        return {"task_id": str(task_id), "status": "in Verarbeitung"}
+        result = {"task_id": str(task_id), "status": "in Verarbeitung"}
+        if stored:
+            result["original_file"] = stored
+        return result
 
     def task(self, person: dict[str, Any] | None, task_id: str) -> dict[str, Any]:
         if not re.fullmatch(r"[A-Za-z0-9-]{8,64}", task_id):
             raise DmsError("Ungültige Verarbeitungs-ID", 422)
-        rows = self._call("GET", "/api/tasks/", person, params={"task_id": task_id}) or []
+        payload = self._call("GET", "/api/tasks/", person, params={"task_id": task_id}) or []
+        # Paperless bis API v9 liefert eine Liste, ab v10 eine Seite mit "results" und neuen Feldnamen.
+        rows = payload.get("results", []) if isinstance(payload, dict) else payload
         row = rows[0] if isinstance(rows, list) and rows else {}
-        return {"task_id": task_id, "status": row.get("status", "UNBEKANNT"), "document_id": row.get("related_document"),
-                "result": str(row.get("result") or "")[:300]}
+        documents = row.get("related_document_ids") or []
+        document_id = row.get("related_document") or (documents[0] if documents else None)
+        result = row.get("result") or row.get("result_message") or row.get("result_data") or ""
+        return {"task_id": task_id, "status": str(row.get("status") or "UNBEKANNT").upper(),
+                "document_id": str(document_id) if document_id is not None else None,
+                "result": (result if isinstance(result, str) else json.dumps(result, ensure_ascii=False))[:300]}
 
     def add_note(self, person: dict[str, Any] | None, document_id: int, note: str) -> dict[str, Any]:
         text = note.strip()
@@ -257,3 +308,20 @@ def _color(value: Any) -> str | None:
     text = str(value or "")
     return text if re.fullmatch(r"#[0-9A-Fa-f]{3,8}", text) else None
 
+
+def _rejection(exc: urllib.error.HTTPError) -> str:
+    """Begründung aus der Paperless-Antwort (z. B. nicht unterstützter Dateityp), gekürzt und ohne Steuerzeichen."""
+    try:
+        payload = json.loads(exc.read(4096) or b"null")
+    except (OSError, ValueError):
+        payload = None
+    messages: list[str] = []
+    if isinstance(payload, dict):
+        for value in payload.values():
+            messages += [str(v) for v in value] if isinstance(value, list) else [str(value)]
+    elif isinstance(payload, list):
+        messages = [str(v) for v in payload]
+    text = "; ".join(messages) or "ungültige Anfrage"
+    if "not supported" in text and "File type" in text:
+        text = f"Dateityp wird nicht unterstützt ({text})"
+    return re.sub(r"[\x00-\x1f]", " ", text)[:200]

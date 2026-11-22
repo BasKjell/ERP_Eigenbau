@@ -11,7 +11,7 @@ COPY app ./app
 COPY seed ./seed
 
 RUN addgroup --system app && adduser --system --ingroup app app \
-    && mkdir -p /data /app/documents \
+    && mkdir -p /data/flowdoc-files /app/documents \
     && chown -R app:app /data /app
 USER app
 

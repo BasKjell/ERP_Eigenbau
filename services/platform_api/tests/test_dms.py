@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+import hashlib
+import io
 import json
+import struct
 import threading
 from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 from app.config import settings
 from app.dms import DmsError, DmsService
+from app.dms_files import FileStore, inspect_stl
 
 TAGS = [{"id": 1, "name": "Status/Entwurf", "color": "#999", "document_count": 1},
         {"id": 2, "name": "Status/In Prüfung", "color": "#fa0", "document_count": 0},
@@ -87,10 +92,13 @@ class FakePaperless(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
         user = self._user()
-        FakePaperless.requests.append({"method": "POST", "path": self.path, "user": user, "body": body[:2000]})
+        FakePaperless.requests.append({"method": "POST", "path": self.path, "user": user, "body": body[:2000],
+                                       "full": body})
         if user is None:
             return self._send(401, {})
         if self.path == "/api/documents/post_document/":
+            if b'filename="abgelehnt.pdf"' in body:
+                return self._send(400, {"document": ["File type application/octet-stream not supported"]})
             return self._send(200, "3f2a1b4c-aaaa-bbbb-cccc-1234567890ab")
         if self.path.endswith("/notes/"):
             return self._send(200, [])
@@ -122,9 +130,9 @@ def paperless():  # noqa: ANN201
     DOCUMENTS.update({int(k): v for k, v in snapshot.items()})
 
 
-def service(url: str, mode: str = "oidc", token: str = "") -> DmsService:
+def service(url: str, mode: str = "oidc", token: str = "", store: FileStore | None = None) -> DmsService:
     return DmsService(replace(settings, paperless_base_url=url, auth_mode=mode, paperless_api_token=token,
-                              paperless_username="", paperless_password=""))
+                              paperless_username="", paperless_password=""), file_store=store or FileStore("/nonexistent"))
 
 
 def test_18_search_runs_in_the_name_of_the_person(paperless: str) -> None:
@@ -209,3 +217,66 @@ def test_upload_is_validated_and_delegated(paperless: str) -> None:
     upload = FakePaperless.requests[-1]
     assert upload["user"] == "demo01" and b'name="tags"' in upload["body"]
     assert dms.task({"username": "demo01"}, task["task_id"])["document_id"] == "13"
+
+
+def binary_stl(triangles: int = 2) -> bytes:
+    return b"FLOW test".ljust(80, b" ") + struct.pack("<I", triangles) + b"\x00" * (50 * triangles)
+
+
+def test_stl_goes_to_the_file_store_and_flowdoc_gets_a_cover_sheet(paperless: str, tmp_path: Path) -> None:
+    from pypdf import PdfReader
+
+    store = FileStore(tmp_path / "files")
+    dms = service(paperless, store=store)
+    model = binary_stl()
+    with pytest.raises(DmsError, match="kein gültiges STL"):
+        dms.upload({"username": "demo01"}, b"kein modell" * 20, "teil.stl", "Teil")
+    task = dms.upload({"username": "demo01"}, model, "Halter v2.stl", "Halter", document_type=1)
+    digest = hashlib.sha256(model).hexdigest()
+    assert task["original_file"] == {"sha256": digest, "name": "Halter v2.stl"}
+    stored = tmp_path / "files" / digest[:2] / f"{digest}.stl"
+    assert stored.read_bytes() == model and not stored.stat().st_mode & 0o222, "Ablage ist schreibgeschützt"
+    upload = FakePaperless.requests[-1]
+    assert upload["user"] == "demo01" and b'filename="Halter v2.stl.pdf"' in upload["full"]
+    pdf = upload["full"][upload["full"].index(b"%PDF"):]
+    text = PdfReader(io.BytesIO(pdf)).pages[0].extract_text()
+    assert f"sha256:{digest}" in text and "Originaldatei: Halter v2.stl" in text and "binär" in text
+    again = dms.upload({"username": "demo01"}, model, "Kopie.stl", "Kopie")
+    assert again["original_file"]["sha256"] == digest, "gleicher Inhalt, gleicher Ablageort"
+
+    DOCUMENTS[11]["content"] = f"Begleitblatt\nOriginaldatei: Halter v2.stl\nFLOWDOC-Datei: sha256:{digest}\n"
+    detail = dms.document({"username": "demo01"}, 11)
+    assert detail["original_file"] == {"name": "Halter v2.stl", "sha256": digest}
+    data, content_type = dms.binary({"username": "demo01"}, 11, "original")
+    assert data == model and content_type.startswith("model/stl")
+    with pytest.raises(DmsError) as hidden:
+        dms.binary({"username": "demo02"}, 11, "original")
+    assert hidden.value.status == 404, "ohne Recht am Begleitblatt keine Originaldatei"
+    with pytest.raises(DmsError, match="keine Originaldatei"):
+        dms.binary({"username": "demo01"}, 10, "original")
+    stored.chmod(0o644)
+    stored.write_bytes(model + b"x")
+    with pytest.raises(DmsError, match="beschädigt"):
+        dms.binary({"username": "demo01"}, 11, "original")
+
+
+def test_stl_inspection_accepts_binary_and_ascii() -> None:
+    assert inspect_stl(binary_stl(3)) == {"format": "binär", "triangles": 3}
+    ascii_model = b"solid w\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nendloop\nendfacet\nendsolid w\n"
+    assert inspect_stl(ascii_model)["format"] == "ASCII"
+
+
+def test_flowdoc_rejections_are_explained(paperless: str) -> None:
+    dms = service(paperless)
+    with pytest.raises(DmsError, match="Dateityp wird nicht unterstützt") as error:
+        dms.upload({"username": "demo01"}, b"%PDF-1.4", "abgelehnt.pdf", "X")
+    assert error.value.status == 422
+
+
+def test_task_status_understands_paperless_api_v10(paperless: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    dms = service(paperless)
+    page = {"count": 1, "results": [{"task_id": "1fb6a698-70db", "status": "success",
+                                     "related_document_ids": [19], "result_data": {"document_id": 19}}]}
+    monkeypatch.setattr(dms, "_call", lambda *args, **kwargs: page)
+    task = dms.task({"username": "demo01"}, "1fb6a698-70db")
+    assert task["status"] == "SUCCESS" and task["document_id"] == "19" and "19" in task["result"]

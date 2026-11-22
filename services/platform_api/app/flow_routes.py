@@ -288,11 +288,15 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
         return dms_call(dms.document, person(request), document_id)
 
     @router.get("/api/dms/documents/{document_id}/{kind}", tags=["dms"])
-    def dms_binary(document_id: int, kind: Literal["thumb", "preview", "download"], request: Request) -> Response:
+    def dms_binary(document_id: int, kind: Literal["thumb", "preview", "download", "original"],
+                   request: Request) -> Response:
         data, content_type = dms_call(dms.binary, person(request), document_id, kind)
-        disposition = "attachment" if kind == "download" else "inline"
+        disposition = "attachment" if kind in {"download", "original"} else "inline"
+        filename = f"flowdoc-{document_id}"
+        if kind == "original" and "name=" in content_type:
+            filename = content_type.split("name=", 1)[1]
         return Response(data, media_type=content_type.split(";")[0],
-                        headers={"Content-Disposition": f'{disposition}; filename="flowdoc-{document_id}"',
+                        headers={"Content-Disposition": f'{disposition}; filename="{filename}"',
                                  "Cache-Control": "private, no-store"})
 
     @router.post("/api/dms/upload", tags=["dms"], status_code=202)

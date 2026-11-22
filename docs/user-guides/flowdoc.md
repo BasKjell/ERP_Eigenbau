@@ -33,15 +33,28 @@ speichern oder an Kolleginnen schicken – sie sehen nur, was ihre eigenen Recht
 ## Ablegen
 
 1. **↑ Dokument ablegen** (oben rechts oder Schnellstart im Portal).
-2. Datei hineinziehen oder auswählen (PDF, Bild, Office; höchstens 25 MB).
+2. Datei hineinziehen oder auswählen (PDF, Bild, Office, 3D-Modell STL; höchstens 25 MB).
 3. Optional Titel, Dokumenttyp und Projekt/Bereich wählen; sonst ordnet FLOWDOC nach den
    Ablageregeln automatisch zu.
 4. Nach der Verarbeitung öffnet sich das neue Dokument als **Entwurf**.
+
+### 3D-Modelle (STL)
+
+FLOWDOC (Paperless) kann STL-Dateien nicht selbst verarbeiten. Beim Ablegen passiert deshalb:
+
+- Die STL-Datei wird geprüft (binär oder ASCII) und unverändert im **FLOWDOC-Dateispeicher**
+  abgelegt, schreibgeschützt und unter ihrer SHA-256-Prüfsumme.
+- Im DMS erscheint ein **Begleitblatt** (PDF) mit Titel, Dateiname, Größe, Anzahl Dreiecke und
+  Prüfsumme. Suche, Status, Freigabe und Rechte gelten für dieses Begleitblatt.
+- Im Dokument lädt **Originaldatei herunterladen** die STL-Datei. Das geht nur, wenn man das
+  Begleitblatt sehen darf; die Datei wird dabei erneut gegen die Prüfsumme geprüft.
 
 ## Hinweise für den Betrieb
 
 - Die Kopfzeile links zeigt den Zugriffsmodus: „im Namen von …“ (angemeldet) oder
   „technisches Konto (Demo)“ (lokaler Demo-Modus ohne Anmeldung).
+- Der FLOWDOC-Dateispeicher ist das Docker-Volume `flowdoc-files` (Plattform-API,
+  `/data/flowdoc-files`). Es gehört in die Datensicherung zusammen mit den Paperless-Volumes.
 - Paperless-ngx bleibt für Administration und Ablageregeln unter „FLOWDOC Admin“ erreichbar.
 - Paperless-ngx ist kein revisionssicheres Archiv; Aufbewahrung und GoBD werden gesondert gelöst
   (ADR-007, KI-U-03).

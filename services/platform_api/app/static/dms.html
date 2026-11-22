@@ -65,8 +65,8 @@
     <dialog class="dms-dialog" id="upload-dialog">
       <form method="dialog" id="upload-form">
         <h3>Dokument ablegen</h3>
-        <p class="lead">Die Datei geht direkt an FLOWDOC. Texterkennung, Ablagepfad und Zugriffsrechte setzt das DMS nach seinen Regeln. Neue Dokumente starten als Entwurf.</p>
-        <label class="dms-drop" id="drop-zone"><input type="file" id="upload-file" name="document" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.txt,.docx,.xlsx,.odt" required /><b>Datei hierher ziehen</b><span>oder klicken · PDF, Bild, Office · höchstens 25 MB</span><em id="upload-filename"></em></label>
+        <p class="lead">Die Datei geht direkt an FLOWDOC. Texterkennung, Ablagepfad und Zugriffsrechte setzt das DMS nach seinen Regeln. Neue Dokumente starten als Entwurf. 3D-Modelle (STL) liegen unveränderlich im FLOWDOC-Dateispeicher; im DMS erscheint dazu ein Begleitblatt mit Prüfsumme.</p>
+        <label class="dms-drop" id="drop-zone"><input type="file" id="upload-file" name="document" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.txt,.docx,.xlsx,.odt,.stl" required /><b>Datei hierher ziehen</b><span>oder klicken · PDF, Bild, Office, 3D-Modell (STL) · höchstens 25 MB</span><em id="upload-filename"></em></label>
         <div class="dms-form">
           <label class="wide">Titel<input name="title" maxlength="160" placeholder="aus dem Dateinamen, wenn leer" /></label>
           <label>Dokumenttyp<select name="document_type" id="upload-type"><option value="">automatisch</option></select></label>

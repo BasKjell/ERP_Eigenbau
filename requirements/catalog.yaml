@@ -549,3 +549,20 @@ requirements:
       - Im Demo-Modus lautet access „technisches Konto (Demo)“; ohne Zugang liefert FLOWDOC 503.
     verification:
       - services/platform_api/tests/test_dms.py::test_demo_mode_uses_and_labels_the_technical_account
+
+  - id: REQ-DOC-008
+    title: 3D-Modelle (STL) mit Begleitblatt und Prüfsumme ablegen
+    type: Software
+    priority: Soll
+    status: review
+    source: Fachabnahme A-004 (Fehler 400 beim STL-Upload), Entscheidung Bas 2026-11-22
+    text: Formate, die Paperless-ngx nicht verarbeitet (STL), legt FLOWDOC unveränderlich und inhaltsadressiert (SHA-256) im eigenen Dateispeicher ab und erzeugt dazu ein PDF-Begleitblatt im DMS. Die Originaldatei ist nur über das Begleitblatt und mit dessen Leserecht abrufbar und wird beim Lesen gegen die Prüfsumme geprüft. Ablehnungen von Paperless erscheinen mit Begründung.
+    acceptance_criteria:
+      - Ungültige STL-Dateien werden abgewiesen; gültige liegen schreibgeschützt unter ihrer Prüfsumme, das Begleitblatt enthält Prüfsumme und Dateiname.
+      - Ohne Leserecht am Begleitblatt keine Originaldatei; eine veränderte Ablage wird als beschädigt gemeldet.
+      - Lehnt Paperless eine Datei ab, nennt FLOWDOC den Grund statt nur den HTTP-Status.
+    verification:
+      - services/platform_api/tests/test_dms.py::test_stl_goes_to_the_file_store_and_flowdoc_gets_a_cover_sheet
+      - services/platform_api/tests/test_dms.py::test_stl_inspection_accepts_binary_and_ascii
+      - services/platform_api/tests/test_dms.py::test_flowdoc_rejections_are_explained
+      - services/platform_api/tests/test_dms.py::test_task_status_understands_paperless_api_v10

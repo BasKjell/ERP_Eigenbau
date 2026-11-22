@@ -171,11 +171,12 @@
       <dl class="dms-meta">
         <dt>Erstellt</dt><dd>${esc(doc.created)}</dd><dt>Abgelegt</dt><dd>${esc(doc.added)}</dd>
         <dt>Korrespondent</dt><dd>${esc(doc.correspondent || "–")}</dd><dt>Ablagepfad</dt><dd>${esc(doc.storage_path || "–")}</dd>
-        <dt>Originaldatei</dt><dd>${esc(doc.original_file_name || "–")}</dd><dt>Seiten</dt><dd>${esc(doc.page_count ?? "–")}</dd>
+        <dt>Originaldatei</dt><dd>${esc(doc.original_file ? doc.original_file.name : doc.original_file_name || "–")}</dd>
+        ${doc.original_file ? `<dt>Prüfsumme</dt><dd><code title="SHA-256 der Originaldatei">${esc(doc.original_file.sha256)}</code></dd>` : ""}<dt>Seiten</dt><dd>${esc(doc.page_count ?? "–")}</dd>
         <dt>Projekte/Bereiche</dt><dd>${doc.tags.map((t) => `<span class="dms-tag">${esc(t.name)}</span>`).join(" ") || "–"}</dd>
         ${fields.map((f) => `<dt>Feld ${esc(f.field)}</dt><dd>${esc(f.value)}</dd>`).join("")}
       </dl>
-      <div style="display:flex;gap:6px;margin-top:12px"><a class="dms-btn" href="/api/dms/documents/${encodeURIComponent(doc.id)}/download">Herunterladen</a><a class="dms-btn" href="/api/dms/documents/${encodeURIComponent(doc.id)}/preview" target="_blank" rel="noopener">Vorschau in neuem Tab</a></div>
+      <div style="display:flex;gap:6px;margin-top:12px">${doc.original_file ? `<a class="dms-btn primary" href="/api/dms/documents/${encodeURIComponent(doc.id)}/original">Originaldatei herunterladen (${esc(doc.original_file.name)})</a>` : ""}<a class="dms-btn" href="/api/dms/documents/${encodeURIComponent(doc.id)}/download">${doc.original_file ? "Begleitblatt" : "Herunterladen"}</a><a class="dms-btn" href="/api/dms/documents/${encodeURIComponent(doc.id)}/preview" target="_blank" rel="noopener">Vorschau in neuem Tab</a></div>
       <h3>Notizen</h3><div class="dms-notes">${doc.notes.length ? doc.notes.map((n) => `<div class="dms-note">${esc(n.note)}<small>${esc(n.user || "")} · ${esc(String(n.created || "").slice(0, 16).replace("T", " "))}</small></div>`).join("") : '<small style="color:#66767a">Noch keine Notiz.</small>'}</div>
       <form class="dms-note-form" data-note><input name="note" minlength="2" maxlength="2000" placeholder="Notiz für Prüfung oder Freigabe" required><button class="dms-btn" type="submit">Hinzufügen</button></form>
       ${doc.content ? `<h3>Erkannter Text (Auszug)</h3><div class="dms-ocr">${esc(doc.content)}</div>` : ""}`;
@@ -224,7 +225,9 @@
       const response = await fetch("/api/dms/upload", { method: "POST", body: data });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.detail || `Ablage abgelehnt (${response.status})`);
-      message.textContent = "Übertragen. FLOWDOC erkennt Text und ordnet ab …";
+      message.textContent = body.original_file
+        ? "3D-Modell sicher abgelegt (Prüfsumme gespeichert). FLOWDOC legt das Begleitblatt an …"
+        : "Übertragen. FLOWDOC erkennt Text und ordnet ab …";
       for (let attempt = 0; attempt < 40; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         const task = await api(`/api/dms/tasks/${encodeURIComponent(body.task_id)}`);

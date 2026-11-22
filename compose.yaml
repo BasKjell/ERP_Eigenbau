@@ -101,10 +101,13 @@ services:
       FLOW_AGENTS_API_SECRET: ${FLOW_AGENTS_API_SECRET:-local-agents-api-secret-change-before-network-use}
       FLOW_AGENT_RM_SECRET: ${FLOW_AGENT_RM_SECRET:-local-agent-rm-secret-change-before-network-use}
       PAPERLESS_REMOTE_USER_HEADER: X-Flow-Sso-User
+      # FLOWDOC-Dateispeicher für Formate, die Paperless nicht verarbeitet (STL), siehe app/dms_files.py
+      DMS_FILE_STORE: /data/flowdoc-files
     ports:
       - "${DEMO_API_PORT:-8088}:8080"
     volumes:
       - demo-state:/data
+      - flowdoc-files:/data/flowdoc-files
       - ./output/pdf:/app/documents:ro
       - ./agents:/app/agents:ro
       - ./requirements:/app/requirements:ro
@@ -1097,6 +1100,7 @@ volumes:
   paperless-export:
   paperless-consume:
   paperless-seed-state:
+  flowdoc-files:
   erpnext-db-data-v16:
   erpnext-redis-queue:
   erpnext-sites-v16:
