@@ -336,3 +336,73 @@ def test_model_usage_is_recorded_per_role_and_run(make_engine) -> None:  # noqa:
     assert sum(row["calls"] for row in usage["totals"]) == engine.store.run(run["id"])["model_calls"]
     assert usage["by_run"][0]["auftrag_id"] == "A-001" and usage["by_run"][0]["output_tokens"] > 0
 
+
+
+# -- Eskalation komplexer Aufträge an Codex/Claude (REQ-AGT-021) ------------------------------
+class Worker:
+    """Abo-Worker-Attrappe: antwortet wie der Simulator, meldet sich aber als codex/claude."""
+
+    def __init__(self, name: str, *, fail: bool = False) -> None:
+        from flowagents.providers import SimulatedProvider
+
+        self.name, self.fail, self.inner, self.roles = name, fail, SimulatedProvider(), []
+
+    def generate(self, request):  # noqa: ANN001, ANN201
+        self.roles.append(request.agent.role)
+        if self.fail:
+            raise ProviderError(f"{self.name}: Nutzungslimit erreicht")
+        reply = self.inner.generate(request)
+        return AgentReply(text=reply.text, provider=self.name, model=self.name, output_tokens=reply.output_tokens)
+
+
+ESCALATION = {"enabled": True, "roles": {"entwicklung": "codex", "codepruefung": "claude"},
+              "complex_classes": ["kritisch"], "after_local_failures": 2, "fallback_local": True}
+
+
+def escalating_engine(make_engine, **workers):  # noqa: ANN001, ANN003, ANN201
+    codex, claude = workers.get("codex") or Worker("codex"), workers.get("claude") or Worker("claude")
+    engine = make_engine(providers={"codex": codex, "claude": claude}, escalation=ESCALATION)
+    engine.scopes["komplex"] = {"label": "Komplex", "complexity": "hoch", "paths": ["docs/dms.md"]}
+    return engine, codex, claude
+
+
+def test_complex_scope_is_developed_by_codex_and_reviewed_by_claude(make_engine) -> None:  # noqa: ANN001
+    engine, codex, claude = escalating_engine(make_engine)
+    run = submit(engine, scope="komplex")
+    drive(engine)
+    assert set(codex.roles) == {"entwicklung"} and set(claude.roles) == {"codepruefung"}
+    events = [e for e in engine.store.events(run_id=run["id"]) if e["kind"] == "eskalation"]
+    assert events and "komplex" in events[0]["message"]
+    usage = {row["role"]: row["provider"] for row in engine.overview()["usage"]["totals"]}
+    assert usage["entwicklung"] == "codex" and usage["anforderungen"] == "simulated"
+
+
+def test_simple_or_confidential_work_stays_local(make_engine) -> None:  # noqa: ANN001
+    engine, codex, claude = escalating_engine(make_engine)
+    submit(engine)
+    submit(engine, scope="komplex", data_class="vertraulich", change_class="kritisch")
+    submit(engine, scope="komplex", execution="lokal")
+    drive(engine)
+    assert codex.roles == [] and claude.roles == []
+    with pytest.raises(EngineError, match="nur lokal"):
+        submit(engine, execution="abo", data_class="vertraulich", change_class="kritisch")
+
+
+def test_unavailable_worker_falls_back_to_the_local_model(make_engine) -> None:  # noqa: ANN001
+    engine, codex, _ = escalating_engine(make_engine, codex=Worker("codex", fail=True))
+    run = submit(engine, execution="abo")
+    drive(engine)
+    assert codex.roles == ["entwicklung"]
+    messages = [e["message"] for e in engine.store.events(run_id=run["id"]) if e["kind"] == "eskalation"]
+    assert any("weiter mit dem lokalen Modell" in m for m in messages)
+    assert open_decision(engine, run["id"])["gate"] == "G4"
+
+
+def test_escalation_must_keep_creator_and_reviewer_independent(registry) -> None:  # noqa: ANN001
+    from flowagents.config import ConfigError, _check_escalation
+
+    _check_escalation(registry, {"entwicklung": "codex", "codepruefung": "claude"})
+    with pytest.raises(ConfigError, match="Unabhängigkeit"):
+        _check_escalation(registry, {"entwicklung": "codex", "codepruefung": "codex"})
+    with pytest.raises(ConfigError, match="nur codex oder claude"):
+        _check_escalation(registry, {"entwicklung": "gpt"})

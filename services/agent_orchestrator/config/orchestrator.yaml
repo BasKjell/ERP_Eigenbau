@@ -152,12 +152,20 @@ scopes:
       - services/platform_api/app/static/portal.js
       - services/platform_api/app/static/portal.css
   erp-anbindung:
-    label: FLOWERP Anbindung (ERPNext-Lesen und -Werkzeuge)
+    label: FLOWERP Anbindung (ERPNext-Lesen und -Werkzeuge) – komplex, Codex/Claude
+    complexity: hoch
     paths:
       - services/platform_api/app/erp_read.py
       - services/platform_api/app/erpnext_client.py
       - services/platform_api/app/business_tools.py
       - services/platform_api/tests/test_integrations_unit.py
+  # Zentrale HTTP-Routen der Plattform-API. Zu groß für lokale Modelle; nur mit Codex/Claude.
+  plattform-routen:
+    label: Plattform-API – zentrale Routen (main.py, flow_routes.py) – komplex, Codex/Claude
+    complexity: hoch
+    paths:
+      - services/platform_api/app/main.py
+      - services/platform_api/app/flow_routes.py
   doku-anwender:
     label: Anwenderhilfe FLOWQ, MES, HR, FIN, FLOWSPACE, FLOWWORK
     paths:
@@ -199,8 +207,11 @@ preview:
 # Abo-CLIs (aus Trading_Ai übernommen). Gesperrt, bis Isolation unabhängig geprüft und durch
 # Bas freigegeben ist (AGENTS.md §5). Image nur per Digest.
 container:
-  execution_enabled: false
-  image: ""
+  # Freigegeben am 2026-11-22 durch Bas: Umgebung aus Trading_Ai (Worker-Image, interne Netze,
+  # Egress-Proxys nur zum jeweiligen Anbieter, Abo-Anmeldung in schreibgeschützten Volumes).
+  execution_enabled: true
+  image: trading-orchestrator-worker@sha256:938cc09ff3c15a64fffa7b2f72607f149714166d2c8eb5141d7c011f3f9e5a6d
+  worker_script: /opt/dev_orchestrator_worker.py
   memory: 4g
   cpus: 2
   pids: 128
@@ -212,11 +223,26 @@ container:
     model: gpt-6.2-sol
     effort: medium
     proxy: http://egress-codex:3128
-    network: flow-dev-codex
-    auth_volume: flow-dev-codex-auth
+    network: trading-dev-codex
+    auth_volume: trading-dev-codex-auth
   claude:
     model: claude-opus-5-5
     effort: medium
     proxy: http://egress-claude:3128
-    network: flow-dev-claude
-    auth_volume: flow-dev-claude-auth
+    network: trading-dev-claude
+    auth_volume: trading-dev-claude-auth
+
+# Komplexe Aufträge: Entwicklung durch Codex, Code-Review durch Claude (verschiedene Familien,
+# auch gegenüber qwen/gemma). Komplex = Klasse kritisch, Änderungsbereich „complexity: hoch“,
+# Umsetzung „abo“ im Auftrag oder zwei gescheiterte lokale Versuche desselben Schritts.
+# Vertrauliche Aufträge und Umsetzung „lokal“ bleiben immer auf den lokalen Modellen.
+escalation:
+  enabled: true
+  roles:
+    entwicklung: codex
+    codepruefung: claude
+  complex_classes: [kritisch]
+  after_local_failures: 2
+  fallback_local: true
+  max_scope_chars: 200000
+

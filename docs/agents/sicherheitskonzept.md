@@ -102,11 +102,31 @@ einreicht. Die internen Endpunkte der Plattform-API verlangen ein eigenes Dienst
 
 ## 7. Externe Modelle (Claude, ChatGPT/Codex)
 
-Standard sind ausschließlich lokale Modelle über FLOWGATE. Die Abo-Worker für Claude Code und Codex
-sind übernommen, aber technisch gesperrt (`container.execution_enabled: false`). Freischaltung nur
-nach Prüfung der Isolation (eigenes internes Netz, Egress-Proxy nur zum Anbieter, Anmeldedaten
-schreibgeschützt, frisches Home, kein Repository, keine `.env`) und ausdrücklicher Freigabe. Externe
-Modelle erhalten dann nur die Arbeitsdaten des einen Schritts; die Unabhängigkeitsregel bleibt.
+Standard sind lokale Modelle über FLOWGATE. Seit 2026-11-22 (Freigabe Bas) sind die Abo-Worker
+aus Trading_Ai freigeschaltet (`container.execution_enabled: true`). Sie nutzen dieselbe geprüfte
+Umgebung: Worker-Image nur per Digest, je Anbieter ein internes Docker-Netz (`trading-dev-codex`,
+`trading-dev-claude`) mit Egress-Proxy nur zum eigenen Anbieter, Anmeldedaten schreibgeschützt aus
+eigenem Volume, frisches Home im tmpfs, read-only, `--cap-drop ALL`, kein Repository, keine `.env`.
+
+**Wann extern gearbeitet wird** (`escalation` in `config/orchestrator.yaml`):
+
+| Auslöser | Wirkung |
+|---|---|
+| Änderungsklasse „kritisch“ | Entwicklung → Codex, Code-Review → Claude |
+| Änderungsbereich mit `complexity: hoch` (ERP-Anbindung, Plattform-Routen) | wie oben; Bereich darf bis 200 000 Zeichen groß sein |
+| Umsetzung „Codex/Claude (Abo)“ im Auftrag | wie oben |
+| zwei gescheiterte lokale Versuche desselben Schritts | dieser Schritt → Abo-Worker |
+| Datenklasse „vertraulich“ oder Umsetzung „nur lokal“ | **nie extern** |
+
+- Die Unabhängigkeit bleibt technisch erzwungen: Ersteller und Prüfer eines Artefakts dürfen auch
+  eskaliert nicht dieselbe Modellfamilie nutzen (qwen/gemma/openai/anthropic); der Orchestrator
+  startet sonst nicht.
+- Externe Modelle erhalten nur die Arbeitsdaten des einen Schritts (Auftrag, Anforderungen,
+  Dateien des freigegebenen Bereichs). Sie liefern Text; schreiben, prüfen und übernehmen tut
+  weiterhin nur der Orchestrator in der Sandbox. Alle Gates bleiben menschlich.
+- Ist ein Abo nicht verfügbar (Kontingent, Anmeldung), arbeitet der Schritt lokal weiter und das
+  Ereignis „eskalation“ dokumentiert es. Nach einem Kontingentfehler pausiert der Anbieter 5 Stunden.
+- Jede Eskalation steht im Live-Log und im Token-Dashboard (Anbieter codex/claude je Rolle).
 
 ## 8. Betrieb und Vorfälle
 
@@ -119,7 +139,7 @@ Modelle erhalten dann nur die Arbeitsdaten des einen Schritts; die Unabhängigke
 
 ## 9. Bekannte Lücken (vor Echtdaten zu schließen)
 
-Kein TLS lokal; Demo-Geheimnisse; symmetrische Tokens statt Keycloak-Dienstkonten mit Token
+Kein TLS lokal; Demo-Geheimnisse; Abo-Worker teilen Anmeldung und Netze mit Trading_Ai; symmetrische Tokens statt Keycloak-Dienstkonten mit Token
 Exchange; fälschbarer Remote-User-Header im internen Netz; vorläufige Rollenzuordnung; keine
 Modell-Evaluation je Rolle; kein Paketspiegel und keine SBOM; Vorschau nutzt das technische
 Paperless-Konto. Details und Abnahmestatus: [Sicherheit und Nachweise](sicherheit.md).

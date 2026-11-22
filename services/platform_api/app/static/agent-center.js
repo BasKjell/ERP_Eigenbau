@@ -462,6 +462,7 @@
           <label class="wide">Ausgeschlossen (optional)<input name="exclusions" maxlength="1500" placeholder="z. B. keine Änderung an Rechten"></label>
           <label>Änderungsklasse<select name="change_class"><option value="standard">Standardänderung</option><option value="neue_funktion" selected>Neue Funktion</option><option value="kritisch">Hoher Schutzbedarf / neuer Dienst</option></select></label>
           <label>Datenklasse<select name="data_class"><option value="intern" selected>intern</option><option value="oeffentlich">öffentlich</option><option value="vertraulich">vertraulich</option></select></label>
+          <label>Umsetzung<select name="execution"><option value="automatisch" selected>automatisch (komplex → Codex/Claude)</option><option value="lokal">nur lokale Modelle</option><option value="abo">Codex/Claude (Abo)</option></select></label>
           <label class="wide">Freigegebener Änderungsbereich<select name="scope" required data-scopes><option value="">wird geladen …</option></select></label>
           <input type="hidden" name="draft_id" value="">
         </div>
@@ -492,7 +493,7 @@
         this.$("[data-run-msg]").className = "msg error";
       }
       if (draft) {
-        for (const name of ["title", "goal", "user_group", "behavior", "success_example", "exclusions", "project", "change_class", "data_class"]) {
+        for (const name of ["title", "goal", "user_group", "behavior", "success_example", "exclusions", "project", "change_class", "data_class", "execution"]) {
           if (draft[name] && form.elements[name]) form.elements[name].value = draft[name];
         }
         if (draft.scope && [...select.options].some((o) => o.value === draft.scope)) select.value = draft.scope;

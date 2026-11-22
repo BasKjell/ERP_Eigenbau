@@ -51,6 +51,7 @@ class Engine:
         adoption: Adoption | None = None,
         preview: Preview | None = None,
         budgets: dict[str, dict[str, int]] | None = None,
+        escalation: dict[str, Any] | None = None,
     ) -> None:
         missing = {profile for profile in {a.model_profile for a in registry.agents.values()}
                    if profile_providers.get(profile) not in providers}
@@ -61,6 +62,7 @@ class Engine:
         self.demo_mode = demo_mode
         self.scopes = scopes or {}
         self.adoption, self.preview, self.budgets = adoption, preview, budgets or {}
+        self.escalation = escalation or {}
         if self.sandbox is not None:
             for scope in self.scopes.values():
                 for path in scope.get("paths", []):
@@ -90,7 +92,7 @@ class Engine:
 
     def _validated_auftrag(self, values: dict[str, Any], user: dict[str, Any]) -> dict[str, Any]:
         allowed = {"title", "goal", "user_group", "behavior", "exclusions", "success_example", "data_class",
-                   "change_class", "scope", "project"}
+                   "change_class", "scope", "project", "execution"}
         unknown = set(values) - allowed
         if unknown:
             raise EngineError(f"unbekannte Auftragsfelder {sorted(unknown)}")
@@ -119,8 +121,15 @@ class Engine:
                 size = sum(len(text or "") for text in self.sandbox.originals(self.sandbox.base_commit(), checked).values())
             except SandboxError as exc:
                 raise EngineError(f"Änderungsbereich nicht lesbar: {exc}") from None
-            if size > 70_000:
-                raise EngineError("Änderungsbereich ist zu groß für die lokalen Modelle; bitte einen kleineren Bereich wählen")
+            limit = self._scope_limit(scope, str(values.get("execution") or "automatisch"), data_class)
+            if size > limit:
+                raise EngineError("Änderungsbereich ist zu groß für die lokalen Modelle; bitte einen kleineren "
+                                  "Bereich wählen oder die Umsetzung durch Codex/Claude zulassen")
+        execution = str(values.get("execution") or "automatisch")
+        if execution not in {"automatisch", "lokal", "abo"}:
+            raise EngineError("Umsetzung muss automatisch, lokal oder abo sein")
+        if execution == "abo" and data_class == "vertraulich":
+            raise EngineError("vertrauliche Daten werden nur lokal verarbeitet")
         project = str(values.get("project") or "FLOW-PLATFORM")
         if not re.fullmatch(r"[A-Z][A-Z0-9-]{2,30}", project):
             raise EngineError("Projektkürzel ungültig")
@@ -137,6 +146,7 @@ class Engine:
             "scope_label": str(scope.get("label", scope_id)),
             "paths": sorted(set(checked)),
             "project": project,
+            "execution": execution,
             "owner": _person(user)["name"],
         }
 
@@ -193,7 +203,11 @@ class Engine:
         if run["model_calls"] >= budget["max_model_calls"] or run["output_tokens"] >= budget["max_output_tokens"]:
             self._block(run, "Laufbudget erschöpft", "blockade", step_id=step.id)
             return
-        provider = self.providers[self.profile_providers[agent.model_profile]]
+        local = self.providers[self.profile_providers[agent.model_profile]]
+        provider, why = self._provider_for(run, step, agent)
+        if provider is not local:
+            self.store.event(run["id"], "eskalation", "orchestrator", agent.role,
+                             f"{agent.name} arbeitet mit {provider.name}: {why}", {"provider": provider.name})
         try:
             context = self._context(run, step, agent)
         except (SandboxError, OSError) as exc:
@@ -211,8 +225,18 @@ class Engine:
             try:
                 reply: AgentReply = provider.generate(request)
             except ProviderError as exc:
-                error = str(exc)
-                break
+                if provider is local or not self.escalation.get("fallback_local", True):
+                    error = str(exc)
+                    break
+                self.store.event(run["id"], "eskalation", "orchestrator", agent.role,
+                                 f"{provider.name} nicht verfügbar ({exc}); weiter mit dem lokalen Modell",
+                                 {"provider": local.name})
+                provider = local
+                try:
+                    reply = provider.generate(request)
+                except ProviderError as again:
+                    error = str(again)
+                    break
             run = self._count(run, reply)
             self.store.record_usage(run["id"], step.id, agent.role, reply.provider, reply.model,
                                     reply.input_tokens, reply.output_tokens, reply.seconds)
@@ -250,6 +274,41 @@ class Engine:
                              {"status": handoff.status, "artifact": stored["kind"], "version": stored["version"],
                               "findings": len(handoff.findings)})
             self._route(current, step, agent, handoff)
+
+    def _scope_limit(self, scope: dict[str, Any], execution: str, data_class: str) -> int:
+        """70k Zeichen für lokale Modelle; komplexe Bereiche mit Abo-Worker dürfen größer sein."""
+        esc = self.escalation
+        external = (esc.get("enabled") and data_class != "vertraulich" and execution != "lokal"
+                    and (execution == "abo" or scope.get("complexity") == "hoch"))
+        return int(esc.get("max_scope_chars", 200_000)) if external else 70_000
+
+    def _provider_for(self, run: dict[str, Any], step: Step, agent: Agent) -> tuple[Provider, str]:
+        """Komplexe Aufträge an Codex/Claude (Abo-Worker), sonst lokal.
+
+        Komplex heißt: Klasse in ``complex_classes``, Änderungsbereich mit ``complexity: hoch``,
+        ausdrücklich „abo“ im Auftrag oder ``after_local_failures`` gescheiterte lokale Versuche
+        dieses Schritts. Vertrauliche Daten verlassen den Rechner nie; „lokal“ im Auftrag
+        schließt die Eskalation aus.
+        """
+        local = self.providers[self.profile_providers[agent.model_profile]]
+        esc = self.escalation
+        target = (esc.get("roles") or {}).get(agent.role)
+        if not esc.get("enabled") or not target or target not in self.providers:
+            return local, ""
+        auftrag = run["auftrag"]
+        if auftrag.get("data_class") == "vertraulich" or auftrag.get("execution") == "lokal":
+            return local, ""
+        reasons = []
+        if auftrag.get("execution") == "abo":
+            reasons.append("im Auftrag so festgelegt")
+        if run["change_class"] in (esc.get("complex_classes") or []):
+            reasons.append(f"Änderungsklasse {run['change_class']}")
+        if (self.scopes.get(str(auftrag.get("scope", ""))) or {}).get("complexity") == "hoch":
+            reasons.append(f"Änderungsbereich {auftrag.get('scope')} ist als komplex eingestuft")
+        limit = int(esc.get("after_local_failures", 0) or 0)
+        if limit and self.store.failed_attempts(run["id"], step.id, local.name) >= limit:
+            reasons.append(f"{limit} lokale Versuche gescheitert")
+        return (self.providers[target], "; ".join(reasons)) if reasons else (local, "")
 
     def _budget(self, run: dict[str, Any]) -> dict[str, int]:
         """Laufbudget: Ablauf, ggf. je Klasse überschrieben, plus vom Tech Lead gewährte Nachschläge."""
@@ -367,6 +426,9 @@ class Engine:
         ]
         if agent.role == "entwicklung":
             lines.append("Freigegebene Pfade: " + (", ".join(context.get("allowed_paths") or []) or "keine"))
+        if agent.role in {"entwicklung", "planung", "architektur"}:
+            lines.append("Braucht die Änderung Dateien außerhalb der freigegebenen Pfade, setze status "
+                         "entscheidung_offen und nenne in questions genau diese Dateien – liefere keine Teillösung.")
         if context.get("findings_to_fix"):
             lines.append("Es liegen Befunde vor, die du in dieser Runde beheben musst (siehe findings_to_fix).")
         lines.append(_schema_hint(agent.role, step.kind))

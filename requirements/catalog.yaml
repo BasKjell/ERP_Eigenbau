@@ -307,6 +307,23 @@ requirements:
       - services/agent_orchestrator/tests/test_boundaries.py::test_03_gateway_uses_role_key_and_profile_alias_only
       - services/platform_api/tests/test_flow_agents.py::test_agent_token_usage_is_exported_as_prometheus_metrics
 
+  - id: REQ-AGT-021
+    title: Komplexe Änderungen durch Codex/Claude, einfache lokal
+    type: System
+    priority: Muss
+    status: review
+    source: Auftrag Bas 2026-11-22 (Backend lokal ändern, komplexe Änderungen durch Codex oder Claude)
+    text: Komplexe Aufträge (Klasse kritisch, Änderungsbereich mit hoher Komplexität, Umsetzung „Abo“ oder wiederholtes Scheitern lokal) entwickelt Codex und prüft Claude in isolierten Workern; alles andere bleibt lokal. Vertrauliche Aufträge verlassen den Rechner nie, und Ersteller und Prüfer gehören auch eskaliert zu verschiedenen Modellfamilien.
+    acceptance_criteria:
+      - Ein komplexer Bereich wird von Codex entwickelt und von Claude geprüft; einfache, lokale oder vertrauliche Aufträge nutzen keinen Abo-Worker.
+      - Ist ein Abo-Worker nicht verfügbar, arbeitet der Schritt lokal weiter und das ist protokolliert.
+      - Eine Eskalation, die Ersteller und Prüfer in dieselbe Modellfamilie legt, verhindert den Start.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_complex_scope_is_developed_by_codex_and_reviewed_by_claude
+      - services/agent_orchestrator/tests/test_engine.py::test_simple_or_confidential_work_stays_local
+      - services/agent_orchestrator/tests/test_engine.py::test_unavailable_worker_falls_back_to_the_local_model
+      - services/agent_orchestrator/tests/test_engine.py::test_escalation_must_keep_creator_and_reviewer_independent
+
   # --- Landingpage / Agentenzentrale -------------------------------------------------------------
   - id: REQ-PRT-001
     title: Landingpage zeigt, was die Agenten gerade tun

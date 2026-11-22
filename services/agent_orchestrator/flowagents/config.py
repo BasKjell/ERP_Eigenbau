@@ -109,12 +109,16 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
             timeout=float(gateway.get("timeout_seconds", 900)), no_think=bool(gateway.get("no_think", True)),
         )
     container = settings.get("container") or {"execution_enabled": False}
-    if used & {"codex", "claude"}:
+    escalation = dict(settings.get("escalation") or {})
+    escalation_roles = {str(k): str(v) for k, v in (escalation.get("roles") or {}).items()}
+    _check_escalation(registry, escalation_roles)
+    workers = (used | (set(escalation_roles.values()) if escalation.get("enabled") else set())) & {"codex", "claude"}
+    if workers:
         try:
             validate_settings(container)
         except ValueError as exc:
             raise ConfigError(str(exc)) from None
-        for name in used & {"codex", "claude"}:
+        for name in workers:
             providers[name] = ContainerProvider(name, container)
 
     rm_secret = _secret(settings, "rm_secret_env", f"local-agent-rm-secret-{DEMO_SECRET_HINT}")
@@ -148,7 +152,8 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
     budgets = {name: {k: int(v) for k, v in spec.items()} for name, spec in (settings.get("budgets") or {}).items()}
     engine = Engine(registry, store, providers, profile_providers, rm, sandbox,
                     scopes=dict(settings.get("scopes") or {}), demo_mode=bool(settings.get("demo_mode")),
-                    adoption=adoption, preview=preview, budgets=budgets)
+                    adoption=adoption, preview=preview, budgets=budgets,
+                    escalation={**escalation, "roles": escalation_roles})
     listen = str(settings.get("listen", "127.0.0.1:8095"))
     host, _, port = listen.rpartition(":")
     api_secret = _secret(settings, "api_secret_env", f"local-agents-api-secret-{DEMO_SECRET_HINT}")
@@ -157,3 +162,25 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
         sync = PlatformSync(engine, str(settings["platform_url"]), api_secret)
     return Runtime(engine, store, settings, api_secret, host or "127.0.0.1", int(port),
                    float(settings.get("poll_seconds", 3)), sync)
+
+
+WORKER_FAMILY = {"codex": "openai", "claude": "anthropic"}
+
+
+def _check_escalation(registry: Any, roles: dict[str, str]) -> None:
+    """Auch eskaliert gilt: Ersteller und Prüfer eines Artefakts gehören zu verschiedenen Modellfamilien."""
+    for role, worker in roles.items():
+        if worker not in WORKER_FAMILY:
+            raise ConfigError(f"escalation.roles.{role}: nur codex oder claude")
+        if role not in registry.agents:
+            raise ConfigError(f"escalation.roles.{role}: unbekannte Rolle")
+
+    def family(role: str) -> set[str]:
+        local = registry.agents[role].family.casefold()
+        return {local, WORKER_FAMILY[roles[role]]} if role in roles else {local}
+
+    for author in registry.agents.values():
+        reviewer = author.reviewed_by
+        if reviewer and reviewer in registry.agents and family(author.role) & family(reviewer):
+            raise ConfigError(f"Eskalation verletzt die Unabhängigkeit: {author.role} und "
+                              f"{reviewer} könnten dieselbe Modellfamilie nutzen")

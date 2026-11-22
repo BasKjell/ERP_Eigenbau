@@ -394,3 +394,12 @@ class Store:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def failed_attempts(self, run_id: str, step_id: str, provider: str) -> int:
+        """Gescheiterte (nicht unterbrochene) Versuche eines Schritts mit einem Provider."""
+        with self._lock:
+            row = self.db.execute(
+                "SELECT COUNT(*) FROM steps WHERE run_id=? AND step_id=? AND provider=? AND status='abgebrochen'",
+                (run_id, step_id, provider),
+            ).fetchone()
+        return int(row[0])
+

@@ -58,6 +58,8 @@ def validate_settings(settings: dict[str, Any]) -> None:
         for key in ("network", "auth_volume"):
             if accounts["codex"][key] == accounts["claude"][key]:
                 raise ValueError(f"Codex und Claude brauchen getrennte {key}")
+    if not str(settings.get("worker_script", "/opt/dev_orchestrator_worker.py")).startswith("/opt/"):
+        raise ValueError("container.worker_script muss im Image unter /opt liegen")
     if settings["execution_enabled"] and not IMAGE.fullmatch(str(settings.get("image", ""))):
         raise ValueError("Ausführung braucht ein unveränderliches Worker-Image (…@sha256:…)")
 
@@ -103,7 +105,10 @@ class ContainerProvider:
             cli = ["claude", "-p", "--model", self.account["model"], "--effort", effort, "--output-format", "json",
                    "--permission-mode", "dontAsk", "--setting-sources", "", "--tools", "Read", "--allowedTools", "Read",
                    "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--no-session-persistence"]
-        argv = ["python", "/opt/flow_agents_worker.py", self.name, str(self.settings.get("output_bytes", 2_000_000)), *cli]
+        # Worker-Einstieg des Trading-Images: Provider, Ausgabelimit, Dateiliste (null = nur Text), CLI.
+        script = str(self.settings.get("worker_script", "/opt/dev_orchestrator_worker.py"))
+        argv = ["python", script, self.name, str(self.settings.get("output_bytes", 2_000_000)), "null", *cli]
+        started = time.monotonic()
         code, output = self._docker(argv, prompt)
         if code:
             raise ProviderError(f"{self.name}: isolierter Worker oder Abo-Anmeldung fehlgeschlagen")
@@ -120,7 +125,8 @@ class ContainerProvider:
         text = _final_text(self.name, events)
         if not text.strip():
             raise ProviderError(f"{self.name}: keine Antwort")
-        return AgentReply(text=text, provider=self.name, model=self.account["model"], output_tokens=len(text) // 4)
+        return AgentReply(text=text, provider=self.name, model=self.account["model"], output_tokens=len(text) // 4,
+                          input_tokens=len(prompt) // 4, seconds=round(time.monotonic() - started, 2))
 
     def docker_args(self, name: str) -> list[str]:
         cfg, account = self.settings, self.account

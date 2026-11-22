@@ -80,19 +80,20 @@ ollama create flow-qwen3-coder-32k -f deployment/ollama/flow-coder.Modelfile
 
 Prüfen mit `ollama ps`: Spalte PROCESSOR muss „100% GPU“ zeigen.
 
-## Abo-Worker (Codex/Claude) – gesperrt
+## Abo-Worker (Codex/Claude) für komplexe Änderungen
 
-Übernommen aus `Trading_Ai` (T-020/T-025/T-027): isolierte Container, read-only, `cap-drop ALL`,
-eigenes internes Netz mit Egress-Proxy je Anbieter, Anmeldedaten nur aus schreibgeschütztem Volume,
-frisches Home im tmpfs. Aktivierung erst nach unabhängiger Prüfung und ausdrücklicher Freigabe:
+Freigeschaltet mit der Umgebung aus Trading_Ai (Details und Regeln: Sicherheitskonzept §7).
+Voraussetzungen, einmal je Rechner:
 
-1. Worker-Image aus `services/agent_orchestrator/worker.Dockerfile` mit geprüften CLI-Versionen bauen,
-   Digest eintragen (`container.image`).
-2. Netze `flow-dev-codex`/`flow-dev-claude` und Egress-Proxys nach dem Muster
-   `orchestrator-pilot-egress.yaml` aus dem Trading-Pilot anlegen und mit den Verify-Proben prüfen.
-3. Volumes `flow-dev-codex-auth`/`flow-dev-claude-auth` mit der Container-UID anmelden.
-4. `container.execution_enabled: true` und ein Modellprofil auf `codex` oder `claude` setzen.
-   Bewährte Aufteilung: Claude erstellt, Codex prüft (oder umgekehrt) – nie dieselbe Familie.
+die Egress-Proxys des Trading-Pilots laufen (`orchestrator-pilot-egress.yaml` aus dem
+Trading_Ai-Pilot, `docker compose -f <pfad>/orchestrator-pilot-egress.yaml up -d`).
+
+- Die Abo-Anmeldung liegt in den Volumes `trading-dev-codex-auth` und `trading-dev-claude-auth`.
+- Komplex sind: Klasse „kritisch“, Änderungsbereiche „ERP-Anbindung“ und „Plattform-API – zentrale
+  Routen“, Umsetzung „Codex/Claude (Abo)“ im Auftrag oder zwei gescheiterte lokale Versuche.
+- Im Auftragsformular steuert **Umsetzung** das je Auftrag: automatisch, nur lokal, Codex/Claude.
+- Abschalten: `escalation.enabled: false` (nur Weiterleitung) oder `container.execution_enabled: false`
+  (Worker komplett gesperrt), danach `scripts/flow_agents.sh restart`.
 
 ## FLOWDOC mit der lokalen KI weiterentwickeln
 

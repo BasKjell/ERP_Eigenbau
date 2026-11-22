@@ -35,6 +35,7 @@ class AgentRunCreate(BaseModel):
     change_class: Literal["standard", "neue_funktion", "kritisch"] = "neue_funktion"
     scope: str = Field(min_length=2, max_length=40)
     project: str = Field(default="FLOW-PLATFORM", pattern=r"^[A-Z][A-Z0-9-]{2,30}$")
+    execution: Literal["automatisch", "lokal", "abo"] = "automatisch"
     draft_id: str = Field(default="", max_length=20, pattern=r"^(VOR-[0-9A-F]{6})?$")
 
 
