@@ -173,6 +173,11 @@ def test_detail_preview_and_hidden_documents(paperless: str) -> None:
     DOCUMENTS[11]["tags"] = [1, 4, 99]  # 99: Tag ohne Leserecht
     detail = dms.document({"username": "demo01"}, 11)
     assert [t["name"] for t in detail["tags"]] == ["Projekt/KOM-2027-4711"]
+    TAGS[3]["color"] = "red;background:url(https://example.invalid)"
+    try:
+        assert dms.metadata({"username": "demo01"})["tags"][3]["color"] is None
+    finally:
+        TAGS[3]["color"] = "#00f"
     assert detail["status"] == "Status/Entwurf" and detail["transitions"] == ["pruefen"]
     assert detail["notes"][0]["note"] == "Geprüft" and detail["user_can_change"] is True
     data, content_type = dms.binary({"username": "demo01"}, 11, "preview")

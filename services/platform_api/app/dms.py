@@ -103,7 +103,7 @@ class DmsService:
             payload = self._call("GET", path, person, params={"page_size": 500, "ordering": "name"})
             result[key] = [
                 {"id": row["id"], "name": row["name"], "count": row.get("document_count", 0),
-                 **({"color": row.get("color")} if key == "tags" else {})}
+                 **({"color": _color(row.get("color"))} if key == "tags" else {})}
                 for row in (payload or {}).get("results", [])
             ]
         return result
@@ -250,3 +250,10 @@ class DmsService:
             "mime_type": row.get("mime_type"),
             "highlight": str(hit.get("highlights") or "")[:400],
         }
+
+
+def _color(value: Any) -> str | None:
+    """Nur echte Hex-Farben gelangen in style-Attribute der Oberfläche."""
+    text = str(value or "")
+    return text if re.fullmatch(r"#[0-9A-Fa-f]{3,8}", text) else None
+
