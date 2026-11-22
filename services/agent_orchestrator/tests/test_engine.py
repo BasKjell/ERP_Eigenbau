@@ -9,6 +9,7 @@ import pytest
 
 from flowagents.engine import EngineError
 from flowagents.providers import AgentReply, ProviderError
+from flowagents.sandbox import SandboxError
 
 from .conftest import KEY_USER, MANAGEMENT, NOBODY, PO, RELEASE, TECH_LEAD, auftrag, drive, open_decision
 
@@ -495,3 +496,31 @@ def test_g4_runs_click_paths_against_the_preview_and_attaches_the_result(make_en
     assert decision["gate"] == "G4" and decision["context"]["ui_check"]["passed"] == 1
     assert ui.seen[0] == ("net", "flow-agents-preview") and ui.seen[1][1][0]["steps"][0]["path"] == "/dms"
     assert engine.store.latest_artifact(run["id"], "ui_pruefung")["content"]["total"] == 1
+
+
+# -- Referenzdateien je Änderungsbereich (REQ-AGT-023) ---------------------------------------------
+def test_reference_files_are_readable_but_not_writable(make_engine, git_repo) -> None:  # noqa: ANN001
+    import subprocess
+
+    (git_repo / "docs" / "prozess.md").write_text("# Wareneingang\nWE bucht, QS prüft.\n")
+    subprocess.run(["git", "add", "-A"], cwd=git_repo, check=True)
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "ref"],
+                   cwd=git_repo, check=True)
+    engine = make_engine()
+    engine.scopes["prozess"] = {"label": "Prozess", "paths": ["docs/dms.md"], "reads": ["docs/prozess.md"]}
+    run = submit(engine, scope="prozess")
+    assert run["auftrag"]["reference_paths"] == ["docs/prozess.md"]
+    seen = {}
+    original = engine._render
+
+    def spy(run_, step, agent, context):  # noqa: ANN001, ANN202
+        seen[agent.role] = context
+        return original(run_, step, agent, context)
+
+    engine._render = spy
+    drive(engine)
+    assert "WE bucht" in seen["entwicklung"]["reference_files"]["docs/prozess.md"]
+    assert seen["entwicklung"]["allowed_paths"] == ["docs/dms.md"]
+    assert "reference_files" not in seen["geschaeftsfuehrung"]
+    with pytest.raises(SandboxError, match="außerhalb"):
+        engine.sandbox.apply("RUN-X", engine.sandbox.base_commit(), ["docs/dms.md"], {"docs/prozess.md": "x"})

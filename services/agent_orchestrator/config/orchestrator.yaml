@@ -169,6 +169,21 @@ scopes:
       - docs/agents/betrieb.md
       - docs/agents/modellbewertung.md
       - docs/user-guides/flowdoc.md
+  # Geschäftsprozesse im Wiki (Diagramme als Mermaid, Zuständigkeiten je Rolle). Die Referenzen
+  # liefern Fachwissen aus ERP, Lager und Qualität und werden nur gelesen.
+  prozess-einkauf-lager-qm:
+    label: Wiki – Prozesse Einkauf, Wareneingang, Lager, Qualität
+    paths:
+      - docs/processes/order-to-cash/goods-receipt.md
+      - docs/processes/order-to-cash/procurement.md
+      - docs/processes/order-to-cash/quality.md
+      - docs/processes/order-to-cash/responsibilities.md
+    reads:
+      - docs/processes/order-to-cash/overview.md
+      - docs/processes/order-to-cash/projects-warehouses.md
+      - docs/tools/user/erpnext.md
+      - docs/user-guides/quality.md
+      - docs/tools/user/paperless.md
   # Zentrale HTTP-Routen der Plattform-API. Zu groß für lokale Modelle; nur mit Codex/Claude.
   plattform-routen:
     label: Plattform-API – zentrale Routen (main.py, flow_routes.py) – komplex, Codex/Claude
@@ -262,4 +277,7 @@ ui_check:
   enabled: true
   image: flow-agents-ui-runner:1
   timeout_seconds: 240
+  # Die Vorschau nutzt noch das echte Paperless (technisches Konto). Bis es eine eigene
+  # Demo-Instanz gibt, blockiert der Prüfbrowser alle schreibenden Anfragen (POST/PUT/PATCH/DELETE).
+  allow_writes: false
 

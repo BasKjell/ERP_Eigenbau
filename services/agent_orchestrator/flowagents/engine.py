@@ -69,7 +69,7 @@ class Engine:
         self.ui_runner = ui_runner
         if self.sandbox is not None:
             for scope in self.scopes.values():
-                for path in scope.get("paths", []):
+                for path in [*scope.get("paths", []), *scope.get("reads", [])]:
                     validate_path(path, self.sandbox.allowed_prefixes)  # fail closed beim Start
         self.lock = threading.RLock()
 
@@ -120,9 +120,11 @@ class Engine:
         if scope is None:
             raise EngineError("Änderungsbereich (scope) fehlt oder ist nicht freigegeben")
         checked = list(scope.get("paths", []))
+        reads = [path for path in scope.get("reads", []) if path not in checked]
         if self.sandbox is not None and checked:
             try:
-                size = sum(len(text or "") for text in self.sandbox.originals(self.sandbox.base_commit(), checked).values())
+                size = sum(len(text or "") for text in
+                           self.sandbox.originals(self.sandbox.base_commit(), [*checked, *reads]).values())
             except SandboxError as exc:
                 raise EngineError(f"Änderungsbereich nicht lesbar: {exc}") from None
             limit = self._scope_limit(scope, str(values.get("execution") or "automatisch"), data_class)
@@ -149,6 +151,7 @@ class Engine:
             "scope": scope_id,
             "scope_label": str(scope.get("label", scope_id)),
             "paths": sorted(set(checked)),
+            "reference_paths": sorted(set(reads)),
             "project": project,
             "execution": execution,
             "owner": _person(user)["name"],
@@ -408,6 +411,10 @@ class Engine:
         pending = (run["corrections"].get("pending") or {}).get(step.id)
         if pending:
             context["findings_to_fix"] = pending
+        references = list(run["auftrag"].get("reference_paths") or [])
+        if references and self.sandbox is not None and agent.role in REFERENCE_READERS:
+            # Nur lesen: fachlicher Hintergrund (z. B. Prozessbeschreibungen), nie Änderungsziel.
+            context["reference_files"] = self.sandbox.originals(self.sandbox.base_commit(), references)
         if agent.role == "entwicklung":
             paths = list(run["auftrag"].get("paths") or [])
             context["allowed_paths"] = paths
@@ -416,7 +423,12 @@ class Engine:
                 context["base_commit"] = base
                 context["files"] = self.sandbox.originals(base, paths)
                 # ~20k Token Eingabe plus 16k Token Ausgabe passen in das 40k-Kontextfenster der lokalen Modelle.
-                if sum(len(text or "") for text in context["files"].values()) > 70_000:
+                auftrag = run["auftrag"]
+                limit = self._scope_limit(self.scopes.get(str(auftrag.get("scope", ""))) or {},
+                                          str(auftrag.get("execution") or "automatisch"),
+                                          str(auftrag.get("data_class") or "intern"))
+                if sum(len(text or "") for text in [*context["files"].values(),
+                                                     *(context.get("reference_files") or {}).values()]) > limit:
                     raise SandboxError("freigegebene Dateien sind zu groß für den Modellkontext")
         return context
 
@@ -1099,6 +1111,10 @@ class Engine:
             "manifest_gaps": self.verify_manifest(run_id),
         }
 
+
+# Rollen, die Referenzdateien eines Änderungsbereichs lesen (fachlicher Hintergrund, keine Implementierung).
+REFERENCE_READERS = {"anforderungen", "anforderungspruefung", "architektur", "entwicklung", "dokumentation",
+                     "akzeptanztest", "codepruefung"}
 
 UI_HINT = (
     'Wenn ein Testfall über die Oberfläche prüfbar ist, ergänze optional "ui": einen Klickpfad, den der '

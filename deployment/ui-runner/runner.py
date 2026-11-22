@@ -98,15 +98,27 @@ def main() -> int:
         for scenario in job["scenarios"]:
             context = browser.new_context(viewport={"width": 1280, "height": 800}, locale="de-DE")
 
-            def guard(route, request):  # noqa: ANN001, ANN202
+            blocked: list[str] = []
+
+            def guard(route, request, blocked=blocked):  # noqa: ANN001, ANN202
                 target = urlparse(request.url)
-                if (target.scheme, target.netloc) == (origin.scheme, origin.netloc) or target.scheme == "data":
-                    return route.continue_()
-                return route.abort()
+                same = (target.scheme, target.netloc) == (origin.scheme, origin.netloc) or target.scheme == "data"
+                if not same:
+                    return route.abort()
+                if request.method not in {"GET", "HEAD", "OPTIONS"} and not job.get("allow_writes"):
+                    # Die Vorschau spricht mit dem echten Paperless: Schreiben bleibt gesperrt.
+                    blocked.append(f"{request.method} {target.path}")
+                    return route.fulfill(status=423, content_type="application/json",
+                                         body='{"detail":"Klickprüfung: Schreibzugriff in der Vorschau gesperrt"}')
+                return route.continue_()
 
             context.route("**/*", guard)
             page = context.new_page()
-            report.append(run_scenario(page, base, scenario, files))
+            result = run_scenario(page, base, scenario, files)
+            if blocked:
+                result["steps"].append({"do": "hinweis", "ok": True,
+                                        "note": "Schreibzugriffe gesperrt: " + ", ".join(sorted(set(blocked)))[:180]})
+            report.append(result)
             context.close()
         browser.close()
     print(json.dumps({"scenarios": report}))

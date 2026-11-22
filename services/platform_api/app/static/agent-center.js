@@ -139,7 +139,7 @@ const PROJECTS = ["FLOW-DMS", "FLOW-PLATFORM", "FLOW-PORTAL", "FLOW-AGENTS", "FL
   "FLOW-MES", "FLOW-QM", "FLOW-WORK", "FLOW-SPACE", "FLOW-DOCS"];
 const SCOPE_PROJECTS = { dms: "FLOW-DMS", portal: "FLOW-PORTAL", erp: "FLOW-ERP", hr: "FLOW-HR", finance: "FLOW-FIN",
   mes: "FLOW-MES", flowq: "FLOW-QM", work: "FLOW-WORK", desksharing: "FLOW-SPACE", doku: "FLOW-DOCS",
-  plattform: "FLOW-PLATFORM", agenten: "FLOW-AGENTS" };
+  plattform: "FLOW-PLATFORM", agenten: "FLOW-AGENTS", prozess: "FLOW-PROZESSE" };
 const FIELD_LABELS = { title: "Titel", goal: "Zweck", user_group: "Nutzergruppe", behavior: "Gewünschtes Verhalten",
   success_example: "Erfolgsbeispiel", exclusions: "Ausgeschlossen", project: "Projekt", scope: "Änderungsbereich",
   change_class: "Änderungsklasse", data_class: "Datenklasse", execution: "Umsetzung" };

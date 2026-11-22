@@ -339,6 +339,18 @@ requirements:
       - services/agent_orchestrator/tests/test_engine.py::test_acceptance_contract_rejects_an_invalid_click_path
       - services/agent_orchestrator/tests/test_engine.py::test_g4_runs_click_paths_against_the_preview_and_attaches_the_result
 
+  - id: REQ-AGT-023
+    title: Geschäftsprozesse im Wiki durch Agenten dokumentieren
+    type: System
+    priority: Soll
+    status: review
+    source: Auftrag Bas 2026-11-22 (Wareneingang als Diagramm, wer pflegt was)
+    text: Ein Änderungsbereich kann Referenzdateien nennen, die Agenten nur lesen (fachlicher Hintergrund aus ERP, Lager, Qualität). So können Agenten Prozessseiten im Wiki mit Mermaid-Diagrammen und Zuständigkeiten erstellen, ohne die Referenzen zu ändern.
+    acceptance_criteria:
+      - Referenzdateien erscheinen im Kontext der fachlichen Rollen, nicht beim Geschäftsführungs-Agenten, und Änderungen daran weist die Sandbox ab.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_reference_files_are_readable_but_not_writable
+
   # --- Landingpage / Agentenzentrale -------------------------------------------------------------
   - id: REQ-PRT-001
     title: Landingpage zeigt, was die Agenten gerade tun

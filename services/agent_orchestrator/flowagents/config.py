@@ -154,7 +154,8 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
     ui_settings = settings.get("ui_check") or {}
     if preview is not None and ui_settings.get("enabled", False):
         ui_runner = UiRunner(image=str(ui_settings.get("image", "flow-agents-ui-runner:1")),
-                             timeout_seconds=int(ui_settings.get("timeout_seconds", 240)))
+                             timeout_seconds=int(ui_settings.get("timeout_seconds", 240)),
+                             allow_writes=bool(ui_settings.get("allow_writes", False)))
     budgets = {name: {k: int(v) for k, v in spec.items()} for name, spec in (settings.get("budgets") or {}).items()}
     engine = Engine(registry, store, providers, profile_providers, rm, sandbox,
                     scopes=dict(settings.get("scopes") or {}), demo_mode=bool(settings.get("demo_mode")),

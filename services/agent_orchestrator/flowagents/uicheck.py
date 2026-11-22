@@ -88,10 +88,11 @@ class UiRunner:
     """Führt Klickpfade in einem isolierten Playwright-Container gegen die Vorschau aus."""
 
     def __init__(self, *, image: str, target: str = "http://flow-agents-preview:8080",
-                 timeout_seconds: int = 240, network: str = NETWORK) -> None:
+                 timeout_seconds: int = 240, network: str = NETWORK, allow_writes: bool = False) -> None:
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:/@-]+", image):
             raise UiCheckError("ungültiges Image für die Klickprüfung")
         self.image, self.target, self.timeout, self.network = image, target, timeout_seconds, network
+        self.allow_writes = allow_writes
 
     def docker_args(self) -> list[str]:
         return ["docker", "run", "--rm", "-i", "--pull", "never", "--read-only", "--cap-drop", "ALL",
@@ -112,7 +113,7 @@ class UiRunner:
                        capture_output=True, text=True, timeout=30, check=False)
 
     def run(self, scenarios: list[dict[str, Any]]) -> dict[str, Any]:
-        payload = json.dumps({"base_url": self.target, "scenarios": scenarios})
+        payload = json.dumps({"base_url": self.target, "scenarios": scenarios, "allow_writes": self.allow_writes})
         started = time.monotonic()
         try:
             result = subprocess.run(self.docker_args(), input=payload, capture_output=True, text=True,
