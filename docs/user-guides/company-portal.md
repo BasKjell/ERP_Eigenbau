@@ -116,3 +116,21 @@ Anwendungen.
 | FLOWGATE | Agentgateway/Ollama | Modellrouting, virtuelle Schlüssel und Richtlinien |
 | FLOWID | Keycloak | Identitäten, Rollen und SSO |
 | FLOWAPI / FLOWOPS | OpenAPI / Prometheus | Integration, Migration und Betrieb |
+
+## Agentenzentrale auf der Startseite
+
+Ganz oben zeigt FLOWPORTAL, was das digitale Team gerade tut:
+
+- **Kennzahlen:** Agenten im Register, wer gerade arbeitet, offene Aufträge, Entscheidungen, die auf
+  dich warten, und Rückläufe aus Prüfungen.
+- **Zusammenarbeit live:** Jeder Kreis ist ein Agent, jede Raute ein Gate (G1–G5), unten stehen die
+  entscheidenden Menschen. Linien zeigen Übergaben, Rückläufe, Fragen, Entscheidungen und
+  Schreibzugriffe in FLOWWORK; neue Ereignisse laufen als Lichtpunkt über die Linie. Ein Klick auf
+  einen Knoten zeigt Auftrag, Grenzen, Werkzeuge und letzte Aktion.
+- **Deine Entscheidungen:** Gates und Rückfragen für deine Rolle. Eine Ablehnung braucht eine
+  Begründung; sie geht als Befund an den zuständigen Agenten zurück.
+- **＋ Fachauftrag starten:** beschreibt, welche Arbeit leichter werden soll. Details und alle Läufe
+  stehen in der Vollansicht **Agentenzentrale** (`/agents`), siehe [FLOWAGENTS](../agents/index.md).
+
+Meldet sich der Orchestrator nicht, zeigt das Portal nur das Agentenregister mit dem Hinweis
+„nicht verbunden“ und nimmt keine Aufträge an.
