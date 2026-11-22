@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-
 _STOP_WORDS = frozenset(
     {
         "aber",

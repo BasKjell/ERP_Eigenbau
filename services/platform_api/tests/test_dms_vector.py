@@ -3,12 +3,11 @@ from __future__ import annotations
 import math
 
 import pytest
-
 from app.dms_vector import DmsVectorError, chunk_document, local_embedding
 
 
 def cosine(left: list[float], right: list[float]) -> float:
-    return sum(a * b for a, b in zip(left, right))
+    return sum(a * b for a, b in zip(left, right, strict=True))
 
 
 def test_local_embedding_is_stable_normalized_and_domain_aware() -> None:

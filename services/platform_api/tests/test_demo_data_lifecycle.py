@@ -2,12 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from starlette.requests import Request
-
 from app.auth import OidcAuth
 from app.config import Settings
 from app.store import ScenarioStore
-
+from starlette.requests import Request
 
 APP_ROOT = Path(__file__).resolve().parents[1]
 

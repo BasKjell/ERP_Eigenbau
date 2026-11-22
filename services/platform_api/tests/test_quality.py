@@ -9,7 +9,6 @@ from app.main import app, store
 from app.store import ScenarioStore
 from fastapi.testclient import TestClient
 
-
 client = TestClient(app)
 
 

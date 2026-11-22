@@ -4,11 +4,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from pypdf import PdfReader
-
 from app.config import Settings, settings
 from app.people import PeopleError, PeopleNotFoundError, PeopleService
 from app.store import ScenarioStore
+from pypdf import PdfReader
 
 
 class FakeDms:

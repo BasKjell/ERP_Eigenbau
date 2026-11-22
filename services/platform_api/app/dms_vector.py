@@ -49,7 +49,7 @@ def local_embedding(text: str, dimensions: int = 768) -> list[float]:
     features: list[tuple[str, float]] = [(f"w:{token}", 1.0) for token in expanded]
     features.extend(
         (f"b:{left}_{right}", 1.35)
-        for left, right in zip(expanded, expanded[1:])
+        for left, right in zip(expanded, expanded[1:], strict=False)
     )
     for token in expanded:
         compact = f"^{token}$"

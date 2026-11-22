@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 from app.main import app, store, workplace_service
-from app.store import ScenarioStore
 from app.mcp_server import mcp
+from app.store import ScenarioStore
 from fastapi.testclient import TestClient
 from mcp import Client
 

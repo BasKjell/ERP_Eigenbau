@@ -7,9 +7,9 @@ from urllib.parse import parse_qs, urlparse
 
 import jwt
 import pytest
+from app import main as main_module
 from app.auth import AuthError, OidcAuth
 from app.config import Settings
-from app import main as main_module
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 from starlette.requests import Request

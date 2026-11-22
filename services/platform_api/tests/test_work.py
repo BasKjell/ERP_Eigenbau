@@ -209,7 +209,7 @@ def test_redmine_client_sends_api_key_and_normalises_issue(monkeypatch: Any) -> 
     class Response:
         status = 200
 
-        def __enter__(self) -> "Response":
+        def __enter__(self) -> Response:
             return self
 
         def __exit__(self, *_: object) -> None:

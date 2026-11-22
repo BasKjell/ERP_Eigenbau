@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 from app.config import Settings, settings
 from app.hr import HrError, HrService
 from app.store import ScenarioStore

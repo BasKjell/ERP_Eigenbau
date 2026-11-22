@@ -331,7 +331,7 @@ def _multipart_body(
             (
                 f'Content-Disposition: form-data; name="{file_field}"; '
                 f'filename="{filename}"\r\n'
-            ).encode("utf-8"),
+            ).encode(),
             b"Content-Type: application/octet-stream\r\n\r\n",
             content,
             b"\r\n--" + marker + b"--\r\n",

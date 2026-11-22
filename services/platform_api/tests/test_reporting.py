@@ -5,7 +5,6 @@ from app.mes import MesService
 from app.reporting import LiveReportingService
 from fastapi.testclient import TestClient
 
-
 client = TestClient(app)
 
 
