@@ -83,6 +83,15 @@ Digest-Bindung, Laufbudget. Gefundene und behobene Fehler: siehe `docs/agents/mo
 - **Entscheidungsrollen** vorläufig auf vorhandene Keycloak-Rollen abgebildet (kein Realm-Drift).
 - **Kein Push, kein PR:** Das Repository ist öffentlich und der Codex-Arbeitsstand war nicht gepusht.
 
+## Nachtrag 2026-11-22 abends: Entwicklungsumgebung für die lokale KI
+
+Auf Wunsch von Bas **ohne Codex-Review** umgesetzt (Codex-Kontingent erst in drei Tagen); das Review
+wird für den gesamten Branch nachgeholt: Übernahme abgenommener Stände als Branch `agent/A-…`,
+Vorschau des Kandidaten vor G4 auf `127.0.0.1:8098`, Änderungsbereiche `dms-backend` und
+`dms-komplett`, Laufbudget je Klasse mit Nachschlag durch den Tech Lead (REQ-AGT-015 bis -017).
+Neue Prüfschwerpunkte: `flowagents/adoption.py` (Integrität, Worktree, kein Eingriff in den Checkout)
+und die Vorschau (Demo-Modus mit technischem Paperless-Konto, nur Loopback).
+
 ## Offene Punkte / nächste Schritte
 
 1. Codex-Review dieses Branches (Klasse K), danach Freigabe durch Bas; erst dann Push und PR.

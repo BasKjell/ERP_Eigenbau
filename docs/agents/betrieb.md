@@ -66,3 +66,26 @@ frisches Home im tmpfs. Aktivierung erst nach unabhängiger Prüfung und ausdrü
 3. Volumes `flow-dev-codex-auth`/`flow-dev-claude-auth` mit der Container-UID anmelden.
 4. `container.execution_enabled: true` und ein Modellprofil auf `codex` oder `claude` setzen.
    Bewährte Aufteilung: Claude erstellt, Codex prüft (oder umgekehrt) – nie dieselbe Familie.
+
+## FLOWDOC mit der lokalen KI weiterentwickeln
+
+1. Stack und Orchestrator laufen (`make sso-all`, `make agents-up`, Prüfung mit `make agents-smoke`).
+2. In FLOWPORTAL **＋ Fachauftrag starten**, Projekt `FLOW-DMS`, Änderungsbereich wählen:
+   - `dms-doku` – nur die Benutzerhilfe,
+   - `dms-ui` – Oberfläche (`dms.js`, `dms.css`),
+   - `dms-backend` – Paperless-Anbindung (`dms.py`) mit Tests,
+   - `dms-komplett` – Oberfläche, Backend, Tests und Hilfe zusammen.
+3. Die Agenten arbeiten mit den lokalen Modellen über FLOWGATE. Du entscheidest in der Inbox
+   (je nach Klasse G1, immer G4 und G5). Ablehnungen mit Begründung gehen als Befund zurück.
+4. **Vor der Fachabnahme (G4)** startet der Kandidat als Vorschau unter `http://localhost:8098/dms`
+   (Demo-Modus, Paperless mit dem technischen Demo-Konto). Der Link steht in der Entscheidung.
+5. **Nach angenommener Fachabnahme** liegt genau der abgenommene Stand als lokaler Branch
+   `agent/A-…` im Repository (`git branch --list 'agent/*'`). Dein Checkout bleibt unverändert.
+   Prüfen, ggf. nacharbeiten und selbst mergen; mit `adoption.push: true` wird der Branch zusätzlich
+   gepusht.
+6. Reicht das Laufbudget nicht, gibt der Tech Lead in der Inbox bewusst 20 weitere Modellaufrufe frei.
+
+Grenzen der lokalen Modelle: Der Entwickler schreibt geänderte Dateien vollständig neu (Eingabe bis
+70 000 Zeichen, Ausgabe bis 16 000 Token); die lokalen Prüfer sind nachgiebig. Fachliche
+Richtigkeit sichert deshalb die Fachabnahme in der Vorschau. Für schwierige Aufgaben ist die
+Eskalation zu Claude/Codex vorgesehen (siehe „Abo-Worker“), aber noch nicht freigeschaltet.
