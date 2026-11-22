@@ -150,6 +150,38 @@ def test_03_gateway_uses_role_key_and_profile_alias_only(registry) -> None:  # n
         server.shutdown()
 
 
+class StreamingGateway(BaseHTTPRequestHandler):
+    def do_POST(self) -> None:  # noqa: N802
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        assert body["stream"] is True and body["stream_options"] == {"include_usage": True}
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.end_headers()
+        chunks = [{"model": "flow-reviewer", "choices": [{"delta": {"content": '{"status":'}}]},
+                  {"model": "flow-reviewer", "choices": [{"delta": {"content": '"fertig"}'}}]},
+                  {"model": "flow-reviewer", "choices": [], "usage": {"prompt_tokens": 120, "completion_tokens": 5}}]
+        for chunk in chunks:
+            self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
+            self.wfile.flush()
+        self.wfile.write(b"data: [DONE]\n\n")
+
+    def log_message(self, *args) -> None:  # noqa: ANN002
+        return
+
+
+def test_gateway_streams_and_reports_usage_and_first_token(registry) -> None:  # noqa: ANN001
+    server = HTTPServer(("127.0.0.1", 0), StreamingGateway)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        provider = GatewayProvider(f"http://127.0.0.1:{server.server_port}", {"codepruefung": "k"})
+        reply = provider.generate(AgentRequest("RUN-1", "codepruefung", registry.agent("codepruefung"), "s", "u", 50))
+        assert reply.text == '{"status":"fertig"}' and reply.model == "flow-reviewer"
+        assert reply.input_tokens == 120 and reply.output_tokens == 5
+        assert 0 < reply.first_token_seconds <= reply.seconds + 0.01
+    finally:
+        server.shutdown()
+
+
 def test_gateway_unreachable_is_a_provider_error(registry) -> None:  # noqa: ANN001
     provider = GatewayProvider("http://127.0.0.1:9", {"planung": "k"}, timeout=1, backoff=0)
     with pytest.raises(ProviderError, match="nicht erreichbar|nicht verfügbar"):

@@ -50,6 +50,7 @@ class AgentReply:
     output_tokens: int
     input_tokens: int = 0
     seconds: float = 0.0
+    first_token_seconds: float = 0.0  # Einlesezeit bis zum ersten Token (nur bei gestreamten Antworten)
 
 
 class Provider(Protocol):
@@ -93,7 +94,10 @@ class GatewayProvider:
             "model": request.agent.gateway_alias,
             "temperature": 0.2,
             "max_tokens": request.max_tokens,
-            "stream": False,
+            # Gestreamt, damit FLOWGATE Einlesezeit (Zeit bis zum ersten Token) und reine
+            # Schreibgeschwindigkeit je Modell misst; die Nutzung kommt im letzten Abschnitt.
+            "stream": True,
+            "stream_options": {"include_usage": True},
             "response_format": {"type": "json_object"},
             "messages": [
                 {"role": "system", "content": system},
@@ -126,9 +130,17 @@ class GatewayProvider:
             },
             method="POST",
         )
+        first_token, streamed = 0.0, False
+        text_parts: list[str] = []
+        usage: dict[str, Any] = {}
+        model = ""
         try:
             with self._opener.open(http_request, timeout=self.timeout) as response:
-                raw = response.read(4_000_000)
+                if "event-stream" in str(response.headers.get("Content-Type", "")):
+                    text_parts, usage, model, first_token = self._read_stream(response, started)
+                    streamed, raw = True, b""
+                else:
+                    raw = response.read(4_000_000)
         except urllib.error.HTTPError as exc:
             if exc.code in {429, 500, 502, 503, 504}:
                 raise _Transient(f"HTTP {exc.code}") from None
@@ -137,6 +149,14 @@ class GatewayProvider:
             if isinstance(exc, urllib.error.URLError) and isinstance(exc.reason, ConnectionRefusedError):
                 raise ProviderError("FLOWGATE nicht erreichbar: ConnectionRefusedError") from None
             raise _Transient(type(exc).__name__) from None
+        if streamed:
+            text = "".join(text_parts)
+            if not text.strip():
+                raise _Transient("leere Antwort")
+            return AgentReply(text=text, provider=self.name, model=model or request.agent.gateway_alias,
+                              output_tokens=int(usage.get("completion_tokens") or len(text) // 4),
+                              input_tokens=int(usage.get("prompt_tokens") or 0),
+                              seconds=round(time.monotonic() - started, 2), first_token_seconds=first_token)
         if not raw.strip():
             raise _Transient("leere Antwort")
         try:
@@ -153,6 +173,37 @@ class GatewayProvider:
             raise ProviderError("FLOWGATE lieferte keine Chat-Antwort") from None
         return AgentReply(text=text, provider=self.name, model=model, output_tokens=tokens,
                           input_tokens=prompt_tokens, seconds=round(time.monotonic() - started, 2))
+
+    @staticmethod
+    def _read_stream(response: Any, started: float) -> tuple[list[str], dict[str, Any], str, float]:
+        """Server-Sent Events (OpenAI-Format) lesen: Text, Nutzung, Modell, Sekunden bis zum ersten Token."""
+        parts: list[str] = []
+        usage: dict[str, Any] = {}
+        model, first_token, total = "", 0.0, 0
+        for line in response:
+            total += len(line)
+            if total > 4_000_000:
+                raise ProviderError("FLOWGATE-Antwort zu groß")
+            line = line.strip()
+            if not line.startswith(b"data:"):
+                continue
+            data = line[5:].strip()
+            if data == b"[DONE]":
+                break
+            try:
+                chunk = json.loads(data)
+            except ValueError:
+                raise _Transient("ungültiger Stream-Abschnitt") from None
+            if chunk.get("error"):
+                raise ProviderError(f"FLOWGATE meldet Fehler: {str(chunk['error'])[:200]}")
+            model = str(chunk.get("model") or model)
+            usage = chunk.get("usage") or usage
+            for choice in chunk.get("choices") or []:
+                piece = (choice.get("delta") or {}).get("content") or ""
+                if piece and not first_token:
+                    first_token = max(round(time.monotonic() - started, 3), 0.001)
+                parts.append(piece)
+        return parts, usage, model, first_token
 
 
 class SimulatedProvider:

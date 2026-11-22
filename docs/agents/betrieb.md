@@ -66,6 +66,12 @@ Grafana → Ordner „ERP Eigenbau“ → **Lokale KI – Token-Verbrauch** (Pro
   keine Inhalte) in `model_usage` und meldet die Summen mit der Übersicht. Die Plattform-API stellt sie
   als `flow_agents_tokens_total`, `flow_agents_model_calls_total` und `flow_agents_model_seconds_total`
   bereit.
+- **Geschwindigkeit je Modell:** Der Orchestrator ruft FLOWGATE gestreamt auf. Dadurch misst FLOWGATE
+  die *Einlesezeit bis zum ersten Token* (`agentgateway_gen_ai_server_time_to_first_token`) und die
+  *Zeit je Ausgabe-Token* (`…_time_per_output_token`). Das Panel „Schreibgeschwindigkeit je Modell“
+  zeigt daraus die reine Generierung in Token/s. „Ausgabe-Token je Modellsekunde“ enthält dagegen auch
+  das Einlesen und liegt deshalb niedriger. Richtwerte auf dem M1 Max (Stand 2026-11-22):
+  flow-qwen3-coder-32k ≈ 75, qwen3:8b ≈ 45, gemma3:12b ≈ 28 Token/s beim Schreiben.
 
 ## Speicher auf dem 32-GB-Mac
 
