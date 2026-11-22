@@ -278,3 +278,18 @@ def test_changed_registry_blocks_running_run_until_a_human_rebinds_it(make_engin
     assert engine.store.run(run["id"])["registry_digest"] == engine.registry.digest
     drive(engine)
     assert open_decision(engine, run["id"])["gate"] == "G4"
+
+
+def test_reviewers_do_not_see_settled_gate_decisions(make_engine) -> None:  # noqa: ANN001
+    engine = make_engine()
+    run = submit(engine, change_class="neue_funktion")
+    drive(engine)
+    engine.decide(open_decision(engine, run["id"])["id"], PO, "ablehnen", "AC-2 ist nicht prüfbar")
+    current = engine.store.run(run["id"])
+    creator = engine._context(current, engine.registry.steps[engine.registry.step_index("anforderungen")],
+                              engine.registry.agent("anforderungen"))
+    assert creator["findings_to_fix"][0]["impact"] == "AC-2 ist nicht prüfbar"
+    reviewer_step = engine.registry.steps[engine.registry.step_index("anforderungspruefung")]
+    reviewer = engine._context(current, reviewer_step, engine.registry.agent("anforderungspruefung"))
+    assert reviewer["decisions"] == [] and "findings_to_fix" not in reviewer
+

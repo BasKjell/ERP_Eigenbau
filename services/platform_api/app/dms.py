@@ -231,9 +231,10 @@ class DmsService:
         def name(key: str, value: Any) -> str | None:
             return next((item["name"] for item in meta[key] if item["id"] == value), None)
 
-        tags = [next(({"id": t["id"], "name": t["name"], "color": t.get("color")} for t in meta["tags"]
-                      if t["id"] == tag_id), {"id": tag_id, "name": "eingeschränkt", "color": None})
-                for tag_id in row.get("tags") or []]
+        # Tags ohne Leserecht (Paperless liefert nur die ID) werden nicht angezeigt.
+        visible_tags = {t["id"]: t for t in meta["tags"]}
+        tags = [{"id": tag_id, "name": visible_tags[tag_id]["name"], "color": visible_tags[tag_id].get("color")}
+                for tag_id in row.get("tags") or [] if tag_id in visible_tags]
         status = next((t["name"] for t in tags if t["name"] in STATUS_TAGS), "ohne Status")
         hit = row.get("__search_hit__") or {}
         return {

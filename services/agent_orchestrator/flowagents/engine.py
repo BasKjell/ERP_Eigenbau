@@ -305,9 +305,12 @@ class Engine:
             "artifacts": {kind: item["content"] for kind, item in visible.items() if item and kind != "auftrag"},
             "digests": {kind: {"version": item["version"], "digest": item["digest"]}
                         for kind, item in visible.items() if item},
+            # Nur Antworten auf eigene Rückfragen dieses Schritts. Erledigte Gate-Ablehnungen kommen als
+            # findings_to_fix beim Ersteller an; Prüfer sollen den aktuellen Stand prüfen, nicht die Historie.
             "decisions": [
                 {"title": d["title"], "outcome": d["outcome"], "comment": d["comment"], "by": d["decided_by"].get("name")}
-                for d in self.store.decisions(run_id=run["id"]) if d["status"] != "offen"
+                for d in self.store.decisions(run_id=run["id"])
+                if d["status"] == "angenommen" and d["step_id"] == step.id and d["gate"] in {"frage", "eskalation"}
             ],
         }
         if agent.role == "nachweise":
