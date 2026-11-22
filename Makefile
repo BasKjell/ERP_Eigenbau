@@ -1,4 +1,4 @@
-.PHONY: requirements-check requirements-sync agents-up agents-down agents-restart agents-status agents-logs agents-test agents-check agents-sandbox-image help demo full work sso sso-all seed-erp seed-dms seed-dms-project dms-vector-index demo-data-setup demo-data-delete demo-data-delete-preview dms-dashboard management-dashboard docs test test-dms-reporting test-management-reporting test-integration audit-links check lint validate stop reset logs ai ai-gateway webui mcp
+.PHONY: agents-smoke requirements-check requirements-sync agents-up agents-down agents-restart agents-status agents-logs agents-test agents-check agents-sandbox-image help demo full work sso sso-all seed-erp seed-dms seed-dms-project dms-vector-index demo-data-setup demo-data-delete demo-data-delete-preview dms-dashboard management-dashboard docs test test-dms-reporting test-management-reporting test-integration audit-links check lint validate stop reset logs ai ai-gateway webui mcp
 
 help:
 	@echo "ERP Eigenbau - verfuegbare Befehle"
@@ -23,6 +23,7 @@ help:
 	@echo "  make agents-up        Startet den FLOWAGENTS-Orchestrator (Host-Dienst, 127.0.0.1:8095)"
 	@echo "  make agents-status    Zeigt Laeufe, Entscheidungen und Agentenzustand"
 	@echo "  make agents-test      Prueft Agentenregister, Orchestrator und Grenzen"
+	@echo "  make agents-smoke     Prueft die laufende Kette (Orchestrator, Portal, FLOWGATE, Sandbox)"
 	@echo "  make agents-sandbox-image  Baut das Offline-Pruefimage fuer die Integrationspruefung"
 	@echo "  make requirements-check  Prueft requirements/catalog.yaml und die Testverweise"
 	@echo "  make requirements-sync   Uebertraegt den Requirements-Katalog nach FLOWWORK"
@@ -173,3 +174,6 @@ requirements-check:
 
 requirements-sync:
 	docker compose exec -T platform-api python -m app.requirements_catalog sync --catalog /app/requirements/catalog.yaml
+
+agents-smoke:
+	python3 scripts/smoke_agents.py

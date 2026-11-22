@@ -22,6 +22,7 @@ make agents-sandbox-image    # einmalig: Prüfimage bauen
 make agents-up               # Orchestrator starten
 make requirements-sync       # Plattformanforderungen nach FLOWWORK übertragen
 make agents-status           # Läufe, offene Entscheidungen, letzte Ereignisse
+make agents-smoke            # laufende Kette prüfen (Orchestrator, Portal, FLOWGATE, Sandbox)
 ```
 
 `curl http://127.0.0.1:8095/health` zeigt `platform_sync.connected`. Ist er `false`, meldet das
