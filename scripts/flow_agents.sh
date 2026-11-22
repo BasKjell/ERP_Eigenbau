@@ -42,11 +42,16 @@ running() { [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; }
 
 start() {
   if running; then echo "FLOWAGENTS läuft bereits (PID $(cat "$PIDFILE"))."; return; fi
+  if curl -fsS -m 2 "$URL" >/dev/null 2>&1; then
+    echo "Port 8095 ist durch einen anderen FLOWAGENTS-Prozess belegt (ohne PID-Datei). Bitte beenden." >&2
+    exit 1
+  fi
   ensure_venv
   (cd "$ROOT" && PYTHONPATH="$ROOT/services/agent_orchestrator" FLOW_AGENTS_STATE="$STATE" \
     nohup "$VENV/bin/python" -m flowagents serve --config "$CONFIG" --repo-root "$ROOT" </dev/null >>"$LOG" 2>&1 &
     echo $! > "$PIDFILE")
   for _ in $(seq 1 30); do
+    if ! running; then break; fi
     if curl -fsS "$URL" >/dev/null 2>&1; then echo "FLOWAGENTS gestartet: $URL (Log: $LOG)"; return; fi
     sleep 1
   done
@@ -56,7 +61,15 @@ start() {
 }
 
 stop() {
-  if running; then kill "$(cat "$PIDFILE")"; sleep 1; fi
+  if running; then
+    local pid
+    pid="$(cat "$PIDFILE")"
+    kill "$pid"
+    # Ein laufender Modellaufruf kann das Beenden verzögern; der Schritt wird nach dem Neustart
+    # als unterbrochen markiert und idempotent wiederholt.
+    for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done
+    if kill -0 "$pid" 2>/dev/null; then kill -9 "$pid"; fi
+  fi
   rm -f "$PIDFILE"
   echo "FLOWAGENTS gestoppt."
 }
