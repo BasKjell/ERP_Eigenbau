@@ -20,7 +20,7 @@ from typing import Any
 from .contract import ContractError, Handoff, extract_json, validate
 from .providers import AgentReply, AgentRequest, Provider, ProviderError
 from .registry import Agent, Registry, Step
-from .rm import RM, RMError
+from .rm import RM, RMConflict, RMError
 from .sandbox import Sandbox, SandboxError, validate_path
 from .store import OPEN_RUN_STATES, Store, digest_of
 
@@ -375,8 +375,15 @@ class Engine:
                 values["source"] = run["auftrag_id"]
                 known = mapping.get(item["key"])
                 if known:
-                    result = self._tool(agent, run, "rm.update_draft",
-                                        {"id": known["id"], "expected_version": known["version"], "values": values})
+                    payload = {"id": known["id"], "expected_version": known["version"], "values": values}
+                    try:
+                        result = self._tool(agent, run, "rm.update_draft", payload)
+                    except RMConflict as conflict:
+                        # Wiederanlauf: Ein unterbrochener Versuch dieses Laufs hat bereits geschrieben.
+                        # Der Adapter erlaubt Änderungen nur am Entwurf desselben Laufs; also mit dem
+                        # bestätigten Stand genau einmal erneut schreiben.
+                        payload["expected_version"] = int(conflict.current.get("version", 0))
+                        result = self._tool(agent, run, "rm.update_draft", payload)
                 else:
                     result = self._tool(agent, run, "rm.create_draft", {
                         "idempotency_key": f"{run['id']}:{item['key']}", "project": project,

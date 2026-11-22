@@ -293,3 +293,24 @@ def test_reviewers_do_not_see_settled_gate_decisions(make_engine) -> None:  # no
     reviewer = engine._context(current, reviewer_step, engine.registry.agent("anforderungspruefung"))
     assert reviewer["decisions"] == [] and "findings_to_fix" not in reviewer
 
+
+def test_resumed_update_uses_the_confirmed_version_after_a_conflict(make_engine) -> None:  # noqa: ANN001
+    from flowagents.rm import RMConflict
+
+    engine = make_engine()
+    calls: list[tuple[str, dict]] = []
+    original = engine.rm.call
+
+    def flaky(role, agent_id, run_id, operation, payload):  # noqa: ANN001, ANN202
+        calls.append((operation, dict(payload)))
+        if operation == "rm.update_draft" and payload["expected_version"] == 1:
+            raise RMConflict("Versionskonflikt", {"id": payload["id"], "version": 2})
+        return original(role, agent_id, run_id, operation, payload)
+
+    engine.rm.call = flaky
+    run = submit(engine, behavior="Ansicht sortiert nach Titel [sim:nacharbeit] mit sichtbaren Dokumenten.")
+    drive(engine)
+    updates = [p for op, p in calls if op == "rm.update_draft"]
+    assert [u["expected_version"] for u in updates[:2]] == [1, 2]
+    assert open_decision(engine, run["id"])["gate"] == "G4"
+

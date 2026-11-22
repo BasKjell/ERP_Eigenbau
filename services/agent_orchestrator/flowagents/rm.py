@@ -24,6 +24,14 @@ class RMError(RuntimeError):
     """FLOWWORK hat die Operation abgelehnt oder war nicht erreichbar."""
 
 
+class RMConflict(RMError):
+    """Versionskonflikt; ``current`` enthält den bestätigten Objektstand (KI-EK Teil 08)."""
+
+    def __init__(self, message: str, current: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.current = current
+
+
 class RM(Protocol):
     enabled: bool
 
@@ -82,11 +90,13 @@ class FlowworkRM:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
                 return json.loads(response.read(2_000_000) or b"{}")
         except urllib.error.HTTPError as exc:
-            detail = ""
+            detail: Any = ""
             try:
                 detail = json.loads(exc.read(20_000)).get("detail", "")
             except (ValueError, AttributeError):
                 detail = ""
+            if exc.code == 409 and isinstance(detail, dict) and isinstance(detail.get("current"), dict):
+                raise RMConflict(f"FLOWWORK {operation}: {detail.get('message', 'Konflikt')}", detail["current"]) from None
             raise RMError(f"FLOWWORK {operation}: HTTP {exc.code} {detail}".strip()) from None
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
             raise RMError(f"FLOWWORK nicht erreichbar: {type(exc).__name__}") from None

@@ -211,8 +211,9 @@ class RMAdapter:
             work = state["work"]
             item = self._requirement(work, str(payload.get("id", "")))
             creator = item.get("created_by") or {}
-            if item.get("status") != "draft" or creator.get("role") != identity.role:
-                raise PolicyError("Nur eigene Entwürfe im Status draft sind änderbar")
+            if (item.get("status") != "draft" or creator.get("role") != identity.role
+                    or creator.get("run") != identity.run_id):
+                raise PolicyError("Nur eigene Entwürfe dieses Laufs im Status draft sind änderbar")
             if int(item.get("version", 0)) != expected:
                 raise RMConflict("Versionskonflikt", {"id": item["id"], "version": item.get("version")})
             item.update(values)

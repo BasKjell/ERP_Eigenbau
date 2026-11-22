@@ -116,6 +116,8 @@ def test_27_concurrent_updates_against_same_version_conflict() -> None:
     assert rm("drafts/update", "anforderungen", update).json()["version"] == 2
     second = rm("drafts/update", "anforderungen", {**update, "values": {**update["values"], "title": "Parallel"}})
     assert second.status_code == 409
+    other_run = rm("drafts/update", "anforderungen", {**update, "expected_version": 2}, run="RUN-20261122-FFFFFF")
+    assert other_run.status_code == 403, "Entwürfe sind an den erzeugenden Lauf gebunden"
     assert second.json()["detail"]["current"]["version"] == 2
     assert requirement(created["id"])["title"] == "Neu"
 
