@@ -18,6 +18,7 @@ import json
 import os
 import sys
 import traceback
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,15 @@ from frappe.utils import add_to_date, get_datetime, getdate, now_datetime, nowda
 SITE = os.environ.get("FRAPPE_SITE", "frontend")
 SITES_PATH = os.environ.get("FRAPPE_SITES_PATH", "/home/frappe/frappe-bench/sites")
 DATA_FILE = Path(os.environ.get("ERP_DEMO_DATA_FILE", "/seed/scenario.json"))
+OIDC_EXTERNAL_ISSUER = os.environ.get(
+    "OIDC_EXTERNAL_ISSUER", "http://localhost:8082/realms/open-manufacturing"
+).rstrip("/")
+OIDC_INTERNAL_ISSUER = os.environ.get(
+    "OIDC_INTERNAL_ISSUER", "http://keycloak:8080/realms/open-manufacturing"
+).rstrip("/")
+ERPNEXT_OIDC_CLIENT_SECRET = os.environ.get(
+    "ERPNEXT_OIDC_CLIENT_SECRET", "erpnext-oidc-demo-change-me"
+)
 
 CREATED: list[str] = []
 EXISTING: list[str] = []
@@ -230,6 +240,7 @@ DEMO_WORK_ORDERS: list[dict[str, Any]] = [
     {
         "name": "WO-DEMO-IOX-24-01",
         "item": "IOX-24",
+        "project": "KOM-2027-1001",
         "qty": 4,
         "start_offset_hours": -4,
         "duration_hours": 8,
@@ -238,6 +249,7 @@ DEMO_WORK_ORDERS: list[dict[str, Any]] = [
     {
         "name": "WO-DEMO-GW-EDGE-01",
         "item": "GW-EDGE-200",
+        "project": "KOM-2027-1002",
         "qty": 2,
         "start_offset_hours": -1,
         "duration_hours": 12,
@@ -246,6 +258,7 @@ DEMO_WORK_ORDERS: list[dict[str, Any]] = [
     {
         "name": "WO-DEMO-HMI-070-01",
         "item": "HMI-070",
+        "project": "KOM-2027-1003",
         "qty": 6,
         "start_offset_hours": 24,
         "duration_hours": 16,
@@ -328,6 +341,17 @@ def set_single_if_present(doctype: str, values: dict[str, Any]) -> None:
     for field, value in values.items():
         if meta.get_field(field):
             frappe.db.set_single_value(doctype, field, value)
+
+
+def update_demo_fields(doctype: str, name: str, values: dict[str, Any]) -> None:
+    """Keep existing demo records aligned without touching unrelated fields."""
+    meta = frappe.get_meta(doctype)
+    for field, value in values.items():
+        if not meta.get_field(field):
+            continue
+        current = frappe.db.get_value(doctype, name, field)
+        if current != value:
+            frappe.db.set_value(doctype, name, field, value, update_modified=False)
 
 
 def ensure_tree_node(
@@ -627,6 +651,101 @@ def ensure_prices(scenario: dict[str, Any], currency: str, bom_rows: list[dict[s
         )
 
 
+def ensure_commercial_master_data(scenario: dict[str, Any], customer: str) -> None:
+    """Seed reusable delivery, payment and document conditions for testing."""
+    commercial = scenario["commercial_master_data"]
+
+    if frappe.db.exists("DocType", "Incoterm"):
+        for row in commercial["incoterms"]:
+            insert_missing(
+                "Incoterm",
+                row["code"],
+                {
+                    "code": row["code"],
+                    "title": row["title"],
+                    "description": row["description"],
+                },
+            )
+
+    payment_terms = {row["name"]: row for row in commercial["payment_terms"]}
+    for row in payment_terms.values():
+        insert_missing(
+            "Payment Term",
+            row["name"],
+            {
+                "payment_term_name": row["name"],
+                "invoice_portion": row["invoice_portion"],
+                "due_date_based_on": row["due_date_based_on"],
+                "credit_days": row["credit_days"],
+                "discount_type": row.get("discount_type", ""),
+                "discount": row.get("discount", 0),
+                "discount_validity_based_on": row.get(
+                    "discount_validity_based_on", ""
+                ),
+                "discount_validity": row.get("discount_validity", 0),
+                "description": row["description"],
+            },
+        )
+
+    for template in commercial["payment_templates"]:
+        details = []
+        for term_name in template["terms"]:
+            term = payment_terms[term_name]
+            details.append(
+                {
+                    "payment_term": term_name,
+                    "description": term["description"],
+                    "invoice_portion": term["invoice_portion"],
+                    "due_date_based_on": term["due_date_based_on"],
+                    "credit_days": term["credit_days"],
+                    "discount_type": term.get("discount_type", ""),
+                    "discount": term.get("discount", 0),
+                    "discount_validity_based_on": term.get(
+                        "discount_validity_based_on", ""
+                    ),
+                    "discount_validity": term.get("discount_validity", 0),
+                }
+            )
+        insert_missing(
+            "Payment Terms Template",
+            template["name"],
+            {
+                "template_name": template["name"],
+                "terms": details,
+            },
+        )
+
+    for row in commercial["terms_and_conditions"]:
+        insert_missing(
+            "Terms and Conditions",
+            row["name"],
+            {
+                "title": row["name"],
+                "selling": row["selling"],
+                "buying": row["buying"],
+                "terms": row["text"],
+            },
+        )
+
+    update_demo_fields(
+        "Customer",
+        customer,
+        {
+            "default_price_list": "Standard Selling",
+            "payment_terms": "30 Tage netto",
+        },
+    )
+    for supplier in ("Baltic Electronics", "Display Components Europe"):
+        update_demo_fields(
+            "Supplier",
+            supplier,
+            {
+                "default_price_list": "Standard Buying",
+                "payment_terms": "30 Tage netto",
+            },
+        )
+
+
 def ensure_additional_products(company: str, currency: str, stores: str) -> list[dict[str, Any]]:
     """Create extra demo products and their shared components."""
     product_group = ensure_tree_node(
@@ -755,11 +874,330 @@ def warehouse_for(company: str, field: str, warehouse_name: str) -> str:
     return value
 
 
-def ensure_workstations_and_operations(scenario: dict[str, Any]) -> list[dict[str, Any]]:
+def ensure_warehouse_structure(scenario: dict[str, Any], company: str) -> None:
+    """Create operational warehouse areas without changing ERPNext defaults."""
+    warehouse_types = {
+        row["warehouse_type"]
+        for row in scenario["warehouses"]
+        if row["warehouse_type"]
+    }
+    for warehouse_type in sorted(warehouse_types):
+        insert_missing(
+            "Warehouse Type",
+            warehouse_type,
+            {"description": f"Demolagertyp: {warehouse_type}"},
+        )
+
+    for row in scenario["warehouses"]:
+        insert_missing(
+            "Warehouse",
+            row["id"],
+            {
+                "warehouse_name": row["warehouse_name"],
+                "company": company,
+                "parent_warehouse": row["parent"],
+                "is_group": row["is_group"],
+                "warehouse_type": row["warehouse_type"],
+                "disabled": 0,
+            },
+        )
+
+
+def department_for(company: str, department_name: str) -> str:
+    existing = frappe.db.get_value(
+        "Department",
+        {"company": company, "department_name": department_name},
+        "name",
+    )
+    if existing:
+        return str(existing)
+    abbreviation = frappe.db.get_value("Company", company, "abbr")
+    name = f"{department_name} - {abbreviation}"
+    return insert_missing(
+        "Department",
+        name,
+        {
+            "department_name": department_name,
+            "parent_department": "All Departments",
+            "is_group": 0,
+            "company": company,
+        },
+    ).name
+
+
+def ensure_commission_projects(scenario: dict[str, Any], company: str) -> None:
+    """Create project records used as order-spanning commission identifiers."""
+    project_types = {row["project_type"] for row in scenario["projects"]}
+    for project_type in sorted(project_types):
+        insert_missing(
+            "Project Type",
+            project_type,
+            {
+                "project_type": project_type,
+                "description": (
+                    "Auftragsuebergreifende Kommissionsklammer"
+                    if project_type == "Kundenkommission"
+                    else "Interne Fertigungs- und Kostensammelkommission"
+                ),
+            },
+        )
+
+    for row in scenario["projects"]:
+        values: dict[str, Any] = {
+            "naming_series": "PROJ-.####",
+            "project_name": row["project_name"],
+            "project_type": row["project_type"],
+            "status": "Open",
+            "priority": row["priority"],
+            "is_active": "Yes",
+            "percent_complete_method": "Manual",
+            "expected_start_date": row["expected_start_date"],
+            "expected_end_date": row["expected_end_date"],
+            "company": company,
+            "department": department_for(company, row["department"]),
+            "notes": row["notes"],
+        }
+        if row["customer"]:
+            values["customer"] = row["customer"]
+        insert_missing("Project", row["id"], values)
+
+
+ERP_ROLES_BY_IAM_ROLE: dict[str, tuple[str, ...]] = {
+    "management-user": ("Analytics",),
+    "sales-user": ("Sales User",),
+    "procurement-user": ("Purchase User",),
+    "planning-user": ("Manufacturing User", "Stock User"),
+    "production-user": ("Manufacturing User",),
+    "quality-user": ("Quality Manager", "Quality User"),
+    "warehouse-user": ("Stock User",),
+    "hr-user": ("HR User",),
+    "hr-admin": ("HR Manager",),
+    "finance-user": ("Accounts User",),
+    "project-user": ("Projects User", "Project User"),
+}
+
+
+def ensure_sso_user(
+    email: str,
+    first_name: str,
+    last_name: str,
+    iam_roles: list[str],
+    *,
+    platform_admin: bool = False,
+) -> None:
+    user = frappe.get_doc("User", email) if frappe.db.exists("User", email) else frappe.new_doc("User")
+    is_new = user.is_new()
+    user.email = email
+    user.first_name = first_name
+    user.last_name = last_name
+    user.enabled = 1
+    user.user_type = "System User"
+    user.send_welcome_email = 0
+    if is_new:
+        user.new_password = frappe.generate_hash(length=40)
+
+    requested_roles = {
+        erp_role
+        for iam_role in iam_roles
+        for erp_role in ERP_ROLES_BY_IAM_ROLE.get(iam_role, ())
+    }
+    if platform_admin:
+        # Keycloak's platform-admin is a composite full-access role for the
+        # presentation account. Mirror that intent inside ERPNext as well:
+        # System Manager alone can administer Frappe but does not imply every
+        # functional ERP workspace/page permission.
+        requested_roles.add("System Manager")
+        requested_roles.update(
+            erp_role
+            for roles in ERP_ROLES_BY_IAM_ROLE.values()
+            for erp_role in roles
+        )
+    available_roles = {
+        role
+        for role in requested_roles
+        if frappe.db.exists("Role", role)
+    }
+    assigned_roles = {row.role for row in user.get("roles", [])}
+    for role in sorted(available_roles - assigned_roles):
+        user.append("roles", {"role": role})
+    user.flags.ignore_permissions = True
+    user.flags.no_welcome_mail = True
+    if is_new:
+        user.insert(ignore_permissions=True)
+        CREATED.append(f"User {email}")
+    else:
+        user.save(ignore_permissions=True)
+        EXISTING.append(f"User {email}")
+
+
+def ensure_keycloak_sso(scenario: dict[str, Any]) -> None:
+    ensure_sso_user(
+        "platform-admin@example.invalid",
+        "Plattform",
+        "Administrator",
+        ["platform-admin"],
+        platform_admin=True,
+    )
+    for entry in scenario["iam"]["users"]:
+        ensure_sso_user(
+            entry["email"],
+            entry["first_name"],
+            entry["last_name"],
+            entry["roles"],
+            platform_admin="platform-admin" in entry["roles"],
+        )
+
+    values = {
+        "provider_name": "Keycloak",
+        "social_login_provider": "Keycloak",
+        "enable_social_login": 1,
+        "client_id": "erpnext",
+        "client_secret": ERPNEXT_OIDC_CLIENT_SECRET,
+        "base_url": OIDC_INTERNAL_ISSUER,
+        "custom_base_url": 0,
+        "authorize_url": f"{OIDC_EXTERNAL_ISSUER}/protocol/openid-connect/auth",
+        "access_token_url": f"{OIDC_INTERNAL_ISSUER}/protocol/openid-connect/token",
+        "redirect_url": "/api/method/frappe.integrations.oauth2_logins.login_via_keycloak",
+        "api_endpoint": f"{OIDC_INTERNAL_ISSUER}/protocol/openid-connect/userinfo",
+        "api_endpoint_args": None,
+        "auth_url_data": json.dumps(
+            {"response_type": "code", "scope": "openid profile email"}
+        ),
+        "user_id_property": "preferred_username",
+        "sign_ups": "Deny",
+    }
+    if frappe.db.exists("Social Login Key", "keycloak"):
+        social_login = frappe.get_doc("Social Login Key", "keycloak")
+        social_login.update(values)
+        social_login.save(ignore_permissions=True)
+        EXISTING.append("Social Login Key keycloak")
+    else:
+        social_login = frappe.get_doc({"doctype": "Social Login Key", **values})
+        social_login.insert(ignore_permissions=True)
+        CREATED.append("Social Login Key keycloak")
+
+
+def ensure_workforce_master_data(
+    scenario: dict[str, Any], company: str, work_in_progress: str
+) -> None:
+    """Create fictitious people and the reusable resource masters around them."""
+    workforce = scenario["workforce"]
+    insert_missing("Branch", workforce["branch"], {"branch": workforce["branch"]})
+
+    start = getdate("2027-01-01")
+    end = getdate("2027-12-31")
+    current = start
+    holidays = []
+    while current <= end:
+        if current.weekday() == 6:
+            holidays.append(
+                {"holiday_date": current, "description": "Sonntag (Demo-Schichtkalender)"}
+            )
+        current += timedelta(days=1)
+    insert_missing(
+        "Holiday List",
+        workforce["holiday_list"],
+        {
+            "holiday_list_name": workforce["holiday_list"],
+            "from_date": start,
+            "to_date": end,
+            "weekly_off": "Sunday",
+            "holidays": holidays,
+        },
+    )
+
+    insert_missing(
+        "Plant Floor",
+        workforce["plant_floor"],
+        {
+            "floor_name": workforce["plant_floor"],
+            "company": company,
+            "warehouse": work_in_progress,
+        },
+    )
+    for row in scenario["capacity"]:
+        insert_missing(
+            "Workstation Type",
+            row["workstation_type"],
+            {
+                "workstation_type": row["workstation_type"],
+                "hour_rate": row["hour_rate"],
+                "description": f"Demotyp fuer {row['name']}",
+            },
+        )
+
+    for row in workforce["activity_types"]:
+        insert_missing(
+            "Activity Type",
+            row["name"],
+            {
+                "activity_type": row["name"],
+                "costing_rate": row["costing_rate"],
+                "billing_rate": row["billing_rate"],
+                "disabled": 0,
+            },
+        )
+
+    operations_department = department_for(company, "Operations")
+    insert_missing(
+        "Project",
+        workforce["project"],
+        {
+            "naming_series": "PROJ-.####",
+            "project_name": workforce["project"],
+            "status": "Open",
+            "priority": "Medium",
+            "is_active": "Yes",
+            "percent_complete_method": "Manual",
+            "expected_start_date": nowdate(),
+            "expected_end_date": "2027-01-31",
+            "company": company,
+            "department": operations_department,
+            "holiday_list": workforce["holiday_list"],
+            "notes": "Ausschliesslich fuer Tests der Zeitverschreibung und Auftragsabwicklung.",
+        },
+    )
+
+    for index, row in enumerate(workforce["employees"], start=1):
+        insert_missing("Gender", row["gender"], {"gender": row["gender"]})
+        insert_missing(
+            "Designation",
+            row["designation"],
+            {"designation_name": row["designation"]},
+        )
+        insert_missing(
+            "Employee",
+            row["id"],
+            {
+                "naming_series": "HR-EMP-",
+                "employee_number": row["id"],
+                "first_name": row["first_name"],
+                "last_name": row["last_name"],
+                "gender": row["gender"],
+                "date_of_birth": f"199{index}-0{min(index, 9)}-15",
+                "date_of_joining": "2025-01-01",
+                "status": "Active",
+                "company": company,
+                "department": department_for(company, row["department"]),
+                "designation": row["designation"],
+                "branch": workforce["branch"],
+                "holiday_list": workforce["holiday_list"],
+                "bio": (
+                    "Fiktiver Testmitarbeiter ohne Benutzerkonto. "
+                    f"Demozuordnung: {row['operation'] or 'Produktionsplanung'}"
+                ),
+            },
+        )
+
+
+def ensure_workstations_and_operations(
+    scenario: dict[str, Any], work_in_progress: str
+) -> list[dict[str, Any]]:
     operations: list[dict[str, Any]] = []
+    workforce = scenario["workforce"]
     for row in scenario["capacity"]:
         start_time, end_time = [f"{value}:00" for value in row["shift"].split("-")]
-        workstation = insert_missing(
+        workstation_doc = insert_missing(
             "Workstation",
             row["id"],
             {
@@ -768,12 +1206,31 @@ def ensure_workstations_and_operations(scenario: dict[str, Any]) -> list[dict[st
                     f"{row['name']} – Demokapazitaet {row['capacity']}, "
                     f"Auslastung {row['utilization']} %"
                 ),
+                "workstation_type": row["workstation_type"],
+                "plant_floor": workforce["plant_floor"],
                 "production_capacity": row["capacity"],
+                "warehouse": work_in_progress,
                 "status": "Production",
+                "hour_rate": row["hour_rate"],
+                "holiday_list": workforce["holiday_list"],
                 "working_hours": [{"start_time": start_time, "end_time": end_time}],
             },
-        ).name
-        operation = insert_missing(
+        )
+        workstation = workstation_doc.name
+        update_demo_fields(
+            "Workstation",
+            workstation,
+            {
+                "workstation_type": row["workstation_type"],
+                "plant_floor": workforce["plant_floor"],
+                "production_capacity": row["capacity"],
+                "warehouse": work_in_progress,
+                "status": "Production",
+                "hour_rate": row["hour_rate"],
+                "holiday_list": workforce["holiday_list"],
+            },
+        )
+        operation_doc = insert_missing(
             "Operation",
             row["name"],
             {
@@ -782,7 +1239,13 @@ def ensure_workstations_and_operations(scenario: dict[str, Any]) -> list[dict[st
                 "workstation": workstation,
                 "default_workstation": workstation,
             },
-        ).name
+        )
+        operation = operation_doc.name
+        update_demo_fields(
+            "Operation",
+            operation,
+            {"workstation": workstation, "default_workstation": workstation},
+        )
         operations.append(
             {
                 "operation": operation,
@@ -1175,6 +1638,20 @@ def ensure_demo_work_orders(
         if frappe.db.exists("Work Order", name):
             work_order = frappe.get_doc("Work Order", name)
             EXISTING.append(f"Work Order: {name}")
+            if work_order.project != specification["project"]:
+                # These stable names identify seed-owned demo documents. A
+                # submitted Work Order does not allow the Project field to be
+                # edited in the UI, but assigning the commission here has no
+                # stock or accounting impact and keeps existing demo sites in
+                # sync with fresh installations.
+                frappe.db.set_value(
+                    "Work Order",
+                    name,
+                    "project",
+                    specification["project"],
+                    update_modified=False,
+                )
+                work_order.project = specification["project"]
         else:
             planned_start = add_to_date(now_datetime(), hours=specification["start_offset_hours"])
             planned_end = add_to_date(planned_start, hours=specification["duration_hours"])
@@ -1184,6 +1661,7 @@ def ensure_demo_work_orders(
                     "Work Order",
                     {
                         "company": company,
+                        "project": specification["project"],
                         "production_item": specification["item"],
                         "bom_no": bom.name,
                         "qty": specification["qty"],
@@ -1253,6 +1731,76 @@ def ensure_demo_work_orders(
         CREATED.append(f"Stock Entry: {stock_entry.name}")
 
 
+def ensure_job_card_employee_assignments(scenario: dict[str, Any]) -> None:
+    """Assign qualified demo employees to open operation-specific Job Cards."""
+    for employee in scenario["workforce"]["employees"]:
+        if not employee["operation"]:
+            continue
+        job_cards = frappe.get_all(
+            "Job Card",
+            filters={
+                "work_order": ["like", "WO-DEMO-%"],
+                "operation": employee["operation"],
+                "docstatus": 0,
+            },
+            pluck="name",
+        )
+        for job_card_name in job_cards:
+            job_card = frappe.get_doc("Job Card", job_card_name)
+            if any(row.employee == employee["id"] for row in job_card.get("employee")):
+                continue
+            # Saving the parent validates the operation sequence and would
+            # require previous operations to be completed. This is only a
+            # personnel assignment, not a production feedback, so insert the
+            # child row directly and leave time/quantity deliberately blank.
+            employee_row = job_card.append("employee", {"employee": employee["id"]})
+            employee_row.db_insert()
+            CREATED.append(
+                f"Job Card employee: {job_card.name} -> {employee['id']}"
+            )
+
+
+def ensure_demo_timesheet(scenario: dict[str, Any], company: str) -> None:
+    """Provide one editable example while leaving production Job Cards unbooked."""
+    planning_employee = next(
+        row
+        for row in scenario["workforce"]["employees"]
+        if row["designation"] == "Fertigungsplanerin"
+    )
+    start = get_datetime(f"{nowdate()} 08:00:00")
+    end = add_to_date(start, hours=1.5)
+    insert_missing(
+        "Timesheet",
+        "TS-DEMO-0001",
+        {
+            "naming_series": "TS-.YYYY.-",
+            "title": "Demo: Produktionsplanung SCU-100",
+            "company": company,
+            "currency": scenario["scenario"]["currency"],
+            "status": "Draft",
+            "parent_project": scenario["workforce"]["project"],
+            "employee": planning_employee["id"],
+            "time_logs": [
+                {
+                    "activity_type": "Produktionsplanung",
+                    "from_time": start,
+                    "to_time": end,
+                    "hours": 1.5,
+                    "project": scenario["workforce"]["project"],
+                    "description": (
+                        "Demobuchung: Material- und Kapazitaetsplanung fuer SCU-100"
+                    ),
+                    "is_billable": 0,
+                }
+            ],
+            "note": (
+                "Editierbares Beispiel fuer projektbezogene Zeitverschreibung. "
+                "Fertigungszeiten werden dagegen direkt auf den Job Cards gebucht."
+            ),
+        },
+    )
+
+
 def ensure_opportunity(scenario: dict[str, Any], company: str, customer: str, product: str) -> None:
     order = scenario["order"]
     insert_missing(
@@ -1304,6 +1852,9 @@ def seed() -> None:
     ensure_company(company, currency)
     ensure_fiscal_years(company)
     customer, _, _ = ensure_parties(scenario)
+    ensure_warehouse_structure(scenario, company)
+    ensure_commission_projects(scenario, company)
+    ensure_keycloak_sso(scenario)
 
     stores = warehouse_for(company, "default_warehouse", "Stores")
     finished_goods = warehouse_for(company, "default_fg_warehouse", "Finished Goods")
@@ -1312,8 +1863,10 @@ def seed() -> None:
 
     product, bom_rows = ensure_items(scenario, company, stores)
     ensure_prices(scenario, currency, bom_rows)
+    ensure_commercial_master_data(scenario, customer)
     extra_products = ensure_additional_products(company, currency, stores)
-    operations = ensure_workstations_and_operations(scenario)
+    ensure_workforce_master_data(scenario, company, work_in_progress)
+    operations = ensure_workstations_and_operations(scenario, work_in_progress)
     ensure_quality_template(product)
     bom_names = {
         product: ensure_bom(
@@ -1357,6 +1910,8 @@ def seed() -> None:
         work_in_progress,
         finished_goods,
     )
+    ensure_job_card_employee_assignments(scenario)
+    ensure_demo_timesheet(scenario, company)
     ensure_opportunity(scenario, company, customer, product)
 
     frappe.db.set_default("setup_complete", "1")

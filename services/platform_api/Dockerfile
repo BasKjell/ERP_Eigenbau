@@ -27,4 +27,5 @@ ENV PYTHONPATH=/app
 COPY requirements-dev.txt .
 RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY tests ./tests
-RUN ruff check app tests && pytest
+RUN ruff check app tests \
+    && pytest --cov=app --cov-branch --cov-report=term-missing --cov-fail-under=75

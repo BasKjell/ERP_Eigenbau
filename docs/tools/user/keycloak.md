@@ -1,9 +1,9 @@
 # Mit Keycloak anmelden und Rollen nutzen
 
-Keycloak ist im Zielbild die zentrale Anmeldung. Das optionale `iam`-Profil
-stellt dafür den Realm `manufacturing` bereit. Der Kern-PoC kann auch ohne SSO
-laufen; produktive Benutzerkonten gehören nicht in die Fachanwendungen
-doppelt gepflegt.
+Keycloak ist die zentrale Anmeldung. Das `iam`-Profil stellt den Realm
+`open-manufacturing` bereit. Mit `make sso` erzwingen Management-Portal, MES,
+HR, Desksharing, Grafana und ihre APIs die Anmeldung und serverseitige
+Rollenprüfung. Grafana leitet dabei automatisch zu Keycloak weiter.
 
 ## Anmelden
 
@@ -13,16 +13,30 @@ doppelt gepflegt.
 4. Bei einem geteilten Arbeitsplatz nach Abschluss in Fachanwendung und
    Keycloak abmelden und Browserfenster schließen.
 
+## Lokale Beispielkonten
+
+| Konten | Initialpasswort | Hinweis |
+|---|---|---|
+| `demo01` bis `demo50` | `Demo-User-2026!` | fiktive Demoidentitäten, nur lokal |
+| `platform-admin` | `Admin-Start-2026!` | temporär; Keycloak verlangt beim ersten Login ein neues Passwort |
+
+Die Passwörter sind absichtlich dokumentierte Demo-Credentials. Sie dürfen
+nicht in einer erreichbaren Test-, Abnahme- oder Produktivumgebung verwendet
+werden.
+
 ## Rollen im Prozess
 
 | Rolle | Typische Prozessaufgabe |
 |---|---|
 | `sales-user` | Opportunity, Angebot und Auftrag |
 | `planning-user` | MRP, Kapazität und Fertigungsauftrag |
-| `shopfloor-user` | Job Cards und Rückmeldungen |
+| `production-user` | MES, Job Cards und Rückmeldungen |
 | `quality-user` | Abweichung, Wiederholtest und Freigabe |
 | `finance-user` | Rechnung und Forderung |
-| `management-reader` | lesende End-to-End-Sicht |
+| `hr-user` / `hr-admin` | HR-Self-Service bzw. HR-Administration |
+| `desksharing-user` / `desksharing-admin` | eigene Buchung bzw. Standortsteuerung |
+| `management-user` | End-to-End-Sicht |
+| `platform-admin` | alle Plattformrollen; in der lokalen Demo zusätzlich Administration des Keycloak-Realms |
 
 Fehlt eine Funktion, keine fremden Konten verwenden. Benötigte Rolle,
 fachliche Begründung und gewünschte Dauer an den Rollenverantwortlichen

@@ -1,0 +1,105 @@
+services:
+  integration-stub:
+    image: python:3.13-alpine
+    profiles: [ci]
+    command: ["python", "/tests/stub_systems.py"]
+    volumes:
+      - ./services/platform_api/tests/integration:/tests:ro
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/health', timeout=2)",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    networks: [platform]
+
+  platform-api:
+    environment:
+      ERPNEXT_BASE_URL: http://integration-stub:9000/erpnext
+      ERPNEXT_API_KEY: ci-key
+      ERPNEXT_API_SECRET: ci-secret
+      PAPERLESS_BASE_URL: http://integration-stub:9000/paperless
+      PAPERLESS_API_TOKEN: ci-paperless-token
+      REDMINE_BASE_URL: http://integration-stub:9000/redmine
+      REDMINE_PUBLIC_URL: http://redmine.test
+      REDMINE_API_KEY: ci-redmine-key
+      READINESS_REQUIRE_INTEGRATIONS: "true"
+    depends_on:
+      integration-stub:
+        condition: service_healthy
+
+  platform-mcp:
+    environment:
+      ERPNEXT_BASE_URL: http://integration-stub:9000/erpnext
+      ERPNEXT_API_KEY: ci-key
+      ERPNEXT_API_SECRET: ci-secret
+    depends_on:
+      integration-stub:
+        condition: service_healthy
+
+  dms-mcp-ci:
+    build:
+      context: ./services/platform_api
+      target: base
+    profiles: [ci]
+    command: ["python", "-m", "app.dms_mcp_server"]
+    environment:
+      PAPERLESS_BASE_URL: http://integration-stub:9000/paperless
+      PAPERLESS_API_TOKEN: ci-paperless-token
+    depends_on:
+      integration-stub:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import socket; socket.create_connection(('127.0.0.1', 8091), 2).close()",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks: [platform]
+
+  docs:
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000', timeout=2)",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  integration-tests:
+    build:
+      context: ./services/platform_api
+      target: base
+    profiles: [ci]
+    command: ["python", "/tests/stack_smoke.py"]
+    environment:
+      TEST_API_URL: http://platform-api:8080
+      TEST_DOCS_URL: http://docs:8000
+    volumes:
+      - ./services/platform_api/tests/integration:/tests:ro
+    depends_on:
+      platform-api:
+        condition: service_healthy
+      platform-mcp:
+        condition: service_healthy
+      dms-mcp-ci:
+        condition: service_healthy
+      knowledge-mcp:
+        condition: service_healthy
+      docs:
+        condition: service_healthy
+    networks: [platform]

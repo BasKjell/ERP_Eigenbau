@@ -1,0 +1,636 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Executive Cockpit",
+      "type": "link",
+      "url": "/d/management-executive",
+      "targetBlank": false
+    },
+    {
+      "title": "Fertigung",
+      "type": "link",
+      "url": "/d/management-production-live",
+      "targetBlank": false
+    },
+    {
+      "title": "FLOWERP CRM",
+      "type": "link",
+      "url": "http://localhost:8001/app/opportunity",
+      "targetBlank": true
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "decimals": 0,
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "gross_pipeline",
+              "text": "Brutto-Pipeline",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.crm_kpis",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Offene Brutto-Pipeline",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
+          "decimals": 0,
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "weighted_pipeline",
+              "text": "Gewichtete Pipeline",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.crm_kpis",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Gewichtete Pipeline",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "semi-dark-blue",
+            "mode": "fixed"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "open_opportunities",
+              "text": "Opportunities",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.crm_kpis",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Offene Opportunities",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "orange",
+            "mode": "fixed"
+          },
+          "decimals": 1,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "average_probability",
+              "text": "Ø Wahrscheinlichkeit",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.crm_kpis",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Durchschnittliche Wahrscheinlichkeit",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 75,
+            "lineWidth": 2,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            }
+          },
+          "decimals": 0,
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 14,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "time",
+              "text": "time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "pipeline_value",
+              "text": "Brutto-Pipeline",
+              "type": "number"
+            },
+            {
+              "selector": "weighted_pipeline",
+              "text": "Gewichtete Pipeline",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "timeseries",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.crm_yearly",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "CRM-Pipeline der nächsten Jahre",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1
+          },
+          "decimals": 0,
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 10,
+        "x": 14,
+        "y": 4
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "stage",
+              "text": "stage",
+              "type": "string"
+            },
+            {
+              "selector": "weighted_value",
+              "text": "weighted_value",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.crm_stage",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Gewichtete Pipeline je Vertriebsphase",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/(opportunity_value|weighted_value)/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "probability"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "expected_close_date"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "opportunity_id",
+              "text": "opportunity_id",
+              "type": "string"
+            },
+            {
+              "selector": "opportunity_name",
+              "text": "opportunity_name",
+              "type": "string"
+            },
+            {
+              "selector": "customer",
+              "text": "customer",
+              "type": "string"
+            },
+            {
+              "selector": "product",
+              "text": "product",
+              "type": "string"
+            },
+            {
+              "selector": "stage",
+              "text": "stage",
+              "type": "string"
+            },
+            {
+              "selector": "sales_owner",
+              "text": "sales_owner",
+              "type": "string"
+            },
+            {
+              "selector": "expected_close_date",
+              "text": "expected_close_date",
+              "type": "timestamp"
+            },
+            {
+              "selector": "close_year",
+              "text": "close_year",
+              "type": "number"
+            },
+            {
+              "selector": "opportunity_value",
+              "text": "opportunity_value",
+              "type": "number"
+            },
+            {
+              "selector": "probability",
+              "text": "probability",
+              "type": "number"
+            },
+            {
+              "selector": "weighted_value",
+              "text": "weighted_value",
+              "type": "number"
+            },
+            {
+              "selector": "source",
+              "text": "source",
+              "type": "string"
+            },
+            {
+              "selector": "region",
+              "text": "region",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.crm_opportunities",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Opportunity-Portfolio 2027–2031",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": [
+    "crm",
+    "live",
+    "management",
+    "pipeline",
+    "sales"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now",
+    "to": "now+6y"
+  },
+  "timezone": "browser",
+  "title": "Management – CRM-Pipeline 2027–2031",
+  "uid": "management-crm-pipeline",
+  "version": 2
+}

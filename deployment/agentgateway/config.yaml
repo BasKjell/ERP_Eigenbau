@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+#
+# FLOWGATE is the central, OpenAI-compatible model gateway.  The configuration
+# stays in Git; secrets are expanded from the container environment at runtime.
+gateways:
+  ui-gateway:
+    port: 4001
+
+llm:
+  port: 4000
+  policies:
+    apiKey:
+      mode: strict
+      keys:
+      - key: ${AGENTGATEWAY_OPENWEBUI_KEY}
+        metadata:
+          consumer: open-webui
+          purpose: employee-chat
+        allowedModels:
+        - qwen3:8b
+        - qwen3-coder:30b
+  models:
+  - name: qwen3:8b
+    provider: ollama
+    params:
+      model: qwen3:8b
+      baseUrl: ${AGENTGATEWAY_OLLAMA_BASE_URL}
+  - name: qwen3-coder:30b
+    provider: ollama
+    params:
+      model: qwen3-coder:30b
+      baseUrl: ${AGENTGATEWAY_OLLAMA_BASE_URL}
+
+ui:
+  gateways: [ui-gateway]
+  policies:
+    oidc:
+      # The token issuer remains the browser-visible Keycloak URL.  Explicit
+      # internal token/JWKS endpoints let the container reach the same realm.
+      issuer: ${ISSUER_URL}
+      authorizationEndpoint: ${OIDC_AUTHORIZATION_ENDPOINT}
+      tokenEndpoint: ${OIDC_TOKEN_ENDPOINT}
+      tokenEndpointAuth: clientSecretBasic
+      jwks:
+        url: ${OIDC_JWKS_URL}
+      clientId: ${UI_CLIENT_ID}
+      clientSecret: ${UI_CLIENT_SECRET}
+      redirectURI: ${REDIRECT_URI}
+      credentials: session
+      scopes:
+      - profile
+      - email
+    authorization:
+      rules:
+      - allow: 'jwt.roles.exists(role, role == "platform-admin")'
+
+frontendPolicies:
+  accessLog:
+    add:
+      user.id: jwt.sub
+      user.email: jwt.email
+      user.department: jwt.department

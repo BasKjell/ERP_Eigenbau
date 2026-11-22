@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="FLOWFIN Management-, Finanz- und Produktionscockpit" />
+    <title>FLOWFIN · Management & Finance</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/finance.css" />
+    <link rel="stylesheet" href="/assets/finance-cash.css" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+  </head>
+  <body>
+    <header class="fin-topbar">
+      <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+      <a class="fin-brand" href="/"><span class="fin-mark">F</span><span><b>FLOWFIN</b><small>Management & Finance</small></span></a>
+      <div class="fin-context"><span class="demo-pill">DEMO-DATEN</span><span id="as-of">Stand –</span></div>
+      <nav><a href="/">FLOWPORTAL</a><a href="http://localhost:3000/d/management-executive" target="_blank">FLOWINSIGHT ↗</a><a href="http://localhost:8001/user-guides/finance/" target="_blank">FLOWDOCS ↗</a></nav>
+    </header>
+
+    <div class="fin-shell">
+      <aside class="fin-sidebar">
+        <div class="sidebar-label">STEUERUNG</div>
+        <button class="nav-item active" data-view="executive"><span>◫</span>Management</button>
+        <button class="nav-item" data-view="revenue"><span>↗</span>Umsatz & Produktion</button>
+        <button class="nav-item" data-view="projects"><span>◇</span>Projekte & Marge</button>
+        <button class="nav-item" data-view="cash"><span>≋</span>Cash & Working Capital</button>
+        <button class="nav-item" data-view="innovation"><span>⌁</span>Engineering & Qualität</button>
+        <div class="sidebar-label">FINANZPROZESSE</div>
+        <button class="nav-item" data-view="operations"><span>✓</span>Budgets & Vorgänge</button>
+        <button class="nav-item" data-view="integrations"><span>⇄</span>Test-Schnittstellen</button>
+        <div class="sidebar-note"><b>Sicherer Demomodus</b><p>DATEV, Bank und E‑Rechnung senden keine Daten nach außen.</p></div>
+      </aside>
+
+      <main class="fin-main">
+        <section class="view active" id="view-executive">
+          <header class="page-head"><div><span class="eyebrow">EXECUTIVE COCKPIT</span><h1>Steuerung auf einen Blick</h1><p>Auftragseingang, laufende Fertigung, Liquidität und Ergebnisrisiken in einer Sicht.</p></div><button class="outline" id="refresh">↻ Aktualisieren</button></header>
+          <div id="executive-kpis" class="kpi-grid"></div>
+          <div class="dashboard-grid two-thirds">
+            <article class="card"><div class="card-head"><div><span class="eyebrow">UMSATZERWARTUNG</span><h2>Forecast nach Rechnungsmonat</h2></div><span class="legend"><i></i>gewichtet</span></div><div id="revenue-chart" class="bar-chart"></div></article>
+            <article class="card risk-card"><div class="card-head"><div><span class="eyebrow">MANAGEMENT-FOKUS</span><h2>Handlungsbedarf</h2></div></div><div id="risk-list" class="risk-list"></div></article>
+          </div>
+          <article class="card"><div class="card-head"><div><span class="eyebrow">PRODUKTIONSPIPELINE</span><h2>Aufträge, Marge und Lieferrisiko</h2></div><a href="#" data-switch="revenue">Detailansicht →</a></div><div id="executive-orders" class="table-wrap"></div></article>
+        </section>
+
+        <section class="view" id="view-revenue">
+          <header class="page-head"><div><span class="eyebrow">REVENUE OPERATIONS</span><h1>Umsatz aus laufenden Aufträgen</h1><p>Brutto-Auftragswert und wahrscheinlichkeitsgewichteter Umsatz aus Vertrieb, Engineering und Produktion.</p></div></header>
+          <div id="revenue-kpis" class="kpi-grid compact"></div>
+          <article class="card"><div class="card-head"><div><span class="eyebrow">AUFTRAGSBESTAND</span><h2>Forecast mit Produktionsfortschritt</h2></div></div><div id="orders-table" class="table-wrap"></div></article>
+        </section>
+
+        <section class="view" id="view-projects">
+          <header class="page-head"><div><span class="eyebrow">PROJECT CONTROLLING</span><h1>Projekt- und Produktprofitabilität</h1><p>Istkosten, Estimate-at-Completion und erwartete Marge je Kommission.</p></div></header>
+          <article class="card"><div class="card-head"><div><span class="eyebrow">MARGEN-CHECK</span><h2>Kommissionen nach EAC</h2></div></div><div id="projects-table" class="table-wrap"></div></article>
+        </section>
+
+        <section class="view" id="view-cash">
+          <header class="page-head"><div><span class="eyebrow">TREASURY</span><h1>Cash & Working Capital</h1><p>Rollierende Liquiditätsvorschau sowie offene Kunden- und Lieferantenposten.</p></div></header>
+          <div id="cash-kpis" class="kpi-grid compact"></div>
+          <div class="dashboard-grid half"><article class="card"><div class="card-head"><div><span class="eyebrow">2 JAHRE HISTORIE · 2 JAHRE VORSCHAU</span><h2>Liquiditätsverlauf</h2></div></div><div id="cash-chart" class="line-bars"></div></article><article class="card"><div class="card-head"><div><span class="eyebrow">OFFENE POSTEN</span><h2>Forderungen & Verbindlichkeiten</h2></div></div><div id="open-items" class="mini-list"></div></article></div>
+        </section>
+
+        <section class="view" id="view-innovation">
+          <header class="page-head"><div><span class="eyebrow">HARDWARE & SOFTWARE</span><h1>Engineering, Qualität und Lifecycle</h1><p>F&E-Portfolio, Software-Abos, Qualitätskosten und Gewährleistungsfälle.</p></div></header>
+          <div class="dashboard-grid half"><article class="card"><div class="card-head"><div><span class="eyebrow">F&E-PORTFOLIO</span><h2>Entwicklungsprojekte</h2></div></div><div id="rd-list" class="detail-list"></div></article><article class="card"><div class="card-head"><div><span class="eyebrow">SOFTWARE & CLOUD</span><h2>Wiederkehrende Kosten</h2></div></div><div id="subscription-list" class="detail-list"></div></article></div>
+          <div class="dashboard-grid half"><article class="card"><div class="card-head"><div><span class="eyebrow">COST OF QUALITY</span><h2>Qualitätskosten</h2></div></div><div id="quality-list" class="detail-list"></div></article><article class="card"><div class="card-head"><div><span class="eyebrow">WARRANTY / RMA</span><h2>Gewährleistungsrisiken</h2></div></div><div id="warranty-list" class="detail-list"></div></article></div>
+        </section>
+
+        <section class="view" id="view-operations">
+          <header class="page-head"><div><span class="eyebrow">FINANCE OPERATIONS</span><h1>Budgets, Auslagen und Anlagen</h1><p>Intern vollständig nutzbare Prozesse – inklusive Vier-Augen-Freigabe und Audit-Trail.</p></div><button class="primary" data-open="expense-dialog">＋ Auslage erfassen</button></header>
+          <div class="dashboard-grid half"><article class="card"><div class="card-head"><div><span class="eyebrow">ROLLING FORECAST</span><h2>Budgets</h2></div></div><div id="budget-list" class="budget-list"></div></article><article class="card"><div class="card-head"><div><span class="eyebrow">AUSLAGEN</span><h2>Offene Freigaben</h2></div></div><div id="expense-list" class="detail-list"></div></article></div>
+          <article class="card"><div class="card-head"><div><span class="eyebrow">ANLAGENBUCH</span><h2>Aktive Anlagen und Abschreibung</h2></div><button class="text-button" data-open="asset-dialog">＋ Anlage</button></div><div id="asset-table" class="table-wrap"></div></article>
+        </section>
+
+        <section class="view" id="view-integrations">
+          <header class="page-head"><div><span class="eyebrow">EXTERNE ÜBERGABEN</span><h1>Kontrollierte Test-Schnittstellen</h1><p>Preview, Bestätigung und Audit-Trail sind echt; die Übertragung zu DATEV, Bank oder Peppol bleibt simuliert.</p></div></header>
+          <div id="adapter-grid" class="adapter-grid"></div>
+          <article class="card"><div class="card-head"><div><span class="eyebrow">PROTOKOLL</span><h2>Letzte Testläufe</h2></div></div><div id="run-list" class="detail-list"></div></article>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="expense-dialog"><form id="expense-form" method="dialog"><header><div><span class="eyebrow">VIER-AUGEN-WORKFLOW</span><h2>Auslage erfassen</h2></div><button type="button" data-close="expense-dialog">×</button></header><label>Beschreibung<input name="description" required value="Musterkoffer für Kundenabnahme" /></label><div class="form-row"><label>Betrag (€)<input name="amount" required type="number" step="0.01" value="680" /></label><label>Kategorie<select name="category"><option>Reisekosten</option><option>Prüfmittel</option><option>Software</option><option>Sonstiges</option></select></label></div><div class="form-row"><label>Kostenstelle<input name="cost_center" required value="CC-SALES" /></label><label>Projekt<input name="project_id" value="KOM-2027-4711" /></label></div><label>Belegreferenz<input name="receipt_reference" value="DMS-REC-DEMO-001" /></label><footer><button type="button" class="outline" data-close="expense-dialog">Abbrechen</button><button class="primary" type="submit">Zur Freigabe senden</button></footer></form></dialog>
+    <dialog id="asset-dialog"><form id="asset-form" method="dialog"><header><div><span class="eyebrow">ANLAGENBUCH</span><h2>Anlage anlegen</h2></div><button type="button" data-close="asset-dialog">×</button></header><label>Bezeichnung<input name="name" required value="Mobiler Protokollanalysator" /></label><div class="form-row"><label>Anschaffung (€)<input name="acquisition_cost" required type="number" step="0.01" value="12800" /></label><label>Nutzungsdauer (Monate)<input name="useful_life_months" required type="number" value="60" /></label></div><div class="form-row"><label>Kostenstelle<input name="cost_center" required value="CC-ENG" /></label><label>Anschaffungsdatum<input name="acquisition_date" required type="date" value="2026-11-04" /></label></div><footer><button type="button" class="outline" data-close="asset-dialog">Abbrechen</button><button class="primary" type="submit">Anlage speichern</button></footer></form></dialog>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/finance.js" defer></script>
+  </body>
+</html>

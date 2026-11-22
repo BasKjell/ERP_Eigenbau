@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="FLOWSPACE - Desksharing und Workplace Management" />
+    <title>FLOWSPACE · Desksharing</title>
+    <link rel="icon" href="/assets/favicon.svg" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/desksharing.css?v=20261111" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+      <a class="brand" href="/desksharing"><span class="brand-mark"><i></i><i></i><i></i></span><span><b>FLOW</b><br />SPACE</span></a>
+      <nav aria-label="Anwendungen">
+        <a href="/">FLOWPORTAL</a><a href="/work">FLOWWORK</a><a href="/mes">FLOWMES</a><a href="/hr">FLOWHR</a><a class="active" href="/desksharing">FLOWSPACE</a><a href="http://localhost:8001" target="_blank">FLOWDOCS ↗</a>
+      </nav>
+      <div class="identity"><span id="auth-dot"></span><div><b id="auth-name">Demo-Modus</b><small id="auth-detail">Keycloak bereit</small></div><a id="auth-action" href="/auth/login?next=/desksharing">Anmelden</a></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <span class="eyebrow">FLOWSPACE · SMART WORKPLACE</span>
+          <h1>Dein Platz.<br /><em>Wenn du ihn brauchst.</em></h1>
+          <p>Zwei Standorte, ein Login und vollständige Transparenz: Arbeitsplatz suchen, passend ausstatten, buchen und vor Ort einchecken.</p>
+        </div>
+        <div class="hero-stats" id="hero-stats" aria-label="Auslastungskennzahlen"></div>
+      </section>
+
+      <section class="control-panel" aria-label="Buchungsfilter">
+        <label><span>Demobenutzer</span><select id="user-filter"></select></label>
+        <label><span>Datum</span><input id="date-filter" type="date" /></label>
+        <label><span>Standort</span><select id="site-filter"></select></label>
+        <label><span>Zeitfenster</span><select id="slot-filter"><option value="full_day">Ganztägig</option><option value="morning">Vormittag</option><option value="afternoon">Nachmittag</option></select></label>
+        <button id="refresh" class="button primary">Verfügbarkeit prüfen</button>
+      </section>
+
+      <section class="workspace" data-tour="floor-plan">
+        <aside>
+          <span class="eyebrow">GEBÄUDEORIENTIERUNG</span>
+          <h2>Platz oder Kollegen finden</h2>
+          <div class="space-mode-switch" role="tablist" aria-label="Suchmodus">
+            <button id="booking-mode" class="active" type="button" role="tab" aria-selected="true">Platz buchen</button>
+            <button id="colleague-mode" type="button" role="tab" aria-selected="false">Kollegen finden</button>
+          </div>
+          <div id="booking-filters">
+            <label class="search"><span>Arbeitsplatzsuche</span><input id="desk-search" type="search" placeholder="Nummer, Raum, Ausstattung" /></label>
+            <fieldset><legend>Zone</legend><label><input type="checkbox" name="zone" value="Fokus" checked /> Fokus</label><label><input type="checkbox" name="zone" value="Team" checked /> Team</label><label><input type="checkbox" name="zone" value="Projekt" checked /> Projekt</label></fieldset>
+            <fieldset><legend>Ausstattung</legend><label><input id="standing-filter" type="checkbox" /> Höhenverstellbar</label><label><input id="accessible-filter" type="checkbox" /> Barrierearm</label><label><input id="dual-filter" type="checkbox" /> Dual-Monitor</label></fieldset>
+          </div>
+          <div id="colleague-finder" hidden>
+            <label class="search"><span>Name oder Abteilung</span><input id="colleague-search" type="search" placeholder="z. B. Felix Hoffmann" /></label>
+            <p class="finder-hint">Angezeigt werden nur Personen mit aktiver Buchung am gewählten Standort und Tag.</p>
+            <div id="colleague-results" class="colleague-results"></div>
+          </div>
+          <div class="legend"><span><i class="available"></i>Frei</span><span><i class="mine"></i>Meine Buchung</span><span><i class="occupied"></i>Belegt</span></div>
+        </aside>
+
+        <div class="floor-area">
+          <div class="section-heading"><div><span class="eyebrow" id="floor-eyebrow">LIVE-BELEGUNG</span><h2 id="floor-title">Gebäudeplan</h2></div><span id="result-count" class="result-count"></span></div>
+          <div class="plan-toolbar">
+            <div id="floor-tabs" class="floor-tabs" aria-label="Etage wählen"></div>
+            <div id="room-tabs" class="room-tabs" aria-label="Raum wählen"></div>
+          </div>
+          <div class="map-layout">
+            <div id="building-plan" class="building-plan" aria-live="polite"></div>
+            <aside id="info-panel" class="info-panel" aria-label="Platzinformation">
+              <span class="eyebrow">PLATZINFORMATION</span>
+              <h3>Wähle einen Platz oder Kollegen</h3>
+              <p>FLOWSPACE zeigt Etage, Raum und den markierten Arbeitsplatz.</p>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="bookings-section">
+        <div class="section-heading"><div><span class="eyebrow">PERSÖNLICHER BEREICH</span><h2>Meine Buchungen</h2></div><button id="reset-demo" class="button ghost">Demo zurücksetzen</button></div>
+        <div id="my-bookings" class="booking-list"></div>
+      </section>
+
+      <section id="admin-section" class="admin-section" hidden>
+        <div class="section-heading"><div><span class="eyebrow">ADMINISTRATION</span><h2>Standortsteuerung</h2></div><span class="admin-badge">Desksharing Admin</span></div>
+        <div id="admin-content" class="admin-grid"></div>
+      </section>
+    </main>
+
+    <dialog id="booking-dialog">
+      <form method="dialog" class="dialog-card" id="booking-form">
+        <button class="dialog-close" value="cancel" aria-label="Schließen">×</button>
+        <span class="eyebrow">ARBEITSPLATZ BUCHEN</span>
+        <h2 id="dialog-title">Arbeitsplatz</h2>
+        <p id="dialog-meta"></p>
+        <div id="dialog-features" class="feature-list"></div>
+        <label><span>Notiz (optional)</span><textarea id="booking-note" maxlength="300" placeholder="z. B. Projektteam SCU-100"></textarea></label>
+        <button id="confirm-booking" class="button primary" value="default">Verbindlich buchen</button>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/desksharing.js?v=20261111" defer></script>
+  </body>
+</html>

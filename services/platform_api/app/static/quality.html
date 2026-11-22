@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="FLOWQ Wareneingangsprüfung und Messmittelanbindung" />
+    <title>FLOWQ · Wareneingangsprüfung</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/quality.css?v=20261110" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+  </head>
+  <body>
+    <div class="quality-shell">
+      <aside class="q-rail" aria-label="FLOWQ Navigation">
+        <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+        <a class="q-brand" href="/quality"><span>Q</span><b>FLOWQ</b><small>QUALITY</small></a>
+        <nav>
+          <a class="active" href="/quality"><span>◇</span><small>PRÜFEN</small></a>
+          <a href="http://localhost:8081/app/purchase-receipt" target="_blank"><span>↓</span><small>ERP</small></a>
+          <a href="/work?view=tests"><span>R</span><small>PLÄNE</small></a>
+          <a href="http://localhost:8010" target="_blank"><span>▤</span><small>DMS</small></a>
+          <a href="/management"><span>↗</span><small>MANAGE</small></a>
+        </nav>
+        <div class="q-online"><i></i><span>Online</span></div>
+      </aside>
+
+      <div class="quality-page">
+        <header class="quality-header">
+          <div><span class="product-name">FLOWQ</span><span class="product-area">Wareneingang · Stichproben · Messmittel</span></div>
+          <label class="scan-field"><span>⌁</span><input id="scan" type="search" placeholder="Bestellung, Wareneingang, Artikel oder Charge scannen" /></label>
+          <label class="operator-field"><span id="operator-avatar">CQ</span><select id="operator" aria-label="Prüfer auswählen"></select></label>
+        </header>
+
+        <main>
+          <section class="quality-intro">
+            <div><span class="eyebrow">MEIN PRÜFPLATZ</span><h1>Wareneingang prüfen.</h1><p>Scannen, Stichprobe abarbeiten und den Bestand sicher freigeben oder sperren.</p></div>
+            <div id="quality-metrics" class="quality-metrics"></div>
+          </section>
+
+          <section class="quality-workbench">
+            <aside class="receipt-panel">
+              <header><div><span class="eyebrow">PRÜFVORRAT</span><h2>Wareneingänge</h2></div><span id="receipt-count" class="count">0</span></header>
+              <div class="receipt-filter"><button class="active" data-receipt-filter="open">Offen</button><button data-receipt-filter="all">Alle</button></div>
+              <div id="receipt-list" class="receipt-list"></div>
+              <button id="quality-reset" class="text-button" type="button">Demodaten zurücksetzen ↻</button>
+            </aside>
+
+            <section id="inspection-workspace" class="inspection-workspace" data-tour="incoming-inspection" aria-live="polite">
+              <div class="workspace-loading"><span></span><p>Prüfauftrag wird geladen …</p></div>
+            </section>
+
+            <aside class="quality-context">
+              <section class="context-card">
+                <div class="context-title"><div><span class="eyebrow">MESSMITTEL</span><h3>Kalibrierstatus</h3></div><a href="/docs#/quality">API ↗</a></div>
+                <div id="instrument-list" class="instrument-list"></div>
+              </section>
+              <section class="context-card">
+                <div class="context-title"><div><span class="eyebrow">OFFENE SCHNITTSTELLE</span><h3>Measurement Gateway</h3></div><span class="api-badge">v1</span></div>
+                <div id="adapter-list" class="adapter-list"></div>
+                <code>POST /api/quality/v1/measurements</code>
+              </section>
+              <section class="context-card trace-card">
+                <span class="eyebrow">TRACEABILITY</span>
+                <div id="trace-links"><p>Prüfauftrag auswählen.</p></div>
+              </section>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+    <div id="quality-toast" class="quality-toast" role="status"></div>
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/quality.js?v=20261110" defer></script>
+  </body>
+</html>

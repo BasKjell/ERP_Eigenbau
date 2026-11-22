@@ -4,13 +4,21 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  python:
+  unit-tests:
+    name: Unit- und Komponententests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -19,27 +27,111 @@ jobs:
           cache: pip
           cache-dependency-path: services/platform_api/requirements-dev.txt
       - run: pip install -r services/platform_api/requirements-dev.txt
-      - run: ruff check services/platform_api/app services/platform_api/tests
-      - run: pytest
+      - run: >-
+          ruff check
+          services/platform_api/app
+          services/platform_api/tests
+          scripts/demo_data_api.py
+          scripts/setup_demo_data.py
+          scripts/delete_demo_data.py
+          scripts/validate_open_webui_config.py
+          scripts/validate_app_shell.py
+          scripts/test_demo_data_api.py
+      - name: API-Demodaten-Orchestrierung testen
+        run: python scripts/test_demo_data_api.py
+      - run: >-
+          pytest
+          --cov=app
+          --cov-branch
+          --cov-report=term-missing
+          --cov-report=xml
+          --cov-fail-under=75
         env:
           PYTHONPATH: services/platform_api
           DEMO_DATA_FILE: /tmp/erp-eigenbau-test-scenario.json
           DEMO_SEED_FILE: ${{ github.workspace }}/services/platform_api/seed/scenario.json
+          DOCUMENT_DIR: ${{ github.workspace }}/output/pdf
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+          if-no-files-found: ignore
 
   docs-and-compose:
+    name: Dokumentation und Compose-Vertrag
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-      - run: docker compose --profile full --profile ai --profile iam --profile ops config --quiet
+      - name: DMS-Governance validieren
+        run: >-
+          PYTHONPATH=services/platform_api
+          python -m app.paperless_governance
+          --config deployment/paperless/governance.json
+          --validate-only
+      - name: Keycloak- und Desksharing-Seeds auf Drift prüfen
+        run: python scripts/generate_iam_demo.py --check
+      - name: DMS- und Grafana-Artefakte validieren
+        run: >-
+          jq empty
+          deployment/paperless/governance.json
+          deployment/erpnext/demo_api_records.json
+          deployment/redmine/demo_api.json
+          deployment/grafana/provisioning/dashboards/json/*.json
+      - run: >-
+          docker compose
+          -f compose.yaml
+          -f compose.ci.yaml
+          --profile full
+          --profile ai
+          --profile iam
+          --profile ops
+          --profile ci
+          config --quiet
+      - name: Open-WebUI-MCP-Verbindungen validieren
+        run: python scripts/validate_open_webui_config.py
+      - name: Einheitliche App-Shell aller Oberflächen validieren
+        run: python scripts/validate_app_shell.py
       - run: docker run --rm -v "$PWD:/docs" squidfunk/mkdocs-material:9.8.0 build --strict
 
   container:
+    name: Produktionsimage bauen
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: services/platform_api
-          target: test
+          target: base
           push: false
+
+  dms-reporting:
+    name: DMS-Terminreporting und DB-Rechte
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Reporting-Vertrag und negativen Berechtigungstest ausführen
+        run: ./scripts/test_dms_reporting.sh
+
+  management-reporting:
+    name: Management-Reporting und DB-Rechte
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: KPI-Vertrag und negativen Berechtigungstest ausführen
+        run: ./scripts/test_management_reporting.sh
+
+  integration-tests:
+    name: Systemintegration ERP, DMS, MES, HR, FLOWFIN, Desksharing, Recruiting, Payroll, MCP und Wiki
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [unit-tests, docs-and-compose, container, dms-reporting, management-reporting]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Integrationsverbund starten und prüfen
+        run: ./scripts/run_integration_tests.sh

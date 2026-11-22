@@ -1,0 +1,90 @@
+:root {
+  --company-navy-950: #08141a;
+  --company-navy-900: #0d2027;
+  --company-navy-800: #17343d;
+  --company-ink: #12262d;
+  --company-muted: #697a80;
+  --company-canvas: #eef1ef;
+  --company-surface: #ffffff;
+  --company-line: #dbe2df;
+  --company-teal: #008b80;
+  --company-teal-dark: #006c64;
+  --company-teal-soft: #e3f4f0;
+  --company-lime: #c9ee45;
+  --company-green: #23845f;
+  --company-shadow: 0 18px 50px rgba(10, 31, 37, .09);
+
+  /* Gemeinsame Abbildung auf die historisch gewachsenen Modulvariablen. */
+  --ink: var(--company-ink);
+  --muted: var(--company-muted);
+  --paper: var(--company-canvas);
+  --bg: var(--company-canvas);
+  --canvas: var(--company-canvas);
+  --card: var(--company-surface);
+  --panel: var(--company-surface);
+  --surface: var(--company-surface);
+  --white: var(--company-surface);
+  --line: var(--company-line);
+  --teal: var(--company-teal);
+  --teal-dark: var(--company-teal-dark);
+  --teal-soft: var(--company-teal-soft);
+  --forest: var(--company-navy-900);
+  --green: var(--company-green);
+  --lime: var(--company-lime);
+  --blue: var(--company-teal);
+  --blue-dark: var(--company-teal-dark);
+  --navy-950: var(--company-navy-950);
+  --navy-900: var(--company-navy-900);
+  --navy-800: var(--company-navy-800);
+  --shadow: var(--company-shadow);
+}
+
+body {
+  color: var(--company-ink);
+  background-color: var(--company-canvas);
+  font-family: Inter, "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+}
+
+.work-sidebar,
+.rail,
+.sidebar,
+.fin-sidebar {
+  background-color: var(--company-navy-950) !important;
+}
+
+.work-topbar,
+.mes-header,
+.topbar,
+.portal-topbar,
+.fin-topbar {
+  border-bottom-color: var(--company-line) !important;
+}
+
+.work-brand > span,
+.fin-mark,
+.button.primary,
+.primary {
+  background-color: var(--company-teal);
+}
+
+.work-nav button:hover,
+.work-nav button.active {
+  background: rgba(0, 139, 128, .2);
+}
+
+.work-nav button.active::before {
+  background: var(--company-lime);
+}
+
+.eyebrow,
+.kicker,
+.product-label {
+  color: var(--company-teal);
+}
+
+.panel,
+.card,
+.metric-card,
+.kpi {
+  border-color: var(--company-line);
+}

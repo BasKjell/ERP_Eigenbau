@@ -4,8 +4,32 @@
 
 Das Profil `full` umfasst Frontend, Backend, WebSocket, Scheduler, kurze und
 lange Worker, Site-Erstellung, MariaDB sowie getrennte Redis-Dienste für Cache
-und Queue. Benutzer greifen nur über `erpnext-frontend` auf Port
-`${ERPNEXT_PORT:-8081}` zu.
+und Queue. `erpnext-shell` veröffentlicht Port `${ERPNEXT_PORT:-8081}` und
+reicht alle ERP-Anfragen an das nur intern erreichbare `erpnext-frontend`
+weiter. Bei HTML-Seiten ergänzt die Shell die gemeinsame linke
+Unternehmensleiste mit eingebettetem 9-Punkte-App-Launcher und Farbsystem. Der
+Aufruf von `/` wird direkt auf den ERPNext-Workspace `/desk/setup/home`
+geleitet; der technische Frappe-Framework-Workspace bleibt für
+Administratoren unter `/desk/build` verfügbar.
+
+Für Socket.IO setzt die Shell den von Frappe erwarteten internen Host
+`frontend`. Der Realtime-Dienst ruft die authentifizierende ERP-API über
+`erpnext-backend:8000` auf. Damit bleiben Origin-Prüfung und Echtzeitfunktionen
+gleichzeitig aktiv. REST-API und Dateien werden unverändert weitergereicht.
+
+Die Site-Konfiguration `host_name` wird bei jedem Lauf von
+`erpnext-create-site` auf `ERPNEXT_PUBLIC_URL` gesetzt. Das ist für den
+Keycloak-Rücksprung wichtig: In der lokalen Demo muss die öffentliche Adresse
+`http://localhost:8081` einschließlich Port lauten. Da das unveränderte
+Frappe-Frontend den Port bei einzelnen internen Weiterleitungen entfernt,
+korrigiert die äußere FLOWERP-Shell ausschließlich portlose
+`http://localhost/...`-Antworten auf die tatsächlich aufgerufene Adresse.
+Keycloak-Weiterleitungen auf Port 8082 werden dabei nicht verändert.
+
+ERPNext/Frappe nutzt in dieser Version einen vertraulichen Social-Login-Client
+mit Client Secret, sendet aber keinen PKCE-Code-Challenge-Parameter. Deshalb
+darf der Keycloak-Client `erpnext` PKCE nicht erzwingen. Portal, Grafana und
+die übrigen dafür ausgelegten OIDC-Clients verwenden weiterhin PKCE.
 
 ## Erststart, Seed und Diagnose
 
@@ -15,6 +39,7 @@ docker compose ps -a
 docker compose logs --tail=200 erpnext-create-site
 docker compose logs --tail=200 erpnext-seed
 docker compose logs --tail=200 erpnext-backend erpnext-queue-short
+docker compose logs --tail=100 erpnext-shell
 ```
 
 `erpnext-create-site` muss erfolgreich beendet sein. Ein 502 während der
@@ -64,4 +89,10 @@ bevor DNS oder Integrationen umgeschaltet werden.
 - `bench migrate` nur im Testklon ausführen.
 - Belegkette von Opportunity bis Sales Invoice sowie Rechte testen.
 - Worker, Scheduler, WebSocket, E-Mail und API-Integration prüfen.
+- Loginseite und Desk über Port 8081 öffnen, Launcher oben links testen und
+  Wechsel zu Portal, MES und DMS prüfen.
+- Mit `demo01` eine Opportunity und die Work-Order-Liste öffnen. Der Rücksprung
+  muss auf Port 8081 bleiben; eine Seite `No permission for Page` ist ein
+  Abnahmefehler. Der Seed spiegelt deshalb die zusammengesetzte
+  `platform-admin`-Rolle als `System Manager` plus ERP-Fachrollen.
 - Rollback-Zeitpunkt und unverarbeitete Queue-Jobs dokumentieren.

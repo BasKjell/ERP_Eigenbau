@@ -1,0 +1,750 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Executive Cockpit",
+      "type": "link",
+      "url": "/d/management-executive",
+      "targetBlank": false
+    },
+    {
+      "title": "CRM-Pipeline",
+      "type": "link",
+      "url": "/d/management-crm-pipeline",
+      "targetBlank": false
+    },
+    {
+      "title": "FLOWMES",
+      "type": "link",
+      "url": "http://localhost:8088/mes",
+      "targetBlank": true
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "active_work_orders",
+              "text": "Aktive Fertigungsaufträge",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.production_kpis",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Aktive Fertigungsaufträge",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "decimals": 0,
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "production_order_value",
+              "text": "Wert im Umlauf",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.production_kpis",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Auftragswert in Fertigung",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "blocked_work_orders",
+              "text": "Blockiert",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.production_kpis",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Blockierte Aufträge",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "orders_at_risk",
+              "text": "Terminrisiken",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.production_kpis",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Aufträge mit Terminrisiko",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "progress_percent"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "order_value"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "due_date"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "work_order_id",
+              "text": "work_order_id",
+              "type": "string"
+            },
+            {
+              "selector": "sales_order_id",
+              "text": "sales_order_id",
+              "type": "string"
+            },
+            {
+              "selector": "project_id",
+              "text": "project_id",
+              "type": "string"
+            },
+            {
+              "selector": "customer",
+              "text": "customer",
+              "type": "string"
+            },
+            {
+              "selector": "product",
+              "text": "product",
+              "type": "string"
+            },
+            {
+              "selector": "quantity",
+              "text": "quantity",
+              "type": "number"
+            },
+            {
+              "selector": "current_operation",
+              "text": "current_operation",
+              "type": "string"
+            },
+            {
+              "selector": "operation_status",
+              "text": "operation_status",
+              "type": "string"
+            },
+            {
+              "selector": "workstation",
+              "text": "workstation",
+              "type": "string"
+            },
+            {
+              "selector": "assigned_employee",
+              "text": "assigned_employee",
+              "type": "string"
+            },
+            {
+              "selector": "completed_operations",
+              "text": "completed_operations",
+              "type": "number"
+            },
+            {
+              "selector": "operation_count",
+              "text": "operation_count",
+              "type": "number"
+            },
+            {
+              "selector": "progress_percent",
+              "text": "progress_percent",
+              "type": "number"
+            },
+            {
+              "selector": "due_date",
+              "text": "due_date",
+              "type": "timestamp"
+            },
+            {
+              "selector": "risk",
+              "text": "risk",
+              "type": "string"
+            },
+            {
+              "selector": "order_value",
+              "text": "order_value",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.production_wip",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Aktuelle Aufträge und momentaner Arbeitsgang",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 10,
+        "x": 0,
+        "y": 15
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "normal",
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "current_operation",
+              "text": "current_operation",
+              "type": "string"
+            },
+            {
+              "selector": "orders",
+              "text": "Aufträge",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.operation_summary",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Aufträge je aktuellem Arbeitsgang",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1200
+              },
+              {
+                "color": "red",
+                "value": 2200
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 7,
+        "x": 10,
+        "y": 15
+      },
+      "id": 7,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "workstation",
+              "text": "workstation",
+              "type": "string"
+            },
+            {
+              "selector": "remaining_planned_minutes",
+              "text": "remaining_planned_minutes",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.workstation_load",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Verbleibende Planminuten je Arbeitsplatz",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 7,
+        "x": 17,
+        "y": 15
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "workstation",
+              "text": "workstation",
+              "type": "string"
+            },
+            {
+              "selector": "open_operations",
+              "text": "open_operations",
+              "type": "number"
+            },
+            {
+              "selector": "active_operations",
+              "text": "active_operations",
+              "type": "number"
+            },
+            {
+              "selector": "blocked_operations",
+              "text": "blocked_operations",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.workstation_load",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Arbeitsplatzbelegung",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": [
+    "live",
+    "management",
+    "mes",
+    "production",
+    "work-orders"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now+12M"
+  },
+  "timezone": "browser",
+  "title": "Management – Fertigung & Arbeitsgänge",
+  "uid": "management-production-live",
+  "version": 2
+}

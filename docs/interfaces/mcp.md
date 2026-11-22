@@ -9,7 +9,7 @@ den read-only DMS- und Wiki-Zugriffen getrennt.
 | Server | Host-Endpunkt | Interner Endpunkt für Open WebUI | Modus |
 |---|---|---|---|
 | ERPNext | `http://localhost:8090/mcp` | `http://platform-mcp:8090/mcp` | lesen + bestätigte Testdaten |
-| Paperless/DMS | `http://localhost:8091/mcp` | `http://dms-mcp:8091/mcp` | nur lesen |
+| Paperless/DMS | `http://localhost:8091/mcp` | `http://dms-mcp:8091/mcp` | Dokumente lesen + lokalen Suchindex aktualisieren |
 | Prozess-Wiki | `http://localhost:8092/mcp` | `http://knowledge-mcp:8092/mcp` | nur lesen |
 
 | Werkzeug | Zweck |
@@ -18,28 +18,57 @@ den read-only DMS- und Wiki-Zugriffen getrennt.
 | `list_late_purchase_orders` | verspätete Bestellungen anzeigen |
 | `get_order_status` | Kundenauftragsstatus und Risiken anzeigen |
 | `search_documents` | freigegebene Dokumentmetadaten suchen |
+| `search_dms_documents_semantic` | OCR-Inhalte über den lokalen pgvector-Index bedeutungsbasiert finden |
+| `refresh_dms_vector_index` | begrenzten lokalen Suchindex aus Paperless neu aufbauen |
+| `get_dms_vector_index_status` | Anzahl Dokumente/Chunks, Modell und letzten Stand anzeigen |
+| `get_personal_daily_brief` | rollenabhängige Tagesübersicht mit Aufgaben, Risiken, Links und KI-Prompts liefern |
+| `list_personal_ai_tools` | je Mitarbeiter verfügbare und geplante KI-Werkzeuge anzeigen |
+| `get_personal_action_context` | Quellkontext und Sicherheitsgrenze einer persönlichen Fokusaktion liefern |
+| `get_future_operating_model` | Management-Zielbild für Arbeitsteilung, Ausnahmen, Agentenregister und Autonomiestufen liefern |
 | `list_manufacturing_products` | aktive ERPNext-Produkte und BOMs anzeigen |
 | `get_bom_details` | Komponenten und Arbeitsgänge einer BOM anzeigen |
 | `get_inventory` | aktuelle ERPNext-Bestände aus `Bin` lesen |
 | `list_item_stock_movements` | Lagerbuchungen eines Artikels aus dem Stock Ledger lesen |
 | `list_materials_consumed` | in Fertigungsbuchungen verbrauchte Materialien je Tag lesen |
+| `get_documentation_context` | relevante Wiki-Ausschnitte zu einer Frage samt klickbaren Quellenlinks liefern |
 | `list_test_data_types` | erlaubte ERPNext-Typen, Felder, Defaults und Beispiele liefern |
 | `create_test_data` | einzelne oder mehrere Testdatensätze vorschauen und anlegen |
 | `import_test_data` | CSV- oder JSON-Inhalt vorschauen und importieren |
 | `rollback_test_data_batch` | ausschließlich eine auditierte MCP-Testdatencharge löschen |
 
-Der DMS-Server bietet `search_dms_documents`, `get_dms_document`,
-`list_recent_dms_documents` und `list_dms_metadata`. Er gibt Metadaten und
-kurze OCR-Treffer zurück, aber keine Binärdateien oder vollständigen
-Dokumentinhalte. Der Wiki-Server bietet `list_documentation_sections`,
-`search_process_documentation` und `get_documentation_page`; Pfade sind auf
-Markdown-Dateien unter `docs/` begrenzt.
+Der DMS-Server bietet zusätzlich `search_dms_documents_semantic`,
+`refresh_dms_vector_index` und `get_dms_vector_index_status`. Der Index enthält
+begrenzte OCR-Textblöcke sowie lokale 768-dimensionale Vektoren in
+PostgreSQL/pgvector. Die aktuelle Demo nutzt einen deterministischen lokalen
+Feature-Encoder; Dokumenttexte verlassen den Rechner nicht. Treffer enthalten
+einen Ausschnitt, eine Ähnlichkeitsbewertung und die Browser-URL der
+Paperless-Detailseite. Binärdateien werden nicht an das Modell übertragen.
+Der Wiki-Server bietet `list_documentation_sections`,
+`search_process_documentation`, `get_documentation_context` und
+`get_documentation_page`; Pfade sind auf Markdown-Dateien unter `docs/`
+begrenzt. Suchtreffer enthalten Seitentitel, passende Überschrift, Ausschnitt
+und eine klickbare MkDocs-URL. Das lokale Modell soll ausschließlich diese
+Treffer zusammenfassen und die URL jeder verwendeten Quelle nennen.
 
 Der Katalog deckt unter anderem Mitarbeiter, Arbeitszeitnachweise,
 Arbeitsplätze und -typen, Werkshallen, Arbeitsgänge, Lieferanten, Kunden,
 Artikel, Lager, Abteilungen, Stellen, Niederlassungen, Projekte,
 Tätigkeitsarten, Feiertagslisten und Mengeneinheiten ab. Freies SQL,
 beliebige DocTypes und beliebige Felder sind nicht möglich.
+
+### Abdeckung der Fachanwendungen
+
+Es existieren nicht für alle Fachanwendungen separate MCP-Server. Der
+Plattform-MCP stellt deshalb das persönliche Tagesbriefing als lesendes
+Gateway bereit. FLOWWORK, FLOWMES, FLOWQ, FLOWHR, FLOWSPACE und FLOWFIN liefern
+dafür Daten über die Plattform-Services. Fachliche Schreibaktionen dieser
+Systeme bleiben geplant oder führen in die jeweilige Bedienoberfläche, bis
+benutzerbezogenes OAuth, Rollenprüfung, Vorschau, Bestätigung und Audit
+durchgängig implementiert sind.
+
+Der vollständige Feldkatalog, die abhängige Importreihenfolge, nicht abgedeckte
+Objekte sowie die Übergabe an eine selbst gehostete planende KI stehen im
+[Migrations- und API-Leitfaden](migration-api.md).
 
 ```mermaid
 flowchart LR
@@ -93,7 +122,11 @@ standardmäßig 100 Datensätze begrenzt.
 - Systemfelder wie `owner`, beliebige DocTypes, SQL und Shell bleiben gesperrt.
 - ERP-Leseabfragen verwenden feste DocTypes, Felder, Filter und Mengenlimits;
   der Client kann kein freies SQL oder beliebige REST-Pfade übergeben.
-- DMS- und Wiki-MCP besitzen keine Schreibwerkzeuge.
+- DMS-Dokumente und Wiki bleiben unverändert. Die DMS-Neuindizierung schreibt
+  ausschließlich abgeleitete Chunks/Vektoren in `knowledge_chunks`.
+- Die lokale Demo verwendet für DMS und ERP technische Zugänge. Vor einer
+  Mehrbenutzerfreigabe müssen Benutzeridentität und Rollen vom Open-WebUI-Chat
+  bis zum MCP- und Fachsystem durchgereicht und serverseitig geprüft werden.
 - Auditereignisse liegen im Volume unter `/data/mcp-write-audit.jsonl`.
 - Die Administrator-Anmeldung ist nur für die lokale Demo vorgesehen. Vor
   jeder Netzfreigabe sind ein eingeschränktes Servicekonto, Tokenauthentifizierung,

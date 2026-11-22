@@ -1,0 +1,390 @@
+{
+  "schema_version": 1,
+  "owner_username": "admin",
+  "roles": [
+    {
+      "name": "DMS-Leser",
+      "permissions": [
+        "documents.view_correspondent",
+        "documents.view_customfield",
+        "documents.view_document",
+        "documents.view_documenttype",
+        "documents.view_note",
+        "documents.view_savedview",
+        "documents.view_storagepath",
+        "documents.view_tag"
+      ]
+    },
+    {
+      "name": "DMS-Bearbeiter",
+      "permissions": [
+        "documents.add_document",
+        "documents.add_note",
+        "documents.change_document",
+        "documents.change_note",
+        "documents.view_correspondent",
+        "documents.view_customfield",
+        "documents.view_document",
+        "documents.view_documenttype",
+        "documents.view_note",
+        "documents.view_savedview",
+        "documents.view_storagepath",
+        "documents.view_tag"
+      ]
+    },
+    {
+      "name": "DMS-Pruefer",
+      "permissions": [
+        "documents.add_note",
+        "documents.change_document",
+        "documents.change_note",
+        "documents.view_correspondent",
+        "documents.view_customfield",
+        "documents.view_document",
+        "documents.view_documenttype",
+        "documents.view_note",
+        "documents.view_savedview",
+        "documents.view_storagepath",
+        "documents.view_tag"
+      ]
+    },
+    {
+      "name": "DMS-Freigeber",
+      "permissions": [
+        "documents.add_note",
+        "documents.change_document",
+        "documents.change_note",
+        "documents.view_correspondent",
+        "documents.view_customfield",
+        "documents.view_document",
+        "documents.view_documenttype",
+        "documents.view_note",
+        "documents.view_savedview",
+        "documents.view_storagepath",
+        "documents.view_tag"
+      ]
+    },
+    {
+      "name": "DMS-Administration",
+      "permissions": [
+        "auth.add_group",
+        "auth.add_user",
+        "auth.change_group",
+        "auth.change_user",
+        "auth.view_group",
+        "auth.view_user",
+        "documents.add_correspondent",
+        "documents.add_customfield",
+        "documents.add_document",
+        "documents.add_documenttype",
+        "documents.add_note",
+        "documents.add_savedview",
+        "documents.add_savedviewfilterrule",
+        "documents.add_storagepath",
+        "documents.add_tag",
+        "documents.add_workflow",
+        "documents.add_workflowaction",
+        "documents.add_workflowtrigger",
+        "documents.change_correspondent",
+        "documents.change_customfield",
+        "documents.change_document",
+        "documents.change_documenttype",
+        "documents.change_note",
+        "documents.change_savedview",
+        "documents.change_savedviewfilterrule",
+        "documents.change_storagepath",
+        "documents.change_tag",
+        "documents.change_workflow",
+        "documents.change_workflowaction",
+        "documents.change_workflowtrigger",
+        "documents.view_correspondent",
+        "documents.view_customfield",
+        "documents.view_document",
+        "documents.view_documenttype",
+        "documents.view_note",
+        "documents.view_savedview",
+        "documents.view_savedviewfilterrule",
+        "documents.view_storagepath",
+        "documents.view_tag",
+        "documents.view_workflow",
+        "documents.view_workflowaction",
+        "documents.view_workflowrun",
+        "documents.view_workflowtrigger",
+        "paperless.view_global_statistics",
+        "paperless.view_system_monitoring"
+      ]
+    }
+  ],
+  "access_groups": [
+    "DMS-Eingang",
+    "DMS-Bereich-Vertrieb",
+    "DMS-Bereich-Einkauf",
+    "DMS-Bereich-Produktion",
+    "DMS-Bereich-Konstruktion",
+    "DMS-Bereich-Qualitaet",
+    "DMS-Bereich-Projektleitung",
+    "DMS-Bereich-HR-Recruiting",
+    "DMS-Bereich-HR-Payroll"
+  ],
+  "metadata": {
+    "custom_fields": [
+      {"name": "Projekt / Kommission", "data_type": "string"},
+      {"name": "ERP-Auftrag", "data_type": "string"},
+      {"name": "Fertigungsauftrag", "data_type": "string"},
+      {"name": "Artikel", "data_type": "string"},
+      {"name": "Revision", "data_type": "string"},
+      {"name": "Charge / Seriennummer", "data_type": "string"},
+      {"name": "Dokumentverantwortung", "data_type": "string"},
+      {"name": "Meilenstein", "data_type": "string"},
+      {"name": "Dokumentlieferobjekt", "data_type": "string"},
+      {"name": "Baseline-Version", "data_type": "string"},
+      {"name": "Baseline-Termin", "data_type": "date"},
+      {"name": "Liefertermin", "data_type": "date"},
+      {"name": "Forecast-Termin", "data_type": "date"},
+      {"name": "Tatsächliches Lieferdatum", "data_type": "date"},
+      {"name": "Lieferempfänger", "data_type": "string"},
+      {"name": "Vertragsdokument", "data_type": "boolean"},
+      {"name": "Fortschritt (%)", "data_type": "integer"},
+      {"name": "Terminnotiz", "data_type": "longtext"},
+      {"name": "Freigegeben durch", "data_type": "string"},
+      {"name": "Freigabedatum", "data_type": "date"},
+      {"name": "Gültig ab", "data_type": "date"},
+      {"name": "Gültig bis", "data_type": "date"},
+      {"name": "Bewerbungsnummer", "data_type": "string"},
+      {"name": "Stellennummer", "data_type": "string"},
+      {"name": "Aufbewahrung prüfen am", "data_type": "date"},
+      {"name": "Mitarbeiter-Nr.", "data_type": "string"},
+      {"name": "Abrechnungszeitraum", "data_type": "string"},
+      {"name": "Abrechnungslauf", "data_type": "string"}
+    ],
+    "tags": [
+      {"name": "Status/Entwurf", "color": "#6c757d", "match": "", "matching_algorithm": 0, "is_insensitive": true, "is_inbox_tag": false},
+      {"name": "Status/In Prüfung", "color": "#0d6efd", "match": "", "matching_algorithm": 0, "is_insensitive": true, "is_inbox_tag": false},
+      {"name": "Status/Zur Freigabe", "color": "#ffc107", "match": "", "matching_algorithm": 0, "is_insensitive": true, "is_inbox_tag": false},
+      {"name": "Status/Freigegeben", "color": "#198754", "match": "", "matching_algorithm": 0, "is_insensitive": true, "is_inbox_tag": false},
+      {"name": "Status/Abgelehnt", "color": "#dc3545", "match": "", "matching_algorithm": 0, "is_insensitive": true, "is_inbox_tag": false},
+      {"name": "Status/Obsolet", "color": "#212529", "match": "", "matching_algorithm": 0, "is_insensitive": true, "is_inbox_tag": false},
+      {"name": "Produkt/SCU-100", "color": "#20c997", "match": "SCU-100", "matching_algorithm": 3, "is_insensitive": true, "is_inbox_tag": false},
+      {"name": "Vertraulich/Personal", "color": "#8a3b12", "match": "", "matching_algorithm": 0, "is_insensitive": true, "is_inbox_tag": false}
+    ],
+    "document_types": [
+      {"name": "Technische Zeichnung", "match": "Zeichnung", "matching_algorithm": 1, "is_insensitive": true},
+      {"name": "Montageanweisung", "match": "Montageanweisung", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Arbeitsanweisung", "match": "Arbeitsanweisung", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Prüfplan", "match": "Prüfplan", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Lieferantenzertifikat", "match": "Lieferantenzertifikat", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Abnahmeprotokoll", "match": "Abnahmeprotokoll", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Spezifikation", "match": "Spezifikation", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Kundenauftrag", "match": "Auftragsbestätigung", "matching_algorithm": 1, "is_insensitive": true},
+      {"name": "Bestellung", "match": "Bestellung", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Vertrag", "match": "Vertrag", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Bewerbungsunterlage", "match": "Bewerbung", "matching_algorithm": 1, "is_insensitive": true},
+      {"name": "Arbeitsvertrag", "match": "Arbeitsvertrag", "matching_algorithm": 3, "is_insensitive": true},
+      {"name": "Entgeltabrechnung", "match": "Entgeltabrechnung", "matching_algorithm": 3, "is_insensitive": true}
+    ],
+    "storage_paths": [
+      {"name": "DMS-Eingang", "path": "Eingang/{{ created_year }}/{{ created_month }}", "match": "", "matching_algorithm": 0, "is_insensitive": true}
+    ]
+  },
+  "protected_areas": [
+    {
+      "name": "HR-Recruiting",
+      "access_group": "DMS-Bereich-HR-Recruiting",
+      "tag": "Bereich/HR-Recruiting",
+      "tag_color": "#8a3b12",
+      "storage_path": "Personal/Bewerbungen/{{ created_year }}/{{ created_month }}",
+      "filename_patterns": ["Bewerbung_*", "Lebenslauf_*", "Arbeitsvertrag_*"],
+      "order": 40
+    },
+    {
+      "name": "HR-Payroll",
+      "access_group": "DMS-Bereich-HR-Payroll",
+      "tag": "Bereich/HR-Payroll",
+      "tag_color": "#6f2c91",
+      "storage_path": "Personal/Entgeltabrechnungen/{{ created_year }}/{{ created_month }}",
+      "filename_patterns": ["Entgeltabrechnung_*", "Lohnabrechnung_*"],
+      "order": 41
+    }
+  ],
+  "project_templates": {
+    "Kundenkommission": {
+      "description": "Kundenspezifische Auftragsakte von Vertrieb bis Abnahme",
+      "tag_color": "#0d6efd",
+      "storage_path": "Projekte/Kunden/{code}/{{ document_type }}/{{ created_year }}"
+    },
+    "Interne Fertigung": {
+      "description": "Interne Fertigungsakte mit Arbeits- und Qualitätsunterlagen",
+      "tag_color": "#6f42c1",
+      "storage_path": "Projekte/Fertigung/{code}/{{ document_type }}/{{ created_year }}"
+    },
+    "Entwicklungsprojekt": {
+      "description": "Entwicklungsakte für Spezifikationen, Zeichnungen und Verifikation",
+      "tag_color": "#fd7e14",
+      "storage_path": "Projekte/Entwicklung/{code}/{{ document_type }}/{{ created_year }}"
+    }
+  },
+  "projects": [
+    {
+      "template": "Kundenkommission",
+      "code": "KOM-2027-4711",
+      "name": "NordMarine SCU-100",
+      "filename_patterns": ["*SCU-100*", "*Auftrag-4711*", "*BE-24117*"]
+    },
+    {
+      "template": "Interne Fertigung",
+      "code": "KOM-2027-1001",
+      "name": "IOX-24 Demo-Fertigung",
+      "filename_patterns": ["*IOX-24*"]
+    },
+    {
+      "template": "Interne Fertigung",
+      "code": "KOM-2027-1002",
+      "name": "GW-EDGE-200 Demo-Fertigung",
+      "filename_patterns": ["*GW-EDGE-200*"]
+    },
+    {
+      "template": "Interne Fertigung",
+      "code": "KOM-2027-1003",
+      "name": "HMI-070 Demo-Fertigung",
+      "filename_patterns": ["*HMI-070*"]
+    }
+  ],
+  "demo_documents": [
+    {
+      "filename": "Auftrag-4711_Abnahmeprotokoll.pdf",
+      "project": "KOM-2027-4711",
+      "document_type": "Abnahmeprotokoll",
+      "status": "Freigegeben",
+      "custom_fields": {
+        "ERP-Auftrag": "SO-4711",
+        "Artikel": "SCU-100",
+        "Dokumentverantwortung": "Projektleitung",
+        "Meilenstein": "Kundenabnahme",
+        "Dokumentlieferobjekt": "Abnahmeunterlagen",
+        "Baseline-Version": "BL-01",
+        "Baseline-Termin": "2026-11-15",
+        "Liefertermin": "2026-11-18",
+        "Forecast-Termin": "2026-11-22",
+        "Lieferempfänger": "NordMarine Systems GmbH",
+        "Vertragsdokument": true,
+        "Fortschritt (%)": 40,
+        "Terminnotiz": "Kundenunterschrift und finale Seriennummernliste noch ausstehend.",
+        "Freigegeben durch": "Demo-QS",
+        "Freigabedatum": "2026-10-31"
+      }
+    },
+    {
+      "filename": "Mainboard_Lieferantenzertifikat_BE-24117.pdf",
+      "project": "KOM-2027-4711",
+      "document_type": "Lieferantenzertifikat",
+      "status": "Freigegeben",
+      "custom_fields": {
+        "Artikel": "SCU-100-MAINBOARD",
+        "Charge / Seriennummer": "BE-24117",
+        "Dokumentverantwortung": "Einkauf / Qualität",
+        "Meilenstein": "Wareneingangsfreigabe",
+        "Dokumentlieferobjekt": "Lieferantendokumentation",
+        "Baseline-Version": "BL-01",
+        "Baseline-Termin": "2026-10-29",
+        "Liefertermin": "2026-10-30",
+        "Forecast-Termin": "2026-10-30",
+        "Tatsächliches Lieferdatum": "2026-10-30",
+        "Lieferempfänger": "Interne Qualitätssicherung",
+        "Vertragsdokument": true,
+        "Fortschritt (%)": 100,
+        "Freigegeben durch": "Demo-QS",
+        "Freigabedatum": "2026-10-31"
+      }
+    },
+    {
+      "filename": "SCU-100_Montageanweisung_Rev-D.pdf",
+      "project": "KOM-2027-4711",
+      "document_type": "Montageanweisung",
+      "status": "Freigegeben",
+      "custom_fields": {
+        "Artikel": "SCU-100",
+        "Revision": "D",
+        "Dokumentverantwortung": "Arbeitsvorbereitung",
+        "Meilenstein": "Produktionsfreigabe",
+        "Dokumentlieferobjekt": "Fertigungsunterlagen",
+        "Baseline-Version": "BL-01",
+        "Baseline-Termin": "2026-11-02",
+        "Liefertermin": "2026-11-04",
+        "Forecast-Termin": "2026-11-06",
+        "Lieferempfänger": "Produktion Werk 1",
+        "Vertragsdokument": false,
+        "Fortschritt (%)": 85,
+        "Terminnotiz": "Forecast zwei Tage nach aktuellem Soll; Kapazität prüfen.",
+        "Freigegeben durch": "Demo-QS",
+        "Freigabedatum": "2026-10-31"
+      }
+    },
+    {
+      "filename": "SCU-100_Pruefplan_Rev-B.pdf",
+      "project": "KOM-2027-4711",
+      "document_type": "Prüfplan",
+      "status": "Freigegeben",
+      "custom_fields": {
+        "Artikel": "SCU-100",
+        "Revision": "B",
+        "Dokumentverantwortung": "Qualitätssicherung",
+        "Meilenstein": "Prüfbereitschaft",
+        "Dokumentlieferobjekt": "Qualitätsunterlagen",
+        "Baseline-Version": "BL-01",
+        "Baseline-Termin": "2026-11-03",
+        "Liefertermin": "2026-11-03",
+        "Forecast-Termin": "2026-11-03",
+        "Lieferempfänger": "Produktion und Kunde",
+        "Vertragsdokument": true,
+        "Fortschritt (%)": 75,
+        "Freigegeben durch": "Demo-QS",
+        "Freigabedatum": "2026-10-31"
+      }
+    },
+    {
+      "filename": "SCU-100_Technische_Zeichnung_Rev-C.pdf",
+      "project": "KOM-2027-4711",
+      "document_type": "Technische Zeichnung",
+      "status": "Freigegeben",
+      "custom_fields": {
+        "Artikel": "SCU-100",
+        "Revision": "C",
+        "Dokumentverantwortung": "Konstruktion",
+        "Meilenstein": "Design Freeze",
+        "Dokumentlieferobjekt": "Konstruktionsunterlagen",
+        "Baseline-Version": "BL-01",
+        "Baseline-Termin": "2026-10-28",
+        "Liefertermin": "2026-10-31",
+        "Forecast-Termin": "2026-10-31",
+        "Tatsächliches Lieferdatum": "2026-10-31",
+        "Lieferempfänger": "NordMarine Systems GmbH",
+        "Vertragsdokument": true,
+        "Fortschritt (%)": 100,
+        "Freigegeben durch": "Demo-QS",
+        "Freigabedatum": "2026-10-31"
+      }
+    }
+  ],
+  "protected_documents": [
+    {
+      "filename": "Bewerbung_APP-0001_Lea-Muster.pdf",
+      "area": "HR-Recruiting",
+      "document_type": "Bewerbungsunterlage",
+      "custom_fields": {
+        "Bewerbungsnummer": "APP-0001",
+        "Stellennummer": "VAC-0001",
+        "Aufbewahrung prüfen am": "2027-04-30"
+      }
+    },
+    {
+      "filename": "Entgeltabrechnung_PAY-2026-10_DEMO-EMP-001.pdf",
+      "area": "HR-Payroll",
+      "document_type": "Entgeltabrechnung",
+      "custom_fields": {
+        "Mitarbeiter-Nr.": "DEMO-EMP-001",
+        "Abrechnungszeitraum": "PAY-2026-10",
+        "Abrechnungslauf": "PAYRUN-0001"
+      }
+    }
+  ]
+}

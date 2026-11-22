@@ -1,0 +1,2086 @@
+{
+  "ifResourceExists": "OVERWRITE",
+  "policy": "OVERWRITE",
+  "groups": [
+    {
+      "name": "AD-GG-FLOW-PLATFORM-ADMIN",
+      "realmRoles": [
+        "platform-admin"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PLATFORM-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-MANAGEMENT-USER",
+      "realmRoles": [
+        "management-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-MANAGEMENT-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-SALES-USER",
+      "realmRoles": [
+        "sales-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-SALES-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PROCUREMENT-USER",
+      "realmRoles": [
+        "procurement-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PROCUREMENT-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PLANNING-USER",
+      "realmRoles": [
+        "planning-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PLANNING-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PRODUCTION-USER",
+      "realmRoles": [
+        "production-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRODUCTION-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-QUALITY-USER",
+      "realmRoles": [
+        "quality-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-QUALITY-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-WAREHOUSE-USER",
+      "realmRoles": [
+        "warehouse-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-WAREHOUSE-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-HR-USER",
+      "realmRoles": [
+        "hr-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-HR-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-HR-ADMIN",
+      "realmRoles": [
+        "hr-admin"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-HR-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-FINANCE-USER",
+      "realmRoles": [
+        "finance-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-FINANCE-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PROJECT-USER",
+      "realmRoles": [
+        "project-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PROJECT-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-DMS-USER",
+      "realmRoles": [
+        "dms-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-DMS-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-DESKSHARING-USER",
+      "realmRoles": [
+        "desksharing-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-DESKSHARING-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-DESKSHARING-ADMIN",
+      "realmRoles": [
+        "desksharing-admin"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-DESKSHARING-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-IT-USER",
+      "realmRoles": [
+        "it-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-IT-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-GRAFANA-VIEWER",
+      "realmRoles": [
+        "grafana-viewer"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-GRAFANA-VIEWER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-AI-USER",
+      "realmRoles": [
+        "ai-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-AI-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-WORK-USER",
+      "realmRoles": [
+        "work-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-WORK-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-REQUIREMENTS-USER",
+      "realmRoles": [
+        "requirements-user"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-REQUIREMENTS-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-WORK-ADMIN",
+      "realmRoles": [
+        "work-admin"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-WORK-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "platform-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Plattform",
+      "lastName": "Administrator",
+      "email": "platform-admin@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "platform-admin"
+        ],
+        "department": [
+          "IT"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-PLATFORM-ADMIN"
+      ],
+      "clientRoles": {
+        "realm-management": [
+          "realm-admin"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin-Start-2026!",
+          "temporary": true
+        }
+      ]
+    },
+    {
+      "username": "demo01",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Anna",
+      "lastName": "Schneider",
+      "email": "demo01@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-001"
+        ],
+        "department": [
+          "Vertrieb"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-SALES-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-PLATFORM-ADMIN"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ],
+      "clientRoles": {
+        "realm-management": [
+          "realm-admin"
+        ]
+      }
+    },
+    {
+      "username": "demo02",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Jonas",
+      "lastName": "Weber",
+      "email": "demo02@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-002"
+        ],
+        "department": [
+          "Vertrieb"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-SALES-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo03",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Miriam",
+      "lastName": "Becker",
+      "email": "demo03@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-003"
+        ],
+        "department": [
+          "Vertrieb"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-SALES-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo04",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "David",
+      "lastName": "Fischer",
+      "email": "demo04@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-004"
+        ],
+        "department": [
+          "Vertrieb"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-SALES-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo05",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Leonie",
+      "lastName": "Wagner",
+      "email": "demo05@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-005"
+        ],
+        "department": [
+          "Vertrieb"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-SALES-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo06",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Felix",
+      "lastName": "Hoffmann",
+      "email": "demo06@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-006"
+        ],
+        "department": [
+          "Einkauf"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROCUREMENT-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo07",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sophie",
+      "lastName": "Koch",
+      "email": "demo07@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-007"
+        ],
+        "department": [
+          "Einkauf"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROCUREMENT-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo08",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Daniel",
+      "lastName": "Richter",
+      "email": "demo08@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-008"
+        ],
+        "department": [
+          "Einkauf"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROCUREMENT-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo09",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Nina",
+      "lastName": "Klein",
+      "email": "demo09@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-009"
+        ],
+        "department": [
+          "Einkauf"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROCUREMENT-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo10",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Lukas",
+      "lastName": "Wolf",
+      "email": "demo10@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-010"
+        ],
+        "department": [
+          "Einkauf"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROCUREMENT-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo11",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Clara",
+      "lastName": "Schröder",
+      "email": "demo11@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-011"
+        ],
+        "department": [
+          "Disposition"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PLANNING-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo12",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Tobias",
+      "lastName": "Neumann",
+      "email": "demo12@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-012"
+        ],
+        "department": [
+          "Disposition"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PLANNING-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo13",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Laura",
+      "lastName": "Schwarz",
+      "email": "demo13@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-013"
+        ],
+        "department": [
+          "Disposition"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PLANNING-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo14",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Jan",
+      "lastName": "Zimmermann",
+      "email": "demo14@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-014"
+        ],
+        "department": [
+          "Disposition"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PLANNING-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo15",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Emilia",
+      "lastName": "Braun",
+      "email": "demo15@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-015"
+        ],
+        "department": [
+          "Disposition"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PLANNING-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo16",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Tim",
+      "lastName": "Krüger",
+      "email": "demo16@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-016"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo17",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Johanna",
+      "lastName": "Hartmann",
+      "email": "demo17@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-017"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo18",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Max",
+      "lastName": "Lange",
+      "email": "demo18@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-018"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo19",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sarah",
+      "lastName": "Schmitt",
+      "email": "demo19@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-019"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo20",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Paul",
+      "lastName": "Werner",
+      "email": "demo20@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-020"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo21",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Julia",
+      "lastName": "Schmitz",
+      "email": "demo21@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-021"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo22",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Simon",
+      "lastName": "Krause",
+      "email": "demo22@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-022"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo23",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Marie",
+      "lastName": "Meier",
+      "email": "demo23@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-023"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo24",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Niklas",
+      "lastName": "Lehmann",
+      "email": "demo24@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-024"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo25",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Lisa",
+      "lastName": "Schmid",
+      "email": "demo25@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-025"
+        ],
+        "department": [
+          "Produktion"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PRODUCTION-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo26",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Ben",
+      "lastName": "Schulz",
+      "email": "demo26@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-026"
+        ],
+        "department": [
+          "Qualität"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-QUALITY-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo27",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Katharina",
+      "lastName": "Maier",
+      "email": "demo27@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-027"
+        ],
+        "department": [
+          "Qualität"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-QUALITY-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo28",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Moritz",
+      "lastName": "Köhler",
+      "email": "demo28@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-028"
+        ],
+        "department": [
+          "Qualität"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-QUALITY-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo29",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Franziska",
+      "lastName": "Herrmann",
+      "email": "demo29@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-029"
+        ],
+        "department": [
+          "Qualität"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-QUALITY-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo30",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Leon",
+      "lastName": "König",
+      "email": "demo30@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-030"
+        ],
+        "department": [
+          "Qualität"
+        ],
+        "home_site": [
+          "BER"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-QUALITY-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo31",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Theresa",
+      "lastName": "Walter",
+      "email": "demo31@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-031"
+        ],
+        "department": [
+          "Lager"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-WAREHOUSE-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo32",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Elias",
+      "lastName": "Mayer",
+      "email": "demo32@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-032"
+        ],
+        "department": [
+          "Lager"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-WAREHOUSE-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo33",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Vanessa",
+      "lastName": "Huber",
+      "email": "demo33@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-033"
+        ],
+        "department": [
+          "Lager"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-WAREHOUSE-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo34",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Florian",
+      "lastName": "Kaiser",
+      "email": "demo34@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-034"
+        ],
+        "department": [
+          "Lager"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-WAREHOUSE-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo35",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Carolin",
+      "lastName": "Fuchs",
+      "email": "demo35@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-035"
+        ],
+        "department": [
+          "Lager"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-WAREHOUSE-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo36",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Noah",
+      "lastName": "Peters",
+      "email": "demo36@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-036"
+        ],
+        "department": [
+          "Personal"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-HR-USER",
+        "/AD-GG-FLOW-HR-ADMIN"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo37",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Alina",
+      "lastName": "Lang",
+      "email": "demo37@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-037"
+        ],
+        "department": [
+          "Personal"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-HR-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo38",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sebastian",
+      "lastName": "Scholz",
+      "email": "demo38@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-038"
+        ],
+        "department": [
+          "Personal"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-HR-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo39",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Amelie",
+      "lastName": "Möller",
+      "email": "demo39@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-039"
+        ],
+        "department": [
+          "Personal"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-HR-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo40",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Philipp",
+      "lastName": "Weiß",
+      "email": "demo40@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-040"
+        ],
+        "department": [
+          "Finanzen"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-FINANCE-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo41",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Isabel",
+      "lastName": "Jung",
+      "email": "demo41@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-041"
+        ],
+        "department": [
+          "Finanzen"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-FINANCE-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo42",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Matteo",
+      "lastName": "Hahn",
+      "email": "demo42@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-042"
+        ],
+        "department": [
+          "Finanzen"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-FINANCE-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo43",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Luisa",
+      "lastName": "Schubert",
+      "email": "demo43@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-043"
+        ],
+        "department": [
+          "Finanzen"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-FINANCE-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo44",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Alexander",
+      "lastName": "Vogel",
+      "email": "demo44@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-044"
+        ],
+        "department": [
+          "Projekte & Engineering"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROJECT-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-WORK-ADMIN"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo45",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Helena",
+      "lastName": "Friedrich",
+      "email": "demo45@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-045"
+        ],
+        "department": [
+          "Projekte & Engineering"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROJECT-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo46",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Nico",
+      "lastName": "Günther",
+      "email": "demo46@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-046"
+        ],
+        "department": [
+          "Projekte & Engineering"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROJECT-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo47",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Eva",
+      "lastName": "Frank",
+      "email": "demo47@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-047"
+        ],
+        "department": [
+          "Projekte & Engineering"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROJECT-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo48",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Robert",
+      "lastName": "Berger",
+      "email": "demo48@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-048"
+        ],
+        "department": [
+          "Projekte & Engineering"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-PROJECT-USER",
+        "/AD-GG-FLOW-MANAGEMENT-USER",
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo49",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Maja",
+      "lastName": "Roth",
+      "email": "demo49@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-049"
+        ],
+        "department": [
+          "IT"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-IT-USER",
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-WORK-ADMIN",
+        "/AD-GG-FLOW-DESKSHARING-ADMIN"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "demo50",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Christian",
+      "lastName": "Beck",
+      "email": "demo50@example.invalid",
+      "attributes": {
+        "desksharing_user_id": [
+          "USR-050"
+        ],
+        "department": [
+          "IT"
+        ],
+        "home_site": [
+          "HAM"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DESKSHARING-USER",
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-IT-USER",
+        "/AD-GG-FLOW-AI-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

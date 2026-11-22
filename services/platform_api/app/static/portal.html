@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="FLOWPORTAL - zentrale Unternehmensoberfläche" />
+    <title>FLOWPORTAL · Unternehmensportal</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/portal.css?v=20261110" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+  </head>
+  <body>
+    <header class="portal-topbar">
+      <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+      <a class="portal-brand" href="/">
+        <span class="portal-brand-mark"><i></i><i></i><i></i></span>
+        <span><b>FLOW</b>PORTAL</span>
+      </a>
+      <label class="global-search"><span>⌕</span><input id="app-search" type="search" placeholder="Anwendung, Aufgabe oder Prozess suchen" /></label>
+      <div class="portal-actions">
+        <a class="help-link" href="http://localhost:8001" target="_blank" aria-label="FLOWDOCS öffnen">?</a>
+        <div class="portal-identity"><span id="identity-avatar">FP</span><div><b id="identity-name">Lokale Demo</b><small id="identity-department">FLOWPORTAL</small></div><a id="identity-action" href="/auth/login">Anmelden</a></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="portal-hero">
+        <div>
+          <span class="eyebrow">MEIN ARBEITSPLATZ · <b id="today">HEUTE</b></span>
+          <h1 id="greeting">Guten Morgen.</h1>
+          <p>Persönliche Aufgaben, Unternehmenswissen und KI-Unterstützung an einem Ort.</p>
+        </div>
+        <div class="hero-callout">
+          <span class="live-dot"></span>
+          <div><b>Plattform betriebsbereit</b><small>SSO, API und lokale Systeme verbunden</small></div>
+          <a href="/ready" target="_blank">Status ↗</a>
+        </div>
+      </section>
+
+      <section class="portal-layout">
+        <div class="portal-primary">
+          <section class="future-workplace" data-tour="future-workplace" aria-labelledby="future-title">
+            <div class="future-heading">
+              <div><span class="eyebrow">ARBEITSPLATZ DER ZUKUNFT</span><h2 id="future-title">Mein KI-Arbeitsplatz</h2><p id="daily-summary">Persönliche Prioritäten werden aus den freigegebenen Fachsystemen zusammengestellt.</p></div>
+              <div class="future-controls">
+                <label><span>Demoprofil</span><select id="workplace-profile" aria-label="Demoprofil"></select></label>
+                <a id="open-flowai" class="ai-primary" href="http://localhost:3001" target="_blank" rel="noopener">FLOWAI öffnen ↗</a>
+              </div>
+            </div>
+            <div class="daily-headline"><span class="ai-orb">AI</span><div><small id="daily-role">PERSÖNLICHES BRIEFING</small><h3 id="daily-headline">Tagesbriefing wird geladen …</h3></div><span id="daily-source-count" class="source-count">3 MCP-Quellen</span></div>
+            <div id="daily-kpis" class="daily-kpis" aria-label="Persönliche Kennzahlen"></div>
+            <div class="future-grid">
+              <div>
+                <div class="subheading"><div><span class="eyebrow">PRIORISIERT</span><h3>Heute im Fokus</h3></div><span id="focus-count"></span></div>
+                <div id="daily-actions" class="daily-actions"><div class="loading-card">Fokusaktionen werden geladen …</div></div>
+              </div>
+              <aside class="agent-console">
+                <span class="eyebrow light">FLOWAI · AGENTEN</span>
+                <h3>Dein digitales Team</h3>
+                <div id="agent-list" class="agent-list"></div>
+                <div class="prompt-box"><small>MIT FLOWAI BESPRECHEN</small><p id="selected-prompt">Wähle eine Fokusaktion oder nutze das Tagesbriefing.</p><div><button id="copy-prompt" type="button">Prompt kopieren</button><a href="http://localhost:3001" target="_blank" rel="noopener">Chat öffnen ↗</a></div></div>
+              </aside>
+            </div>
+          </section>
+
+          <section aria-labelledby="apps-title">
+            <div class="section-title"><div><span class="eyebrow">ANWENDUNGEN</span><h2 id="apps-title">Meine Anwendungen</h2></div><button id="show-all-apps" type="button">Alle anzeigen</button></div>
+            <div id="application-grid" class="application-grid" aria-live="polite"></div>
+            <p id="app-empty" class="empty-state" hidden>Keine Anwendung entspricht der Suche.</p>
+          </section>
+
+          <section class="process-section" aria-labelledby="process-title">
+            <div class="section-title"><div><span class="eyebrow">END-TO-END</span><h2 id="process-title">Vom Bedarf bis zur Lieferung</h2></div><a href="/management">Gesamtprozess öffnen →</a></div>
+            <div class="process-ribbon">
+              <a href="http://localhost:8081" target="_blank"><span>01</span><b>Verkaufen</b><small>CRM & Auftrag</small></a>
+              <a href="/work"><span>02</span><b>Spezifizieren</b><small>Requirements</small></a>
+              <a href="http://localhost:8081" target="_blank"><span>03</span><b>Planen</b><small>MRP & Projekt</small></a>
+              <a href="http://localhost:8081" target="_blank"><span>04</span><b>Beschaffen</b><small>Einkauf</small></a>
+              <a href="/quality"><span>05</span><b>Prüfen</b><small>Wareneingang</small></a>
+              <a href="/mes"><span>06</span><b>Fertigen</b><small>MES & Qualität</small></a>
+              <a href="http://localhost:8010" target="_blank"><span>07</span><b>Nachweisen</b><small>DMS & Lieferung</small></a>
+            </div>
+          </section>
+
+          <section aria-labelledby="activity-title">
+            <div class="section-title"><div><span class="eyebrow">ZUSAMMENARBEIT</span><h2 id="activity-title">Aktuelle Projektarbeit</h2></div><a href="/work">FLOWWORK öffnen →</a></div>
+            <div id="work-overview" class="work-overview"><div class="loading-card">Projektinformationen werden geladen …</div></div>
+          </section>
+        </div>
+
+        <aside class="portal-sidebar">
+          <section class="today-card">
+            <span class="eyebrow light">HEUTE</span>
+            <div class="date-number" id="date-number">04</div>
+            <div class="date-copy" id="date-copy">Mittwoch · November</div>
+            <div id="today-list" class="today-list"><div class="today-loading">Persönliche Liste wird geladen …</div></div>
+          </section>
+
+          <section class="quick-card">
+            <div class="section-title compact"><div><span class="eyebrow">SCHNELLSTART</span><h2>Direkt erledigen</h2></div></div>
+            <a href="/work?action=new-ticket"><span>＋</span> Ticket anlegen</a>
+            <a href="/work?view=requirements&action=new"><span>R</span> Anforderung erfassen</a>
+            <a href="/quality"><span>◇</span> Wareneingang prüfen</a>
+            <a href="http://localhost:8010" target="_blank"><span>↑</span> Dokument ablegen</a>
+            <a href="/hr"><span>◷</span> Zeit oder Abwesenheit</a>
+            <a href="/finance"><span>€</span> Forecast und Finanzen</a>
+            <a href="http://localhost:3001" target="_blank" rel="noopener"><span>AI</span> FLOWAI fragen</a>
+          </section>
+
+          <section class="system-card">
+            <div><span class="status-dot"></span><span><b>SSO aktivierbar</b><small>Zentral über Keycloak</small></span></div>
+            <div><span class="status-dot"></span><span><b>Rollenbasiert</b><small>Apps nach Berechtigung</small></span></div>
+            <div><span class="status-dot"></span><span><b>API-first</b><small>Integrationen überwacht</small></span></div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/portal.js?v=20261110" defer></script>
+  </body>
+</html>

@@ -40,10 +40,15 @@ flowchart LR
 
 Die GitHub-Actions-Pipeline führt aus:
 
-1. Ruff-Lint und Pytest,
+1. Ruff-Lint sowie Unit- und Komponententests mit Branch-Coverage-Gate,
 2. MkDocs-Build im Strict-Modus,
 3. Docker-Compose-Konfigurationsprüfung,
-4. Build des Python-Containers.
+4. Build des Python-Containers,
+5. einen isolierten Integrationstest über API, ERP-/DMS-Adapter, MES, MCP und
+   Prozess-Wiki.
+
+Auslöser und Go-live-Gates sind unter
+[Live-Readiness, Tests und Release-Gates](live-readiness-testing.md) beschrieben.
 
 Eine spätere AI-Prüfung darf betroffene Dokumente vorschlagen, ersetzt aber
 nicht die fachliche Freigabe.

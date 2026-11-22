@@ -31,7 +31,25 @@ function render(nextState) {
   const risk = $("#order-risk");
   risk.textContent = order.delivery_risk === "at_risk" ? "Termin gefährdet" : "Im Plan";
   risk.className = `risk ${order.delivery_risk === "at_risk" ? "bad" : "good"}`;
-  renderProcess(); renderMetrics(); renderTimeline(); renderIncident(); renderBom(); renderCapacity(); renderDocuments();
+  renderProcess(); renderMetrics(); renderTimeline(); renderIncident(); renderBom(); renderCapacity(); renderDocuments(); renderIam();
+}
+
+function renderIam() {
+  const iam = state.iam || {};
+  const directory = iam.directory || {};
+  const groups = directory.groups || [];
+  const user = (iam.users || []).find((item) => item.username === "demo06");
+  if (!directory.name || !user) return;
+  $("#iam-directory-count").textContent = `${directory.users} Identitäten · ${directory.domain}`;
+  $("#iam-group-count").textContent = `${groups.length} Sicherheitsgruppen`;
+  $("#iam-system-count").textContent = `${(iam.systems || []).length} Systeme`;
+  $("#iam-user-groups").innerHTML = user.roles.map((role) => {
+    const group = groups.find((item) => item.role === role);
+    return `<span>${escapeHtml(group?.name || role)}</span>`;
+  }).join("");
+  const highlighted = ["procurement-user", "dms-user", "work-user", "grafana-viewer", "platform-admin"];
+  $("#iam-group-table").innerHTML = groups.filter((group) => highlighted.includes(group.role)).map((group) => `
+    <div><b>${escapeHtml(group.name)}</b><span>${escapeHtml(group.role)}</span><small>${escapeHtml(group.description)}</small></div>`).join("");
 }
 
 function renderProcess() {
@@ -86,6 +104,34 @@ function renderDocuments() {
   $("#document-grid").innerHTML = state.documents.map((doc) => `<a class="document-card" target="_blank" href="/api/documents/${encodeURIComponent(doc.id)}"><span class="doc-icon">PDF</span><h4>${escapeHtml(doc.title)}</h4><p>${escapeHtml(doc.revision)} · ${escapeHtml(doc.type)}</p></a>`).join("");
 }
 
+function renderFutureModel(model) {
+  $("#future-principle").textContent = model.principle;
+  $("#future-mix").innerHTML = model.scenario_mix.map((item) => `
+    <div class="mix-row ${escapeHtml(item.tone)}">
+      <div><label>${escapeHtml(item.label)}</label><div class="mix-bar"><i style="width:${Number(item.share)}%"></i></div></div>
+      <div class="mix-share">${Number(item.share)}<small>%</small></div>
+      <p>${escapeHtml(item.examples)}</p>
+    </div>`).join("");
+  $("#future-inbox-count").textContent = String(model.decision_inbox.length);
+  $("#future-decisions").innerHTML = model.decision_inbox.map((item) => `
+    <article class="decision-row ${escapeHtml(item.priority)}">
+      <span class="decision-dot"></span>
+      <div><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.ai_prepared)}</p></div>
+      <small>${escapeHtml(item.domain)}</small>
+    </article>`).join("");
+  $("#future-agents").innerHTML = model.agent_register.map((item) => `
+    <article class="agent-register-card">
+      <header><h4>${escapeHtml(item.name)}</h4><span class="agent-level">${escapeHtml(item.autonomy)}</span></header>
+      <p>${escapeHtml(item.allowed)}</p>
+      <footer>Owner: ${escapeHtml(item.owner)}<br />Eskalation: ${escapeHtml(item.escalation)}</footer>
+    </article>`).join("");
+  $("#future-autonomy").innerHTML = model.autonomy_levels.map((item) => `
+    <article class="autonomy-level"><b>${escapeHtml(item.level)}</b><h4>${escapeHtml(item.label)}</h4><p>${escapeHtml(item.rule)}</p></article>`).join("");
+  $("#future-roadmap").innerHTML = model.roadmap.map((item, index) => `
+    <article class="roadmap-step"><b>${String(index + 1).padStart(2, "0")}</b><div><span>${escapeHtml(item.period)}</span><p>${escapeHtml(item.focus)}</p></div></article>`).join("");
+  $("#future-guardrails").innerHTML = model.guardrails.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+}
+
 async function mutate(path, success) {
   try { render(await api(path, { method: "POST" })); toast(success); }
   catch (error) { toast(error.message, true); }
@@ -115,3 +161,4 @@ $$('.suggestions button').forEach((button) => button.addEventListener("click", (
 $("#ask-form").addEventListener("submit", (event) => { event.preventDefault(); ask($("#question").value); });
 
 api("/api/demo").then(render).catch((error) => toast(error.message, true));
+api("/api/workplace/future-model").then(renderFutureModel).catch((error) => toast(error.message, true));

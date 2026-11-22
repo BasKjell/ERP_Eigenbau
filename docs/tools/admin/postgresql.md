@@ -32,3 +32,20 @@ Umgebung testen und Anwendungsmigration sowie Stichproben ausführen.
 pgvector-Indizes sind aus Primärdaten rekonstruierbar; Einbettungsmodell,
 Dimension und Chunking-Version müssen zusammen mit den Daten dokumentiert
 werden.
+
+## DMS-Vektorindex
+
+`knowledge_chunks` enthält ausschließlich abgeleitete OCR-Blöcke aus
+Paperless, die Dokumentreferenz, klickbare Metadaten, Content-Hash und den
+768-dimensionalen Vektor. Der Index wird reproduzierbar aufgebaut:
+
+```bash
+make dms-vector-index
+docker compose exec demo-db psql -U platform -d platform_demo \
+  -c "select count(distinct source_reference), count(*) from knowledge_chunks where source_system='Paperless-ngx';"
+```
+
+Paperless bleibt führend. Löschung, Rechteänderung oder Schutzklassifizierung
+müssen eine Neuindizierung auslösen. Im Livebetrieb sind Sicherheitsbereiche
+getrennt zu indizieren oder bei jeder Suche serverseitig mit der Identität des
+Benutzers zu filtern.

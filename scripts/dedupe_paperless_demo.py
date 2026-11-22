@@ -14,6 +14,8 @@ from typing import Any
 
 DEMO_FILES = {
     "Auftrag-4711_Abnahmeprotokoll.pdf",
+    "Bewerbung_APP-0001_Lea-Muster.pdf",
+    "Entgeltabrechnung_PAY-2026-10_DEMO-EMP-001.pdf",
     "Mainboard_Lieferantenzertifikat_BE-24117.pdf",
     "SCU-100_Montageanweisung_Rev-D.pdf",
     "SCU-100_Pruefplan_Rev-B.pdf",

@@ -19,7 +19,8 @@ führenden Systeme.
 
 ## Auftrag durchspielen
 
-1. `http://localhost:8088` öffnen.
+1. Im Unternehmensportal `http://localhost:8088` das **Management-Cockpit**
+   wählen oder direkt `http://localhost:8088/management` öffnen.
 2. Auftragskopf `SO-4711`, Revision, Menge und Liefertermin prüfen.
 3. Die Kacheln von CRM bis Rechnung in fachlicher Reihenfolge durchgehen.
 4. Nach jeder Aktion Ergebnis und Nachweis kontrollieren; nicht nur den
@@ -38,5 +39,6 @@ für Freigaben im führenden Fachsystem. Vor einer realen Lieferung müssen
 Auftrag, Seriennummern, Qualitätsstatus und Dokumente dort geprüft sein.
 
 Weiterführend: [Gesamtprozess](../../processes/order-to-cash/overview.md),
+[Unternehmensportal](../../user-guides/company-portal.md),
 [Management-Demo](../../user-guides/presentation.md) und
 [Portal-Administration](../admin/portal.md).

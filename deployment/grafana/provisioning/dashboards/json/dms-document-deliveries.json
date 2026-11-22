@@ -1,0 +1,201 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {"type": "grafana", "uid": "-- Grafana --"},
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Baseline, Soll, Forecast und tatsächliche Lieferung der DMS-Dokumente je Projekt.",
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Paperless öffnen",
+      "tooltip": "DMS in neuem Tab öffnen",
+      "type": "link",
+      "url": "http://localhost:8010"
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}},
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {"datasource": {"type": "postgres", "uid": "paperless-reporting"}, "editorMode": "code", "format": "table", "rawQuery": true, "rawSql": "SELECT COUNT(*) AS \"Dokumente\" FROM reporting.dms_document_schedule WHERE project = '$project' AND schedule_status <> 'Obsolet';", "refId": "A"}
+      ],
+      "title": "Dokumentlieferobjekte",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}},
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "id": 2,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {"datasource": {"type": "postgres", "uid": "paperless-reporting"}, "editorMode": "code", "format": "table", "rawQuery": true, "rawSql": "SELECT COUNT(*) AS \"Überfällig\" FROM reporting.dms_document_schedule WHERE project = '$project' AND schedule_status = 'Überfällig';", "refId": "A"}
+      ],
+      "title": "Überfällig",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}]}},
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "id": 3,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {"datasource": {"type": "postgres", "uid": "paperless-reporting"}, "editorMode": "code", "format": "table", "rawQuery": true, "rawSql": "SELECT COUNT(*) AS \"Fällig / gefährdet\" FROM reporting.dms_document_schedule WHERE project = '$project' AND schedule_status IN ('Fällig ≤ 14 Tage', 'Gefährdet');", "refId": "A"}
+      ],
+      "title": "Fällig oder gefährdet",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}},
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "id": 4,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "percentChangeColorMode": "standard", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {"datasource": {"type": "postgres", "uid": "paperless-reporting"}, "editorMode": "code", "format": "table", "rawQuery": true, "rawSql": "SELECT COUNT(*) AS \"Geliefert\" FROM reporting.dms_document_schedule WHERE project = '$project' AND schedule_status = 'Geliefert';", "refId": "A"}
+      ],
+      "title": "Geliefert",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "barWidthFactor": 0.6, "drawStyle": "bars", "fillOpacity": 35, "gradientMode": "none", "hideFrom": {"legend": false, "tooltip": false, "viz": false}, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": {"type": "linear"}, "showPoints": "never", "spanNulls": false, "stacking": {"group": "A", "mode": "none"}, "thresholdsStyle": {"mode": "off"}}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}},
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 14, "x": 0, "y": 4},
+      "id": 5,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": false}, "tooltip": {"hideZeros": false, "mode": "single", "sort": "none"}},
+      "targets": [
+        {"datasource": {"type": "postgres", "uid": "paperless-reporting"}, "editorMode": "code", "format": "time_series", "rawQuery": true, "rawSql": "SELECT date_trunc('week', due_date)::timestamp AS time, COUNT(*)::double precision AS \"fällige Dokumente\" FROM reporting.dms_document_schedule WHERE project = '$project' AND due_date IS NOT NULL AND schedule_status <> 'Obsolet' GROUP BY 1 ORDER BY 1;", "refId": "A"}
+      ],
+      "title": "Dokumentenlieferungen nach Kalenderwoche",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}},
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 10, "x": 14, "y": 4},
+      "id": 6,
+      "options": {"displayLabels": ["name", "percent"], "legend": {"displayMode": "table", "placement": "right", "showLegend": true, "values": ["value"]}, "pieType": "donut", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": true}, "tooltip": {"hideZeros": false, "mode": "single", "sort": "none"}},
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {"datasource": {"type": "postgres", "uid": "paperless-reporting"}, "editorMode": "code", "format": "table", "rawQuery": true, "rawSql": "SELECT schedule_status AS metric, COUNT(*) AS value FROM reporting.dms_document_schedule WHERE project = '$project' GROUP BY schedule_status ORDER BY schedule_status;", "refId": "A"}
+      ],
+      "title": "Terminstatus",
+      "type": "piechart"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "filterable": true, "inspect": false}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Status"}, "properties": [{"id": "custom.cellOptions", "value": {"type": "color-text"}}, {"id": "mappings", "value": [{"options": {"Geliefert": {"color": "green", "index": 0}, "Gefährdet": {"color": "orange", "index": 1}, "Fällig ≤ 14 Tage": {"color": "yellow", "index": 2}, "Überfällig": {"color": "red", "index": 3}, "Im Plan": {"color": "blue", "index": 4}}, "type": "value"}]}]},
+          {"matcher": {"id": "byName", "options": "Dokument"}, "properties": [{"id": "links", "value": [{"targetBlank": true, "title": "In Paperless öffnen", "url": "http://localhost:8010/documents/${__data.fields.ID}/details"}]}]},
+          {"matcher": {"id": "byName", "options": "ID"}, "properties": [{"id": "custom.hidden", "value": true}]}
+        ]
+      },
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 12},
+      "id": 7,
+      "options": {"cellHeight": "sm", "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false}, "showHeader": true, "sortBy": [{"desc": false, "displayName": "Liefertermin"}]},
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {"datasource": {"type": "postgres", "uid": "paperless-reporting"}, "editorMode": "code", "format": "table", "rawQuery": true, "rawSql": "SELECT document_id AS \"ID\", title AS \"Dokument\", document_type AS \"Dokumenttyp\", milestone AS \"Meilenstein\", baseline_version AS \"Baseline\", baseline_date AS \"Baseline-Termin\", due_date AS \"Liefertermin\", forecast_date AS \"Forecast\", actual_delivery_date AS \"Ist-Lieferung\", baseline_variance_days AS \"Δ Baseline (Tage)\", forecast_variance_days AS \"Δ Forecast (Tage)\", schedule_status AS \"Status\", progress_percent AS \"Fortschritt %\", responsible AS \"Verantwortlich\", recipient AS \"Empfänger\" FROM reporting.dms_document_schedule WHERE project = '$project' ORDER BY due_date NULLS LAST, title;", "refId": "A"}
+      ],
+      "title": "Dokumentenlieferplan",
+      "type": "table"
+    },
+    {
+      "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "thresholds"}, "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "filterable": true, "inspect": false}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}},
+        "overrides": []
+      },
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 24},
+      "id": 8,
+      "options": {"cellHeight": "sm", "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false}, "showHeader": true},
+      "pluginVersion": "12.2.0",
+      "targets": [
+        {"datasource": {"type": "postgres", "uid": "paperless-reporting"}, "editorMode": "code", "format": "table", "rawQuery": true, "rawSql": "SELECT milestone AS \"Meilenstein\", MIN(due_date) AS \"Erster Liefertermin\", MAX(due_date) AS \"Letzter Liefertermin\", COUNT(*) AS \"Dokumente\", COUNT(*) FILTER (WHERE delivered) AS \"Geliefert\", COUNT(*) FILTER (WHERE overdue) AS \"Überfällig\", ROUND(AVG(progress_percent)) AS \"Ø Fortschritt %\" FROM reporting.dms_document_schedule WHERE project = '$project' GROUP BY milestone ORDER BY MIN(due_date) NULLS LAST;", "refId": "A"}
+      ],
+      "title": "Meilensteine und Lieferpakete",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "1m",
+  "schemaVersion": 41,
+  "tags": ["DMS", "Projekt", "Dokumentenplanung"],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {"selected": false, "text": "KOM-2027-4711", "value": "KOM-2027-4711"},
+        "datasource": {"type": "postgres", "uid": "paperless-reporting"},
+        "definition": "SELECT DISTINCT project FROM reporting.dms_document_schedule WHERE project IS NOT NULL ORDER BY 1",
+        "description": "Projekt oder Kommission aus den Paperless-Custom-Fields",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Projekt",
+        "multi": false,
+        "name": "project",
+        "options": [],
+        "query": "SELECT DISTINCT project FROM reporting.dms_document_schedule WHERE project IS NOT NULL ORDER BY 1",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {"from": "now-90d", "to": "now+180d"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "DMS – Dokumentenlieferplan",
+  "uid": "dms-document-deliveries",
+  "version": 1,
+  "weekStart": "monday"
+}

@@ -20,7 +20,16 @@ werden nicht überschrieben. Erzeugt werden unter anderem:
 - vier Produkte mit freigegebenen BOMs und Arbeitsgängen:
   **SCU-100**, **IOX-24**, **HMI-070** und **GW-EDGE-200**,
 - Anfangsbestände für Komponenten sowie ein Beispielzugang für `PCB-MAIN-42`,
-- fünf Workstations, Qualitätsmerkmale und Prüfvorlage,
+- fünf Workstations mit Typ, Werkhalle, Kapazität, Kalender und Stundensatz,
+- sechs fiktive Testmitarbeiter, passende Job-Card-Zuordnungen, Activity Types,
+  Projekt und Beispiel-Timesheet `TS-DEMO-0001`,
+- Kundenkommission `KOM-2027-4711`, drei interne Fertigungskommissionen und
+  Projektzuordnung der Demo-Work-Orders,
+- eine operative Lagerhierarchie für Wareneingang/QS, Kleinteile,
+  Elektronik, Paletten, Fertigung, Fertigware und Versand,
+- Incoterms `EXW`, `FCA`, `DAP`, zwei Zahlungsbedingungen und Standardtexte
+  für Verkauf und Einkauf,
+- Qualitätsmerkmale und Prüfvorlage,
 - Opportunity **OPP-2027-0018** über fünf Geräte zu je 12.500 EUR.
 
 Zusätzlich werden idempotent gebuchte Beispiele angelegt:
@@ -39,12 +48,23 @@ Materials**, Bestände unter **Stock > Reports > Stock Balance** und die
 Beispielbewegungen unter **Stock > Stock Entry** bzw. **Stock Ledger**. Die
 Fertigungsaufträge stehen unter **Manufacturing > Work Order**.
 
-Nach der Anmeldung unter [localhost:8081](http://localhost:8081) beginnt der
-manuelle Ablauf bei **CRM > Opportunity > OPP-2027-0018**. Falls ein Workspace
-in ERPNext v16 anders angeordnet ist, kann der Dokumenttyp über die globale
-Suche geöffnet werden. Angebot und alle Folgebelege erhalten die vom echten
-ERPNext erzeugten Nummern; die festen Referenzen wie `SO-4711` bleiben die
-fachlichen Kennungen des parallelen Portal-Szenarios.
+Nach der Anmeldung unter [localhost:8081](http://localhost:8081) öffnet FLOWERP
+direkt die ERPNext-Startseite. Die technische Frappe-Auswahl zwischen
+**ERPNext** und **Framework** wird im normalen Einstieg übersprungen. Der
+Bereich **Framework** enthält die zugrunde liegenden Frappe-Werkzeuge für
+Administration, Entwicklung und Systemkonfiguration und ist kein separater
+Fachprozess für Anwender.
+
+Der manuelle Ablauf beginnt bei **CRM > Opportunity > OPP-2027-0018**. Falls
+ein Workspace in ERPNext v16 anders angeordnet ist, kann der Dokumenttyp über
+die globale Suche geöffnet werden. Angebot und alle Folgebelege erhalten die
+vom echten ERPNext erzeugten Nummern; die festen Referenzen wie `SO-4711`
+bleiben die fachlichen Kennungen des parallelen Portal-Szenarios.
+
+Über die **neun Punkte oben links** kann jederzeit in Portal, FLOWMES,
+FLOWWORK, DMS, Wiki oder ein anderes freigegebenes Werkzeug gewechselt werden.
+Der Launcher verändert keine ERPNext-Rechte und ersetzt nicht die
+ERPNext-Navigation.
 
 ## Prozess und Bedienweg
 
@@ -75,11 +95,19 @@ fachlichen Kennungen des parallelen Portal-Szenarios.
 
 ## Prozessanleitungen
 
+- [Gesamtprozess und Übergabegates](../../processes/order-to-cash/overview.md)
+- [Aufgaben je Abteilung und Stammdatenverantwortung](../../processes/order-to-cash/responsibilities.md)
 - [CRM, Angebot und Auftrag](../../processes/order-to-cash/crm-sales.md)
 - [MRP, Einkauf und Wareneingang](../../processes/order-to-cash/procurement.md)
 - [Kapazitätsplanung und Fertigung](../../processes/order-to-cash/production.md)
+- [Arbeitsplätze, Mitarbeiter und Zeitverschreibung](../../processes/order-to-cash/resources-time.md)
+- [Projekte, Kommissionen und Lagerbereiche](../../processes/order-to-cash/projects-warehouses.md)
 - [Qualität, Abweichung und DMS](../../processes/order-to-cash/quality.md)
 - [Lager, Lieferung und Buchhaltung](../../processes/order-to-cash/delivery-accounting.md)
+- [Stammdatenkatalog und offene Produktivlücken](../../demo/master-data-catalog.md)
+
+Für Datenübernahme, erlaubte API-Felder und die Planungsübergabe an eine lokale
+KI: [Migration und API-Import](../../interfaces/migration-api.md).
 
 Bei fehlenden Rechten oder falschem Workflow nicht auf Datenbankebene
 korrigieren. Belegnummer, erwarteten Schritt und Screenshot an den

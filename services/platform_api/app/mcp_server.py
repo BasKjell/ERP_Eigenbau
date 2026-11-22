@@ -16,10 +16,12 @@ from .erp_read import ERPReadService
 from .erpnext_client import ERPNextError
 from .master_data import MasterDataError, MasterDataService
 from .store import ScenarioStore
+from .workplace import WorkplaceNotFoundError, WorkplaceService
 
 store = ScenarioStore(settings.data_file, settings.seed_file)
 master_data = MasterDataService(settings)
 erp_read = ERPReadService(settings)
+workplace = WorkplaceService(store)
 mcp = MCPServer("Open Manufacturing Platform")
 
 
@@ -48,6 +50,49 @@ def get_order_status(order_id: str = "SO-4711") -> dict[str, object]:
 def search_documents(query: str) -> dict[str, object]:
     """Search approved manufacturing document metadata without returning file contents."""
     return query_documents(store.get(), query)
+
+
+@mcp.tool()
+def get_personal_daily_brief(
+    user_id: str = "USR-006", selected_date: str = ""
+) -> dict[str, object]:
+    """Return the role-based daily focus, risks, source links and AI prompts."""
+    try:
+        return workplace.daily_brief(user_id, selected_date)
+    except WorkplaceNotFoundError as exc:
+        return {"tool": "get_personal_daily_brief", "status": "error", "error": str(exc)}
+
+
+@mcp.tool()
+def list_personal_ai_tools(user_id: str = "USR-006") -> dict[str, object]:
+    """List available and planned AI tools for one employee's roles."""
+    try:
+        tools = workplace.personal_tools(user_id)
+        return {
+            "tool": "list_personal_ai_tools",
+            "user_id": user_id,
+            "count": len(tools),
+            "tools": tools,
+        }
+    except WorkplaceNotFoundError as exc:
+        return {"tool": "list_personal_ai_tools", "status": "error", "error": str(exc)}
+
+
+@mcp.tool()
+def get_personal_action_context(
+    action_id: str, user_id: str = "USR-006", selected_date: str = ""
+) -> dict[str, object]:
+    """Return source context and guardrails for one personal focus action."""
+    try:
+        return workplace.action_context(action_id, user_id, selected_date)
+    except WorkplaceNotFoundError as exc:
+        return {"tool": "get_personal_action_context", "status": "error", "error": str(exc)}
+
+
+@mcp.tool()
+def get_future_operating_model() -> dict[str, object]:
+    """Return the 12-24 month human and AI operating model for management."""
+    return workplace.future_operating_model()
 
 
 @mcp.tool()

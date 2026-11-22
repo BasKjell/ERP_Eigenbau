@@ -9,6 +9,9 @@ danach ausdrücklich bestätigen.
 
 | Wunsch | Werkzeug | Führendes System |
 |---|---|---|
+| Was ist heute für mich wichtig? | `get_personal_daily_brief` | FLOWPORTAL mit freigegebenen Fachquellen |
+| Welche KI-Werkzeuge darf ich nutzen? | `list_personal_ai_tools` | Keycloak-Rollen und Plattformkatalog |
+| Welche Quellen gehören zu einer Fokusaktion? | `get_personal_action_context` | FLOWPORTAL und jeweiliges Fachsystem |
 | Welche Aufträge sind in Produktion? | `list_production_orders` | ERPNext Work Order |
 | Welche Bestellungen sind verspätet? | `list_late_purchase_orders` | ERPNext Purchase Order |
 | Welche Produkte und Stücklisten gibt es? | `list_manufacturing_products`, `get_bom_details` | ERPNext BOM |
@@ -21,6 +24,20 @@ danach ausdrücklich bestätigen.
 | Mitarbeiter oder Arbeitsplätze anlegen | `create_test_data` | ERPNext |
 | Lieferanten oder andere Listen importieren | `import_test_data` | ERPNext |
 | eine fehlerhafte Testcharge entfernen | `rollback_test_data_batch` | ERPNext + MCP-Audit |
+
+## Persönliches Tagesbriefing
+
+Das Tagesbriefing verbindet die Rolle aus Keycloak mit den dazu passenden
+Fachinformationen. Im lokalen Demobetrieb wird stattdessen eine Benutzer-ID
+wie `USR-006` übergeben:
+
+> Rufe `get_personal_daily_brief` mit `user_id=USR-006` und
+> `selected_date=2026-11-05` auf. Priorisiere Risiken und verlinke die
+> Fachaktionen. Führe nichts aus.
+
+Das Ergebnis enthält Kennzahlen, höchstens sechs Fokusaktionen, passende
+Agenten, vorgeschlagene Prompts und den persönlichen Werkzeugkatalog.
+Werkzeuge mit Status `planned` sind noch keine ausführbaren MCP-Aktionen.
 
 ## Bestände und Materialverbrauch fragen
 
@@ -53,8 +70,12 @@ Artikelspur einschließlich Zugang, Umlagerung, Verbrauch und Abstimmung.
 
 Der DMS-MCP liefert nur Paperless-Metadaten und kurze OCR-Treffer. Binärdateien
 werden im Paperless-Webclient geöffnet. Der Wiki-MCP liest ausschließlich
-Markdown-Seiten unter `docs/`. Bei Antworten soll das Modell Dokument-ID bzw.
-Wiki-Pfad als Quelle nennen.
+Markdown-Seiten unter `docs/`. Beide Server liefern Browser-URLs. Bei
+Antworten soll das Modell Dokument-ID beziehungsweise Wiki-Seite nennen und
+die gelieferte URL als anklickbaren Markdown-Link ausgeben. Für natürliche
+Fragen zum Prozess ist `get_documentation_context` der bevorzugte Einstieg;
+das Werkzeug liefert bereits die wichtigsten Ausschnitte samt Seiten- und
+Überschriftenlink.
 
 ## Einzelne Testdaten anlegen
 

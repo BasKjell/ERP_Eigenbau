@@ -3,22 +3,30 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="description" content="Open Manufacturing Platform - Management-Demo" />
-    <title>Open Manufacturing Platform</title>
+    <meta name="description" content="FLOWMANAGE - geführte Management-Demo" />
+    <title>FLOWMANAGE · Management-Demo</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
   </head>
   <body>
     <div class="noise"></div>
     <header class="topbar">
-      <a class="brand" href="/">
+      <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+      <a class="brand" href="/management">
         <span class="brand-mark"><i></i><i></i><i></i></span>
-        <span><b>OPEN</b> MANUFACTURING</span>
+        <span><b>FLOW</b>MANAGE</span>
       </a>
       <nav>
-        <a class="nav-link active" href="#cockpit">Cockpit</a>
-        <a class="nav-link" href="http://localhost:8001" target="_blank">Prozess-Wiki ↗</a>
-        <a class="nav-link" href="/docs" target="_blank">API ↗</a>
+        <a class="nav-link" href="/">FLOWPORTAL</a>
+        <a class="nav-link" href="/work">FLOWWORK ↗</a>
+        <a class="nav-link" href="/quality">FLOWQ ↗</a>
+        <a class="nav-link" href="/mes">FLOWMES ↗</a>
+        <a class="nav-link" href="/hr">FLOWHR ↗</a>
+        <a class="nav-link" href="/desksharing">FLOWSPACE ↗</a>
+        <a class="nav-link" href="/finance">FLOWFIN ↗</a>
+        <a class="nav-link" href="http://localhost:8001" target="_blank">FLOWDOCS ↗</a>
       </nav>
       <div class="live"><span></span> Demo live</div>
     </header>
@@ -30,7 +38,8 @@
           <h1>Ein Wertstrom.<br /><em>Eine Sicht.</em></h1>
           <p>Vom ersten Kundenkontakt bis zur verbuchten Rechnung - offen, lokal und über APIs verbunden.</p>
           <div class="hero-actions">
-            <button id="advance" class="button primary">Nächsten Schritt ausführen <span>→</span></button>
+            <a id="start-tour" class="button primary" href="/management?managementDemo=1&amp;tourStep=0">Geführte Management-Demo starten <span>→</span></a>
+            <button id="advance" class="button ghost">Prozessschritt ausführen</button>
             <button id="reset" class="button ghost">Demo zurücksetzen</button>
           </div>
         </div>
@@ -54,6 +63,129 @@
         </div>
       </section>
 
+      <section id="future-model" class="section future-model" data-tour="future-operating-model" aria-labelledby="future-model-title">
+        <div class="future-model-heading">
+          <div>
+            <span class="eyebrow">ZIELBILD · 12 BIS 24 MONATE</span>
+            <h2 id="future-model-title">Routine läuft im Hintergrund. Menschen entscheiden die Ausnahmen.</h2>
+          </div>
+          <span class="future-scenario-label">Szenario, kein Ist-KPI</span>
+        </div>
+        <p id="future-principle" class="future-principle">Das Zielbild wird geladen …</p>
+
+        <div class="future-model-grid">
+          <article class="future-workmix">
+            <div class="future-card-heading">
+              <div><span class="eyebrow">ARBEITSTEILUNG</span><h3>Beispielhafter Zielkorridor</h3></div>
+              <span>2028</span>
+            </div>
+            <div id="future-mix" class="future-mix" aria-label="Szenario für die künftige Arbeitsteilung"></div>
+            <p class="future-caveat">Die Anteile sind eine Pilotannahme. Jede Domäne verdient Autonomie durch Datenqualität, Tests und nachgewiesene Prozessstabilität.</p>
+          </article>
+
+          <article class="future-inbox">
+            <div class="future-card-heading">
+              <div><span class="eyebrow">MENSCHLICHE ENTSCHEIDUNGS-INBOX</span><h3>Nur Fälle mit Verantwortung</h3></div>
+              <b id="future-inbox-count">0</b>
+            </div>
+            <div id="future-decisions" class="future-decisions"></div>
+          </article>
+        </div>
+
+        <div class="future-agent-strip">
+          <div class="future-card-heading">
+            <div><span class="eyebrow">DIGITALE BELEGSCHAFT</span><h3>Jeder Agent hat Owner, Grenze und Evidenz</h3></div>
+            <a href="http://localhost:3001" target="_blank">FLOWAI öffnen ↗</a>
+          </div>
+          <div id="future-agents" class="future-agents"></div>
+        </div>
+
+        <div class="autonomy-ladder" aria-label="Autonomiestufen">
+          <div class="future-card-heading">
+            <div><span class="eyebrow">AUTONOMIE WIRD VERDIENT</span><h3>Von Erklärung bis menschlicher Verantwortung</h3></div>
+          </div>
+          <div id="future-autonomy" class="autonomy-levels"></div>
+        </div>
+
+        <div class="future-transition-grid">
+          <article class="future-roadmap-card">
+            <div class="future-card-heading">
+              <div><span class="eyebrow">UMSTELLUNG IN VIER STUFEN</span><h3>Vom Datenfundament zur begrenzten Autonomie</h3></div>
+            </div>
+            <div id="future-roadmap" class="future-roadmap"></div>
+          </article>
+          <article class="future-guardrail-card">
+            <div class="future-card-heading">
+              <div><span class="eyebrow">NICHT VERHANDELBAR</span><h3>Leitplanken für den Livebetrieb</h3></div>
+            </div>
+            <ul id="future-guardrails" class="future-guardrails"></ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="iam-sso" class="section iam-sso" data-tour="iam-sso" aria-labelledby="iam-sso-title">
+        <div class="iam-heading">
+          <div>
+            <span class="eyebrow">FLOWID · IDENTITÄT UND BERECHTIGUNG</span>
+            <h2 id="iam-sso-title">Ein Konto aus dem AD. Gruppen steuern alle Anwendungen.</h2>
+          </div>
+          <span class="iam-demo-label">AD-Simulation</span>
+        </div>
+        <p class="iam-lead">Die Demo bildet die spätere LDAP-Föderation deterministisch ab: Benutzer und Sicherheitsgruppen stammen fachlich aus dem Active Directory, Keycloak übernimmt Anmeldung, SSO und die Übersetzung in Anwendungsrollen.</p>
+
+        <div class="iam-flow" aria-label="Identitätsfluss vom Active Directory zu den Anwendungen">
+          <article><span>01 · QUELLE</span><b>Active Directory</b><small id="iam-directory-count">51 Identitäten</small></article>
+          <i>→</i>
+          <article><span>02 · FÖDERATION</span><b>Keycloak</b><small>LDAP-Sync, MFA, Sitzungen</small></article>
+          <i>→</i>
+          <article><span>03 · BERECHTIGUNG</span><b>Gruppen → Rollen</b><small id="iam-group-count">21 Sicherheitsgruppen</small></article>
+          <i>→</i>
+          <article><span>04 · ZUGRIFF</span><b>Alle FLOW-Anwendungen</b><small>SSO ohne zweites Passwort</small></article>
+        </div>
+
+        <div class="iam-grid">
+          <article class="iam-card">
+            <header><div><span class="eyebrow">BEISPIELBENUTZER</span><h3>Felix Hoffmann · Einkauf</h3></div><span>demo06</span></header>
+            <p>Die Mitgliedschaften werden in der Demo wie importierte AD-Sicherheitsgruppen behandelt.</p>
+            <div id="iam-user-groups" class="iam-pills"></div>
+          </article>
+          <article class="iam-card">
+            <header><div><span class="eyebrow">GRUPPENMAPPING</span><h3>Eine Quelle, nachvollziehbare Rechte</h3></div><span id="iam-system-count">11 Systeme</span></header>
+            <div id="iam-group-table" class="iam-group-table"></div>
+          </article>
+        </div>
+
+        <div class="iam-actions">
+          <a class="button primary" href="http://localhost:8082/admin/open-manufacturing/console/#/open-manufacturing/groups" target="_blank">Keycloak-Gruppen öffnen <span>↗</span></a>
+          <a class="button ghost" href="http://localhost:8001/interfaces/iam-sso/" target="_blank">Berechtigungskonzept <span>↗</span></a>
+          <small>Livebetrieb: echtes AD per LDAP/LDAPS anbinden; keine Passwörter nach Keycloak kopieren.</small>
+        </div>
+      </section>
+
+      <section id="delivery-evidence" class="section delivery-evidence" aria-labelledby="delivery-evidence-title">
+        <div class="delivery-evidence-heading">
+          <div>
+            <span class="eyebrow">ENTSTEHUNGSAUFWAND · SCHÄTZKORRIDOR</span>
+            <h2 id="delivery-evidence-title">Aus vielen Fachfragen wurde ein durchgängiger, testbarer Demonstrator.</h2>
+          </div>
+          <span class="delivery-evidence-label">Stand 16.11.2026</span>
+        </div>
+        <p class="delivery-evidence-lead">Die Oberfläche liefert keine historische Modell-, Token- oder GPU-Abrechnung für den gesamten Chat. Die folgenden Werte sind deshalb transparent gekennzeichnete Planungsgrößen und keine Abrechnungs- oder ROI-Messung.</p>
+        <div class="delivery-evidence-grid">
+          <article><span>ARBEITSAUFTRÄGE</span><b>rund 70</b><small>Fachfragen, Ergänzungen und Fortsetzungen im sichtbaren Projektverlauf</small></article>
+          <article><span>NUTZERTEXT</span><b>ca. 2.500–4.000 Wörter</b><small>ohne Inhalte der beigefügten Screenshots</small></article>
+          <article><span>REINE SCHREIBZEIT</span><b>ca. 1–2,5 h</b><small>bei etwa 25–45 Wörtern pro Minute</small></article>
+          <article><span>INKL. NACHDENKEN &amp; REVIEW</span><b>ca. 3–6 h</b><small>realistischer menschlicher Arbeitskorridor</small></article>
+          <article><span>AKTIVE AGENTENARBEIT</span><b>ca. 8–20 h</b><small>Analyse, Umsetzung, Builds, Seeds, Tests und technische Wartezeit</small></article>
+          <article class="delivery-evidence-dark"><span>EXAKTE KI-RECHENZEIT</span><b>nicht verfügbar</b><small>für den Pilot ab jetzt mit Auftrag, Laufzeit, Review, Korrektur und Abnahme messen</small></article>
+        </div>
+        <div class="delivery-evidence-actions">
+          <a class="button primary" href="http://localhost:8001/user-guides/tool-process-catalog/" target="_blank">Prozesse je Anwendung <span>↗</span></a>
+          <a class="button ghost" href="http://localhost:8001/user-guides/presentation/#entstehungsaufwand-und-messgrenze" target="_blank">Schätzgrundlage <span>↗</span></a>
+          <small>Empfehlung: Pilotnutzen nicht mit dieser Rückschau, sondern mit automatisch erfasster Durchlaufzeit und Review-Aufwand bewerten.</small>
+        </div>
+      </section>
+
       <section class="section process-section">
         <div class="section-heading">
           <div><span class="eyebrow">END-TO-END-PROZESS</span><h2 id="current-status">Opportunity qualifizieren</h2></div>
@@ -70,7 +202,7 @@
           <button class="tab" data-tab="bom">Material & MRP</button>
           <button class="tab" data-tab="capacity">Kapazitätsplanung</button>
           <button class="tab" data-tab="documents">Dokumente</button>
-          <button class="tab accent" data-tab="assistant">AI Copilot</button>
+          <button class="tab accent" data-tab="assistant">FLOWAI Copilot</button>
         </div>
 
         <div id="overview" class="tab-panel active">
@@ -102,7 +234,7 @@
 
         <div id="documents" class="tab-panel">
           <article class="panel full">
-            <div class="panel-title"><div><span class="eyebrow">PAPERLESS-NGX</span><h3>Kontextbezogene Dokumente</h3></div><span class="tag">5 freigegebene Dokumente</span></div>
+            <div class="panel-title"><div><span class="eyebrow">FLOWDOC · PAPERLESS-NGX</span><h3>Kontextbezogene Dokumente</h3></div><span class="tag">5 freigegebene Dokumente</span></div>
             <div id="document-grid" class="document-grid"></div>
           </article>
         </div>
@@ -131,6 +263,7 @@
     </main>
 
     <div id="toast" class="toast" role="status"></div>
-    <script src="/assets/app.js" defer></script>
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/app.js?v=20261110" defer></script>
   </body>
 </html>

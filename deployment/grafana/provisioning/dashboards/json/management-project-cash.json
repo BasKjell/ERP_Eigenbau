@@ -1,0 +1,371 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Executive Cockpit",
+      "type": "link",
+      "url": "/d/management-executive",
+      "targetBlank": false
+    },
+    {
+      "title": "FLOWFIN",
+      "type": "link",
+      "url": "http://localhost:8088/finance",
+      "targetBlank": true
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 25,
+            "lineWidth": 3
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 14,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "time",
+              "text": "time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "liquidity",
+              "text": "Liquidität",
+              "type": "number"
+            },
+            {
+              "selector": "inflow",
+              "text": "Einzahlungen",
+              "type": "number"
+            },
+            {
+              "selector": "outflow",
+              "text": "Auszahlungen",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "timeseries",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.cash",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Liquiditätsforecast",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "amount"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 10,
+        "x": 14,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "type",
+              "text": "item_type",
+              "type": "string"
+            },
+            {
+              "selector": "document",
+              "text": "document_reference",
+              "type": "string"
+            },
+            {
+              "selector": "partner",
+              "text": "partner",
+              "type": "string"
+            },
+            {
+              "selector": "due_date",
+              "text": "due_date",
+              "type": "timestamp"
+            },
+            {
+              "selector": "amount",
+              "text": "amount",
+              "type": "number"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "project_id",
+              "text": "project_id",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.open_items",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Offene Posten",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/(order_value|actual_cost|forecast_cost|expected_margin)/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "expected_margin_percent"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "expected_margin_percent"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "project_id",
+              "text": "project_id",
+              "type": "string"
+            },
+            {
+              "selector": "order_id",
+              "text": "order_id",
+              "type": "string"
+            },
+            {
+              "selector": "customer",
+              "text": "customer",
+              "type": "string"
+            },
+            {
+              "selector": "product",
+              "text": "product",
+              "type": "string"
+            },
+            {
+              "selector": "progress",
+              "text": "progress",
+              "type": "number"
+            },
+            {
+              "selector": "order_value",
+              "text": "order_value",
+              "type": "number"
+            },
+            {
+              "selector": "actual_cost",
+              "text": "actual_cost",
+              "type": "number"
+            },
+            {
+              "selector": "forecast_cost",
+              "text": "forecast_cost",
+              "type": "number"
+            },
+            {
+              "selector": "expected_margin",
+              "text": "expected_margin",
+              "type": "number"
+            },
+            {
+              "selector": "expected_margin_percent",
+              "text": "expected_margin_percent",
+              "type": "number"
+            },
+            {
+              "selector": "risk",
+              "text": "risk",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.project_profitability",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Projektprofitabilität / Estimate-at-Completion",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": [
+    "cash",
+    "finance",
+    "live",
+    "management",
+    "projects"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-2y",
+    "to": "now+2y"
+  },
+  "timezone": "browser",
+  "title": "Management – Projekte & Cash",
+  "uid": "management-project-cash",
+  "version": 3
+}

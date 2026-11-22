@@ -6,7 +6,35 @@ Der Vertrag überträgt freigegebene Work Orders in eine Shopfloor-/MES-Schicht
 und meldet Arbeitsfortschritt kontrolliert an ERPNext zurück. ERPNext bleibt
 führend für BOM, Routing, Bestand und Kosten.
 
+## Aktueller Implementierungsstand
+
+Der lokale FLOWMES-Arbeitsplatz ist unter `/mes` lauffähig. Seine Demo-API
+speichert Bedienhandlungen im rücksetzbaren Szenario und erzwingt
+Vorgängerlogik, Bedienerzuordnung, Zeitabschluss, Pflichtchecklisten,
+Gutmenge und eindeutige Seriennummern.
+
+| Methode | Endpunkt | Zweck |
+|---|---|---|
+| `GET` | `/api/mes/dashboard?operator_id=…` | Schicht, Kennzahlen und persönlicher Arbeitsvorrat |
+| `GET` | `/api/mes/jobs/{job_card}` | Arbeitsgang, Route, Material, Anleitung und Zeiten |
+| `POST` | `/api/mes/jobs/{job_card}/start` | Arbeitsgang und Terminalzeit starten |
+| `POST` | `/api/mes/jobs/{job_card}/pause` | offene Zeit schließen und Pausengrund buchen |
+| `POST` | `/api/mes/jobs/{job_card}/time` | begründete manuelle Zeitkorrektur |
+| `POST` | `/api/mes/jobs/{job_card}/complete` | Menge, Ausschuss, Seriennummern und Checkliste rückmelden |
+| `POST` | `/api/mes/jobs/{job_card}/issue` | Störung anlegen und Arbeitsgang sperren |
+| `POST` | `/api/mes/jobs/{job_card}/issue/resolve` | Nacharbeit dokumentieren und wieder freigeben |
+| `GET` | `/api/mes/jobs/{job_card}/documents` | gültige DMS-Dokumente und Paperless-Status |
+| `POST` | `/api/mes/reset` | nur den MES-Demozustand reproduzierbar zurücksetzen |
+
+Die OpenAPI-Beschreibung ist unter `/docs` abrufbar. Der produktive Adapter
+ersetzt später die Szenariospeicherung, ohne die Bedienoberfläche oder die
+fachlichen Zustandsübergänge zu ändern.
+
 ## Work Order freigeben
+
+Der folgende Endpunkt ist der **Zielvertrag des produktiven ERPNext-Adapters**;
+er ist von der oben aufgeführten, bereits lauffähigen Demo-API zu
+unterscheiden.
 
 `POST /api/mes/work-orders`
 
@@ -35,6 +63,21 @@ erzeugen.
 Pflichtfelder: Benutzer/Servicekonto, Start, Ende, Gutmenge, Ausschuss,
 Seriennummern und Quellereignis. Schreibzugriffe werden auditiert und bei
 fachlichem Konflikt mit `409 Conflict` abgewiesen.
+
+Die FLOWMES-Demo bildet diese Rückmeldung bereits fachlich ab. Im
+Produktivadapter wird eine erfolgreiche MES-Rückmeldung idempotent auf die
+ERPNext Job Card und die zugehörigen Stock-/Qualitätsbelege übertragen.
+
+## Dokumentensystem
+
+Eine Job Card enthält ausschließlich Dokument-IDs und den für den Arbeitsgang
+gültigen Revisionsstand. `GET /api/mes/jobs/{job_card}/documents` löst diese
+Referenzen auf und liefert lokale Vorschau-URLs. Bei konfiguriertem
+Paperless-Token ergänzt der Adapter eine Live-Suche nach dem Artikel.
+
+FLOWMES ändert keine Dokumentrevision. Freigabe, Archivierung und Versionen
+bleiben Verantwortung des DMS; laufende Arbeitsgänge behalten ihre
+eingefrorenen Dokumentreferenzen.
 
 ## Statuszuordnung
 

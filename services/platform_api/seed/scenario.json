@@ -170,13 +170,55 @@
     }
   ],
   "bom": [
-    {"item": "CASE-100-C", "name": "Gehause Revision C", "qty": 1, "source": "make", "available": 5},
-    {"item": "PCB-MAIN-42", "name": "Mainboard", "qty": 1, "source": "buy", "available": 0},
-    {"item": "PSU-24V-80", "name": "Netzteil 24 V", "qty": 1, "source": "buy", "available": 8},
-    {"item": "CON-M12", "name": "M12 Steckverbinder", "qty": 2, "source": "buy", "available": 40},
-    {"item": "HARNESS-100", "name": "Kabelsatz", "qty": 1, "source": "make", "available": 6},
-    {"item": "DISPLAY-7", "name": "Display-Modul 7 Zoll", "qty": 1, "source": "buy", "available": 7},
-    {"item": "FW-SCU-3", "name": "Firmware SCU v3", "qty": 1, "source": "software", "available": 999}
+    {
+      "item": "CASE-100-C",
+      "name": "Gehause Revision C",
+      "qty": 1,
+      "source": "make",
+      "available": 5
+    },
+    {
+      "item": "PCB-MAIN-42",
+      "name": "Mainboard",
+      "qty": 1,
+      "source": "buy",
+      "available": 0
+    },
+    {
+      "item": "PSU-24V-80",
+      "name": "Netzteil 24 V",
+      "qty": 1,
+      "source": "buy",
+      "available": 8
+    },
+    {
+      "item": "CON-M12",
+      "name": "M12 Steckverbinder",
+      "qty": 2,
+      "source": "buy",
+      "available": 40
+    },
+    {
+      "item": "HARNESS-100",
+      "name": "Kabelsatz",
+      "qty": 1,
+      "source": "make",
+      "available": 6
+    },
+    {
+      "item": "DISPLAY-7",
+      "name": "Display-Modul 7 Zoll",
+      "qty": 1,
+      "source": "buy",
+      "available": 7
+    },
+    {
+      "item": "FW-SCU-3",
+      "name": "Firmware SCU v3",
+      "qty": 1,
+      "source": "software",
+      "available": 999
+    }
   ],
   "purchase_orders": [
     {
@@ -208,6 +250,8 @@
       "name": "Mechanische Montage",
       "capacity": 3,
       "shift": "06:00-14:00",
+      "workstation_type": "Montagearbeitsplatz",
+      "hour_rate": 62,
       "utilization": 68,
       "operation_minutes": 60,
       "scheduled": "2027-01-08 06:00"
@@ -217,6 +261,8 @@
       "name": "Elektronikmontage",
       "capacity": 4,
       "shift": "06:00-14:00",
+      "workstation_type": "Elektronikarbeitsplatz",
+      "hour_rate": 72,
       "utilization": 76,
       "operation_minutes": 90,
       "scheduled": "2027-01-08 08:00"
@@ -226,6 +272,8 @@
       "name": "Firmware-Station",
       "capacity": 2,
       "shift": "08:00-16:00",
+      "workstation_type": "Software-Arbeitsplatz",
+      "hour_rate": 78,
       "utilization": 54,
       "operation_minutes": 30,
       "scheduled": "2027-01-09 08:00"
@@ -235,6 +283,8 @@
       "name": "Pruefstand A",
       "capacity": 1,
       "shift": "06:00-22:00",
+      "workstation_type": "Pruefstand",
+      "hour_rate": 95,
       "utilization": 91,
       "operation_minutes": 120,
       "scheduled": "2027-01-09 10:00"
@@ -244,18 +294,1666 @@
       "name": "Endpruefung",
       "capacity": 2,
       "shift": "06:00-14:00",
+      "workstation_type": "Qualitaetsarbeitsplatz",
+      "hour_rate": 82,
       "utilization": 63,
       "operation_minutes": 45,
       "scheduled": "2027-01-11 06:00"
     }
   ],
-  "serials": [
-    {"id": "SN-10001", "status": "planned", "last_operation": "-"},
-    {"id": "SN-10002", "status": "planned", "last_operation": "-"},
-    {"id": "SN-10003", "status": "planned", "last_operation": "-"},
-    {"id": "SN-10004", "status": "planned", "last_operation": "-"},
-    {"id": "SN-10005", "status": "planned", "last_operation": "-"}
+  "commercial_master_data": {
+    "incoterms": [
+      {
+        "code": "EXW",
+        "title": "Ab Werk",
+        "description": "Bereitstellung am Werk; Transport und Risiko gehen ab Bereitstellung auf den Kunden ueber."
+      },
+      {
+        "code": "FCA",
+        "title": "Frei Frachtfuehrer",
+        "description": "Uebergabe an den benannten Frachtfuehrer am vereinbarten Ort."
+      },
+      {
+        "code": "DAP",
+        "title": "Geliefert benannter Ort",
+        "description": "Lieferung bis zum benannten Bestimmungsort, unverzollt und entladebereit."
+      }
+    ],
+    "payment_terms": [
+      {
+        "name": "30 Tage netto",
+        "invoice_portion": 100,
+        "due_date_based_on": "Day(s) after invoice date",
+        "credit_days": 30,
+        "description": "Zahlbar ohne Abzug innerhalb von 30 Tagen ab Rechnungsdatum."
+      },
+      {
+        "name": "14 Tage 2 Prozent Skonto",
+        "invoice_portion": 100,
+        "due_date_based_on": "Day(s) after invoice date",
+        "credit_days": 30,
+        "discount_type": "Percentage",
+        "discount": 2,
+        "discount_validity_based_on": "Day(s) after invoice date",
+        "discount_validity": 14,
+        "description": "2 Prozent Skonto bei Zahlung innerhalb von 14 Tagen, sonst 30 Tage netto."
+      }
+    ],
+    "payment_templates": [
+      {
+        "name": "30 Tage netto",
+        "terms": [
+          "30 Tage netto"
+        ]
+      },
+      {
+        "name": "14 Tage 2 Prozent Skonto, 30 Tage netto",
+        "terms": [
+          "14 Tage 2 Prozent Skonto"
+        ]
+      }
+    ],
+    "terms_and_conditions": [
+      {
+        "name": "Standard Verkauf Inland",
+        "selling": 1,
+        "buying": 0,
+        "text": "Lieferbedingung: DAP benannter Ort. Zahlungsbedingung: 30 Tage netto. Die konkreten Bedingungen des Belegs haben Vorrang."
+      },
+      {
+        "name": "Standard Einkauf",
+        "selling": 0,
+        "buying": 1,
+        "text": "Lieferbedingung: FCA Lieferantenwerk. Zahlungsbedingung: 30 Tage netto. Die konkreten Bedingungen des Belegs haben Vorrang."
+      }
+    ]
+  },
+  "projects": [
+    {
+      "id": "KOM-2027-4711",
+      "project_name": "KOM-2027-4711 | NordMarine SCU-100",
+      "project_type": "Kundenkommission",
+      "customer": "NordMarine Systems GmbH",
+      "department": "Operations",
+      "priority": "High",
+      "expected_start_date": "2026-10-31",
+      "expected_end_date": "2027-01-31",
+      "notes": "Kundenkommission fuer den SCU-100-Demoprozess. Auftraege, Bestellungen, Fertigung, Lagerbewegungen, Zeiten, Lieferung und Rechnung sollen diese Projektreferenz tragen."
+    },
+    {
+      "id": "KOM-2027-1001",
+      "project_name": "KOM-2027-1001 | IOX-24 Demo-Fertigung",
+      "project_type": "Interne Fertigung",
+      "customer": "",
+      "department": "Production",
+      "priority": "Medium",
+      "expected_start_date": "2026-10-31",
+      "expected_end_date": "2027-01-31",
+      "notes": "Interne Demokommission fuer Work Order WO-DEMO-IOX-24-01."
+    },
+    {
+      "id": "KOM-2027-1002",
+      "project_name": "KOM-2027-1002 | GW-EDGE-200 Demo-Fertigung",
+      "project_type": "Interne Fertigung",
+      "customer": "",
+      "department": "Production",
+      "priority": "Medium",
+      "expected_start_date": "2026-10-31",
+      "expected_end_date": "2027-01-31",
+      "notes": "Interne Demokommission fuer Work Order WO-DEMO-GW-EDGE-01."
+    },
+    {
+      "id": "KOM-2027-1003",
+      "project_name": "KOM-2027-1003 | HMI-070 Demo-Fertigung",
+      "project_type": "Interne Fertigung",
+      "customer": "",
+      "department": "Production",
+      "priority": "Medium",
+      "expected_start_date": "2026-10-31",
+      "expected_end_date": "2027-01-31",
+      "notes": "Interne Demokommission fuer Work Order WO-DEMO-HMI-070-01."
+    }
   ],
+  "warehouses": [
+    {
+      "id": "Demo Lagerbereiche - OMD",
+      "warehouse_name": "Demo Lagerbereiche",
+      "parent": "All Warehouses - OMD",
+      "is_group": 1,
+      "warehouse_type": ""
+    },
+    {
+      "id": "Beschaffung und QS - OMD",
+      "warehouse_name": "Beschaffung und QS",
+      "parent": "Demo Lagerbereiche - OMD",
+      "is_group": 1,
+      "warehouse_type": ""
+    },
+    {
+      "id": "Wareneingang - OMD",
+      "warehouse_name": "Wareneingang",
+      "parent": "Beschaffung und QS - OMD",
+      "is_group": 0,
+      "warehouse_type": "Wareneingang"
+    },
+    {
+      "id": "QS-Pruefung - OMD",
+      "warehouse_name": "QS-Pruefung",
+      "parent": "Beschaffung und QS - OMD",
+      "is_group": 0,
+      "warehouse_type": "Qualitaetspruefung"
+    },
+    {
+      "id": "Sperrlager - OMD",
+      "warehouse_name": "Sperrlager",
+      "parent": "Beschaffung und QS - OMD",
+      "is_group": 0,
+      "warehouse_type": "Sperrlager"
+    },
+    {
+      "id": "Retourenlager - OMD",
+      "warehouse_name": "Retourenlager",
+      "parent": "Beschaffung und QS - OMD",
+      "is_group": 0,
+      "warehouse_type": "Retouren"
+    },
+    {
+      "id": "Materiallager - OMD",
+      "warehouse_name": "Materiallager",
+      "parent": "Demo Lagerbereiche - OMD",
+      "is_group": 1,
+      "warehouse_type": ""
+    },
+    {
+      "id": "Kleinteilelager - OMD",
+      "warehouse_name": "Kleinteilelager",
+      "parent": "Materiallager - OMD",
+      "is_group": 0,
+      "warehouse_type": "Materiallager"
+    },
+    {
+      "id": "Elektroniklager - OMD",
+      "warehouse_name": "Elektroniklager",
+      "parent": "Materiallager - OMD",
+      "is_group": 0,
+      "warehouse_type": "Materiallager"
+    },
+    {
+      "id": "Palettenlager - OMD",
+      "warehouse_name": "Palettenlager",
+      "parent": "Materiallager - OMD",
+      "is_group": 0,
+      "warehouse_type": "Materiallager"
+    },
+    {
+      "id": "Verbrauchsmateriallager - OMD",
+      "warehouse_name": "Verbrauchsmateriallager",
+      "parent": "Materiallager - OMD",
+      "is_group": 0,
+      "warehouse_type": "Materiallager"
+    },
+    {
+      "id": "Fertigungslager - OMD",
+      "warehouse_name": "Fertigungslager",
+      "parent": "Demo Lagerbereiche - OMD",
+      "is_group": 1,
+      "warehouse_type": ""
+    },
+    {
+      "id": "Montagebereitstellung - OMD",
+      "warehouse_name": "Montagebereitstellung",
+      "parent": "Fertigungslager - OMD",
+      "is_group": 0,
+      "warehouse_type": "Fertigung"
+    },
+    {
+      "id": "Nacharbeit WIP - OMD",
+      "warehouse_name": "Nacharbeit WIP",
+      "parent": "Fertigungslager - OMD",
+      "is_group": 0,
+      "warehouse_type": "Fertigung"
+    },
+    {
+      "id": "Fertigware und Versand - OMD",
+      "warehouse_name": "Fertigware und Versand",
+      "parent": "Demo Lagerbereiche - OMD",
+      "is_group": 1,
+      "warehouse_type": ""
+    },
+    {
+      "id": "Fertigwarenlager - OMD",
+      "warehouse_name": "Fertigwarenlager",
+      "parent": "Fertigware und Versand - OMD",
+      "is_group": 0,
+      "warehouse_type": "Fertigware"
+    },
+    {
+      "id": "Versandbereitstellung - OMD",
+      "warehouse_name": "Versandbereitstellung",
+      "parent": "Fertigware und Versand - OMD",
+      "is_group": 0,
+      "warehouse_type": "Versand"
+    },
+    {
+      "id": "Verpackungsmateriallager - OMD",
+      "warehouse_name": "Verpackungsmateriallager",
+      "parent": "Fertigware und Versand - OMD",
+      "is_group": 0,
+      "warehouse_type": "Versand"
+    }
+  ],
+  "workforce": {
+    "branch": "Demo Werk Berlin",
+    "plant_floor": "Demo Werkhalle 1",
+    "holiday_list": "Demo Schichtkalender 2027",
+    "project": "ERP-Demo-Auftragsabwicklung",
+    "activity_types": [
+      {
+        "name": "Fertigungszeit",
+        "costing_rate": 62,
+        "billing_rate": 0
+      },
+      {
+        "name": "Ruestzeit",
+        "costing_rate": 68,
+        "billing_rate": 0
+      },
+      {
+        "name": "Qualitaetspruefung",
+        "costing_rate": 82,
+        "billing_rate": 0
+      },
+      {
+        "name": "Nacharbeit",
+        "costing_rate": 75,
+        "billing_rate": 0
+      },
+      {
+        "name": "Produktionsplanung",
+        "costing_rate": 70,
+        "billing_rate": 0
+      },
+      {
+        "name": "Anwesenheitszeit",
+        "costing_rate": 0,
+        "billing_rate": 0
+      }
+    ],
+    "employees": [
+      {
+        "id": "DEMO-EMP-001",
+        "first_name": "Mara",
+        "last_name": "Montage",
+        "gender": "Female",
+        "department": "Production",
+        "designation": "Montagemitarbeiterin",
+        "operation": "Mechanische Montage",
+        "workstation": "WS-MECH"
+      },
+      {
+        "id": "DEMO-EMP-002",
+        "first_name": "Emil",
+        "last_name": "Elektronik",
+        "gender": "Male",
+        "department": "Production",
+        "designation": "Elektroniker",
+        "operation": "Elektronikmontage",
+        "workstation": "WS-ELEC"
+      },
+      {
+        "id": "DEMO-EMP-003",
+        "first_name": "Fiona",
+        "last_name": "Firmware",
+        "gender": "Female",
+        "department": "Production",
+        "designation": "Firmwaretechnikerin",
+        "operation": "Firmware-Station",
+        "workstation": "WS-FW"
+      },
+      {
+        "id": "DEMO-EMP-004",
+        "first_name": "Theo",
+        "last_name": "Test",
+        "gender": "Male",
+        "department": "Quality Management",
+        "designation": "Prueftechniker",
+        "operation": "Pruefstand A",
+        "workstation": "WS-TEST-A"
+      },
+      {
+        "id": "DEMO-EMP-005",
+        "first_name": "Clara",
+        "last_name": "Qualitaet",
+        "gender": "Female",
+        "department": "Quality Management",
+        "designation": "Qualitaetsprueferin",
+        "operation": "Endpruefung",
+        "workstation": "WS-QC"
+      },
+      {
+        "id": "DEMO-EMP-006",
+        "first_name": "Paula",
+        "last_name": "Planung",
+        "gender": "Female",
+        "department": "Operations",
+        "designation": "Fertigungsplanerin",
+        "operation": "",
+        "workstation": ""
+      }
+    ]
+  },
+  "hr": {
+    "site": "Demo Werk Berlin",
+    "timezone": "Europe/Berlin",
+    "manager_id": "DEMO-EMP-006",
+    "work_rules": {
+      "daily_target_minutes": 480,
+      "weekly_target_minutes": 2400,
+      "break_threshold_minutes": 360,
+      "minimum_break_minutes": 30,
+      "maximum_daily_minutes": 600,
+      "core_time": "09:00–15:00",
+      "rounding_minutes": 1
+    },
+    "employees": [
+      {
+        "id": "DEMO-EMP-001",
+        "name": "Mara Montage",
+        "initials": "MM",
+        "department": "Produktion",
+        "role": "Montagemitarbeiterin",
+        "manager_id": "DEMO-EMP-006",
+        "location": "Werkhalle 1 · WS-MECH",
+        "schedule_minutes": {
+          "0": 480,
+          "1": 480,
+          "2": 480,
+          "3": 480,
+          "4": 480,
+          "5": 0,
+          "6": 0
+        },
+        "annual_leave_days": 30,
+        "leave_used_days": 12,
+        "overtime_opening_minutes": 420
+      },
+      {
+        "id": "DEMO-EMP-002",
+        "name": "Emil Elektronik",
+        "initials": "EE",
+        "department": "Produktion",
+        "role": "Elektroniker",
+        "manager_id": "DEMO-EMP-006",
+        "location": "Werkhalle 1 · WS-ELEC",
+        "schedule_minutes": {
+          "0": 480,
+          "1": 480,
+          "2": 480,
+          "3": 480,
+          "4": 480,
+          "5": 0,
+          "6": 0
+        },
+        "annual_leave_days": 30,
+        "leave_used_days": 18,
+        "overtime_opening_minutes": 135
+      },
+      {
+        "id": "DEMO-EMP-003",
+        "name": "Fiona Firmware",
+        "initials": "FF",
+        "department": "Produktion",
+        "role": "Firmwaretechnikerin",
+        "manager_id": "DEMO-EMP-006",
+        "location": "Engineering · WS-FW",
+        "schedule_minutes": {
+          "0": 480,
+          "1": 480,
+          "2": 480,
+          "3": 480,
+          "4": 480,
+          "5": 0,
+          "6": 0
+        },
+        "annual_leave_days": 30,
+        "leave_used_days": 16,
+        "overtime_opening_minutes": -45
+      },
+      {
+        "id": "DEMO-EMP-004",
+        "name": "Theo Test",
+        "initials": "TT",
+        "department": "Qualität",
+        "role": "Prüftechniker",
+        "manager_id": "DEMO-EMP-006",
+        "location": "Prüffeld · WS-TEST-A",
+        "schedule_minutes": {
+          "0": 480,
+          "1": 480,
+          "2": 480,
+          "3": 480,
+          "4": 480,
+          "5": 0,
+          "6": 0
+        },
+        "annual_leave_days": 30,
+        "leave_used_days": 9,
+        "overtime_opening_minutes": 620
+      },
+      {
+        "id": "DEMO-EMP-005",
+        "name": "Clara Qualität",
+        "initials": "CQ",
+        "department": "Qualität",
+        "role": "Qualitätsprüferin",
+        "manager_id": "DEMO-EMP-006",
+        "location": "Qualität · WS-QC",
+        "schedule_minutes": {
+          "0": 480,
+          "1": 480,
+          "2": 480,
+          "3": 480,
+          "4": 480,
+          "5": 0,
+          "6": 0
+        },
+        "annual_leave_days": 30,
+        "leave_used_days": 14,
+        "overtime_opening_minutes": 210
+      },
+      {
+        "id": "DEMO-EMP-006",
+        "name": "Paula Planung",
+        "initials": "PP",
+        "department": "Operations",
+        "role": "Fertigungsplanerin / Teamleitung",
+        "manager_id": null,
+        "location": "Produktionsplanung",
+        "schedule_minutes": {
+          "0": 480,
+          "1": 480,
+          "2": 480,
+          "3": 480,
+          "4": 480,
+          "5": 0,
+          "6": 0
+        },
+        "annual_leave_days": 30,
+        "leave_used_days": 11,
+        "overtime_opening_minutes": 85
+      }
+    ],
+    "attendance": [
+      {
+        "id": "HR-ATT-0001",
+        "employee_id": "DEMO-EMP-001",
+        "direction": "IN",
+        "timestamp": "2026-11-02T05:58:00+01:00",
+        "source": "terminal",
+        "terminal": "Werkstor Nord",
+        "erp_status": "pending"
+      },
+      {
+        "id": "HR-ATT-0002",
+        "employee_id": "DEMO-EMP-001",
+        "direction": "OUT",
+        "timestamp": "2026-11-02T09:31:00+01:00",
+        "source": "terminal",
+        "terminal": "Pausenterminal",
+        "erp_status": "pending"
+      },
+      {
+        "id": "HR-ATT-0003",
+        "employee_id": "DEMO-EMP-001",
+        "direction": "IN",
+        "timestamp": "2026-11-02T10:02:00+01:00",
+        "source": "terminal",
+        "terminal": "Pausenterminal",
+        "erp_status": "pending"
+      },
+      {
+        "id": "HR-ATT-0004",
+        "employee_id": "DEMO-EMP-001",
+        "direction": "OUT",
+        "timestamp": "2026-11-02T14:37:00+01:00",
+        "source": "terminal",
+        "terminal": "Werkstor Nord",
+        "erp_status": "pending"
+      },
+      {
+        "id": "HR-ATT-0005",
+        "employee_id": "DEMO-EMP-001",
+        "direction": "IN",
+        "timestamp": "2026-11-03T05:57:00+01:00",
+        "source": "terminal",
+        "terminal": "Werkstor Nord",
+        "erp_status": "pending"
+      },
+      {
+        "id": "HR-ATT-0006",
+        "employee_id": "DEMO-EMP-002",
+        "direction": "IN",
+        "timestamp": "2026-11-03T06:04:00+01:00",
+        "source": "terminal",
+        "terminal": "Werkstor Nord",
+        "erp_status": "pending"
+      },
+      {
+        "id": "HR-ATT-0007",
+        "employee_id": "DEMO-EMP-004",
+        "direction": "IN",
+        "timestamp": "2026-11-03T06:48:00+01:00",
+        "source": "web",
+        "terminal": "Mobiles Arbeiten",
+        "erp_status": "pending"
+      },
+      {
+        "id": "HR-ATT-0008",
+        "employee_id": "DEMO-EMP-006",
+        "direction": "IN",
+        "timestamp": "2026-11-03T06:45:00+01:00",
+        "source": "terminal",
+        "terminal": "Büro",
+        "erp_status": "pending"
+      }
+    ],
+    "requests": [
+      {
+        "id": "HR-REQ-0001",
+        "type": "vacation",
+        "employee_id": "DEMO-EMP-003",
+        "start_date": "2026-11-02",
+        "end_date": "2026-11-06",
+        "minutes": null,
+        "from_time": null,
+        "to_time": null,
+        "reason": "Erholungsurlaub",
+        "status": "approved",
+        "approver_id": "DEMO-EMP-006",
+        "created_at": "2026-10-10T09:20:00+02:00",
+        "decided_at": "2026-10-11T08:05:00+02:00",
+        "decision_comment": "Vertretung abgestimmt"
+      },
+      {
+        "id": "HR-REQ-0002",
+        "type": "remote_work",
+        "employee_id": "DEMO-EMP-004",
+        "start_date": "2026-11-03",
+        "end_date": "2026-11-03",
+        "minutes": null,
+        "from_time": null,
+        "to_time": null,
+        "reason": "Dokumentationsarbeit und Testauswertung",
+        "status": "approved",
+        "approver_id": "DEMO-EMP-006",
+        "created_at": "2026-10-30T13:15:00+01:00",
+        "decided_at": "2026-10-30T15:30:00+01:00",
+        "decision_comment": "Prüfstand ist nicht erforderlich"
+      },
+      {
+        "id": "HR-REQ-0003",
+        "type": "sick",
+        "employee_id": "DEMO-EMP-005",
+        "start_date": "2026-11-03",
+        "end_date": "2026-11-04",
+        "minutes": null,
+        "from_time": null,
+        "to_time": null,
+        "reason": "Arbeitsunfähigkeit gemeldet",
+        "status": "approved",
+        "approver_id": "DEMO-EMP-006",
+        "created_at": "2026-11-03T05:55:00+01:00",
+        "decided_at": "2026-11-03T06:02:00+01:00",
+        "decision_comment": "Vertraulich behandelt"
+      },
+      {
+        "id": "HR-REQ-0004",
+        "type": "vacation",
+        "employee_id": "DEMO-EMP-001",
+        "start_date": "2026-12-14",
+        "end_date": "2026-12-18",
+        "minutes": null,
+        "from_time": null,
+        "to_time": null,
+        "reason": "Jahresurlaub",
+        "status": "pending",
+        "approver_id": "DEMO-EMP-006",
+        "created_at": "2026-11-01T16:10:00+01:00",
+        "decided_at": null,
+        "decision_comment": ""
+      },
+      {
+        "id": "HR-REQ-0005",
+        "type": "overtime",
+        "employee_id": "DEMO-EMP-002",
+        "start_date": "2026-11-05",
+        "end_date": "2026-11-05",
+        "minutes": 120,
+        "from_time": "14:00",
+        "to_time": "16:00",
+        "reason": "Eilauftrag Elektronikmontage",
+        "status": "pending",
+        "approver_id": "DEMO-EMP-006",
+        "created_at": "2026-11-02T11:45:00+01:00",
+        "decided_at": null,
+        "decision_comment": ""
+      },
+      {
+        "id": "HR-REQ-0006",
+        "type": "time_off",
+        "employee_id": "DEMO-EMP-004",
+        "start_date": "2026-11-06",
+        "end_date": "2026-11-06",
+        "minutes": 240,
+        "from_time": "10:00",
+        "to_time": "14:00",
+        "reason": "Überstundenabbau am Nachmittag",
+        "status": "approved",
+        "approver_id": "DEMO-EMP-006",
+        "created_at": "2026-10-28T10:00:00+01:00",
+        "decided_at": "2026-10-28T12:05:00+01:00",
+        "decision_comment": "Vertretung durch Clara"
+      },
+      {
+        "id": "HR-REQ-0007",
+        "type": "correction",
+        "employee_id": "DEMO-EMP-005",
+        "start_date": "2026-11-02",
+        "end_date": "2026-11-02",
+        "minutes": 30,
+        "from_time": "07:00",
+        "to_time": "15:30",
+        "reason": "Gehen-Buchung am Terminal vergessen",
+        "status": "pending",
+        "approver_id": "DEMO-EMP-006",
+        "created_at": "2026-11-02T16:20:00+01:00",
+        "decided_at": null,
+        "decision_comment": ""
+      },
+      {
+        "id": "HR-REQ-0008",
+        "type": "business_trip",
+        "employee_id": "DEMO-EMP-006",
+        "start_date": "2026-11-09",
+        "end_date": "2026-11-09",
+        "minutes": null,
+        "from_time": null,
+        "to_time": null,
+        "reason": "Lieferantentermin",
+        "status": "approved",
+        "approver_id": "DEMO-EMP-006",
+        "created_at": "2026-10-20T09:00:00+02:00",
+        "decided_at": "2026-10-20T09:05:00+02:00",
+        "decision_comment": "Genehmigung aus vorgelagertem Workflow"
+      }
+    ],
+    "holidays": [
+      {
+        "date": "2026-12-25",
+        "name": "1. Weihnachtstag"
+      },
+      {
+        "date": "2026-12-26",
+        "name": "2. Weihnachtstag"
+      },
+      {
+        "date": "2027-01-01",
+        "name": "Neujahr"
+      }
+    ],
+    "admin_users": [
+      {
+        "id": "HR-USER-001",
+        "name": "Helena Personal",
+        "initials": "HP",
+        "roles": [
+          "recruiter",
+          "payroll_preparer",
+          "hr_admin"
+        ]
+      },
+      {
+        "id": "HR-USER-002",
+        "name": "Konrad Kontrolle",
+        "initials": "KK",
+        "roles": [
+          "payroll_approver",
+          "hr_admin"
+        ]
+      }
+    ],
+    "recruiting": {
+      "privacy_notice_version": "DS-HR-2026-01",
+      "retention_policy": {
+        "days_after_close": 180,
+        "action": "review_and_delete_or_document_legal_hold"
+      },
+      "vacancies": [
+        {
+          "id": "VAC-0001",
+          "title": "Mechatroniker/in Produktion",
+          "department": "Produktion",
+          "location": "Demo Werk Berlin",
+          "status": "open",
+          "hiring_manager": "DEMO-EMP-006",
+          "positions": 2,
+          "opened_at": "2026-10-10"
+        },
+        {
+          "id": "VAC-0002",
+          "title": "Qualitätsingenieur/in",
+          "department": "Qualität",
+          "location": "Demo Werk Berlin",
+          "status": "open",
+          "hiring_manager": "DEMO-EMP-006",
+          "positions": 1,
+          "opened_at": "2026-10-20"
+        }
+      ],
+      "applications": [
+        {
+          "id": "APP-0001",
+          "vacancy_id": "VAC-0001",
+          "candidate_name": "Lea Muster",
+          "email": "lea.muster@example.invalid",
+          "phone": "+49 30 5550101",
+          "source": "Karriereseite",
+          "stage": "interview",
+          "created_at": "2026-10-22T09:15:00+02:00",
+          "updated_at": "2026-10-30T14:00:00+01:00",
+          "retention_until": "2027-04-30",
+          "privacy_notice_version": "DS-HR-2026-01",
+          "documents": [
+            {
+              "id": "APP-DOC-0001",
+              "document_id": "DOC-HR-CV-001",
+              "title": "Bewerbungsprofil Lea Muster",
+              "document_type": "Lebenslauf",
+              "status": "archived",
+              "access_group": "DMS-Bereich-HR-Recruiting",
+              "linked_at": "2026-10-22T09:16:00+02:00",
+              "linked_by": "HR-USER-001"
+            }
+          ],
+          "history": [
+            {
+              "timestamp": "2026-10-22T09:15:00+02:00",
+              "actor_id": "HR-USER-001",
+              "stage": "new",
+              "note": "Eingang über Karriereseite"
+            },
+            {
+              "timestamp": "2026-10-24T11:30:00+02:00",
+              "actor_id": "HR-USER-001",
+              "stage": "screening",
+              "note": "Mindestanforderungen erfüllt"
+            },
+            {
+              "timestamp": "2026-10-30T14:00:00+01:00",
+              "actor_id": "HR-USER-001",
+              "stage": "interview",
+              "note": "Gespräch am 05.11.2026 geplant"
+            }
+          ]
+        },
+        {
+          "id": "APP-0002",
+          "vacancy_id": "VAC-0002",
+          "candidate_name": "Noah Beispiel",
+          "email": "noah.beispiel@example.invalid",
+          "phone": "+49 30 5550102",
+          "source": "Mitarbeiterempfehlung",
+          "stage": "screening",
+          "created_at": "2026-10-28T13:05:00+01:00",
+          "updated_at": "2026-10-29T08:20:00+01:00",
+          "retention_until": "2027-04-28",
+          "privacy_notice_version": "DS-HR-2026-01",
+          "documents": [],
+          "history": [
+            {
+              "timestamp": "2026-10-28T13:05:00+01:00",
+              "actor_id": "HR-USER-001",
+              "stage": "new",
+              "note": "Bewerbung erfasst"
+            },
+            {
+              "timestamp": "2026-10-29T08:20:00+01:00",
+              "actor_id": "HR-USER-001",
+              "stage": "screening",
+              "note": "Unterlagen in Prüfung"
+            }
+          ]
+        }
+      ]
+    },
+    "payroll": {
+      "calculation_mode": "demo_fixed_values_not_for_payment",
+      "legal_notice": "Demonstrationsabrechnung mit versionierten Testwerten; keine produktive Steuer-, Sozialversicherungs-, Melde- oder Zahlungsausführung.",
+      "periods": [
+        {
+          "id": "PAY-2026-10",
+          "label": "Oktober 2026",
+          "start_date": "2026-10-01",
+          "end_date": "2026-10-31",
+          "status": "open",
+          "attendance_status": "locked",
+          "elstam_status": "demo_imported",
+          "social_insurance_status": "demo_imported"
+        }
+      ],
+      "profiles": [
+        {
+          "employee_id": "DEMO-EMP-001",
+          "tax_class": "I",
+          "health_insurance": "Demo BKK",
+          "bank_account_masked": "DE•• •••• •••• 1001",
+          "checks": {
+            "contract": true,
+            "tax": true,
+            "social_insurance": true,
+            "bank": true
+          },
+          "earnings": [
+            {
+              "code": "1000",
+              "label": "Grundentgelt",
+              "amount_cents": 348000
+            },
+            {
+              "code": "1200",
+              "label": "Schichtzulage",
+              "amount_cents": 18000
+            }
+          ],
+          "deductions": [
+            {
+              "code": "LST",
+              "label": "Lohnsteuer (Testwert)",
+              "amount_cents": 42100
+            },
+            {
+              "code": "KV",
+              "label": "Krankenversicherung (Testwert)",
+              "amount_cents": 28600
+            },
+            {
+              "code": "RV",
+              "label": "Rentenversicherung (Testwert)",
+              "amount_cents": 34000
+            },
+            {
+              "code": "PV",
+              "label": "Pflegeversicherung (Testwert)",
+              "amount_cents": 7200
+            },
+            {
+              "code": "AV",
+              "label": "Arbeitslosenversicherung (Testwert)",
+              "amount_cents": 4800
+            }
+          ]
+        },
+        {
+          "employee_id": "DEMO-EMP-002",
+          "tax_class": "I",
+          "health_insurance": "Demo BKK",
+          "bank_account_masked": "DE•• •••• •••• 1002",
+          "checks": {
+            "contract": true,
+            "tax": true,
+            "social_insurance": true,
+            "bank": true
+          },
+          "earnings": [
+            {
+              "code": "1000",
+              "label": "Grundentgelt",
+              "amount_cents": 372000
+            },
+            {
+              "code": "1200",
+              "label": "Schichtzulage",
+              "amount_cents": 16500
+            }
+          ],
+          "deductions": [
+            {
+              "code": "LST",
+              "label": "Lohnsteuer (Testwert)",
+              "amount_cents": 48600
+            },
+            {
+              "code": "KV",
+              "label": "Krankenversicherung (Testwert)",
+              "amount_cents": 30100
+            },
+            {
+              "code": "RV",
+              "label": "Rentenversicherung (Testwert)",
+              "amount_cents": 36100
+            },
+            {
+              "code": "PV",
+              "label": "Pflegeversicherung (Testwert)",
+              "amount_cents": 7600
+            },
+            {
+              "code": "AV",
+              "label": "Arbeitslosenversicherung (Testwert)",
+              "amount_cents": 5050
+            }
+          ]
+        },
+        {
+          "employee_id": "DEMO-EMP-003",
+          "tax_class": "IV",
+          "health_insurance": "Demo BKK",
+          "bank_account_masked": "DE•• •••• •••• 1003",
+          "checks": {
+            "contract": true,
+            "tax": true,
+            "social_insurance": true,
+            "bank": true
+          },
+          "earnings": [
+            {
+              "code": "1000",
+              "label": "Grundentgelt",
+              "amount_cents": 435000
+            }
+          ],
+          "deductions": [
+            {
+              "code": "LST",
+              "label": "Lohnsteuer (Testwert)",
+              "amount_cents": 57400
+            },
+            {
+              "code": "KV",
+              "label": "Krankenversicherung (Testwert)",
+              "amount_cents": 33700
+            },
+            {
+              "code": "RV",
+              "label": "Rentenversicherung (Testwert)",
+              "amount_cents": 40400
+            },
+            {
+              "code": "PV",
+              "label": "Pflegeversicherung (Testwert)",
+              "amount_cents": 8500
+            },
+            {
+              "code": "AV",
+              "label": "Arbeitslosenversicherung (Testwert)",
+              "amount_cents": 5650
+            }
+          ]
+        },
+        {
+          "employee_id": "DEMO-EMP-004",
+          "tax_class": "I",
+          "health_insurance": "Demo BKK",
+          "bank_account_masked": "DE•• •••• •••• 1004",
+          "checks": {
+            "contract": true,
+            "tax": true,
+            "social_insurance": true,
+            "bank": true
+          },
+          "earnings": [
+            {
+              "code": "1000",
+              "label": "Grundentgelt",
+              "amount_cents": 398000
+            }
+          ],
+          "deductions": [
+            {
+              "code": "LST",
+              "label": "Lohnsteuer (Testwert)",
+              "amount_cents": 51500
+            },
+            {
+              "code": "KV",
+              "label": "Krankenversicherung (Testwert)",
+              "amount_cents": 30900
+            },
+            {
+              "code": "RV",
+              "label": "Rentenversicherung (Testwert)",
+              "amount_cents": 37000
+            },
+            {
+              "code": "PV",
+              "label": "Pflegeversicherung (Testwert)",
+              "amount_cents": 7800
+            },
+            {
+              "code": "AV",
+              "label": "Arbeitslosenversicherung (Testwert)",
+              "amount_cents": 5200
+            }
+          ]
+        },
+        {
+          "employee_id": "DEMO-EMP-005",
+          "tax_class": "IV",
+          "health_insurance": "Demo BKK",
+          "bank_account_masked": "DE•• •••• •••• 1005",
+          "checks": {
+            "contract": true,
+            "tax": true,
+            "social_insurance": true,
+            "bank": true
+          },
+          "earnings": [
+            {
+              "code": "1000",
+              "label": "Grundentgelt",
+              "amount_cents": 412000
+            }
+          ],
+          "deductions": [
+            {
+              "code": "LST",
+              "label": "Lohnsteuer (Testwert)",
+              "amount_cents": 53600
+            },
+            {
+              "code": "KV",
+              "label": "Krankenversicherung (Testwert)",
+              "amount_cents": 32000
+            },
+            {
+              "code": "RV",
+              "label": "Rentenversicherung (Testwert)",
+              "amount_cents": 38300
+            },
+            {
+              "code": "PV",
+              "label": "Pflegeversicherung (Testwert)",
+              "amount_cents": 8100
+            },
+            {
+              "code": "AV",
+              "label": "Arbeitslosenversicherung (Testwert)",
+              "amount_cents": 5350
+            }
+          ]
+        },
+        {
+          "employee_id": "DEMO-EMP-006",
+          "tax_class": "IV",
+          "health_insurance": "Demo BKK",
+          "bank_account_masked": "DE•• •••• •••• 1006",
+          "checks": {
+            "contract": true,
+            "tax": true,
+            "social_insurance": true,
+            "bank": true
+          },
+          "earnings": [
+            {
+              "code": "1000",
+              "label": "Grundentgelt",
+              "amount_cents": 528000
+            },
+            {
+              "code": "1500",
+              "label": "Funktionszulage",
+              "amount_cents": 24000
+            }
+          ],
+          "deductions": [
+            {
+              "code": "LST",
+              "label": "Lohnsteuer (Testwert)",
+              "amount_cents": 81200
+            },
+            {
+              "code": "KV",
+              "label": "Krankenversicherung (Testwert)",
+              "amount_cents": 42800
+            },
+            {
+              "code": "RV",
+              "label": "Rentenversicherung (Testwert)",
+              "amount_cents": 51300
+            },
+            {
+              "code": "PV",
+              "label": "Pflegeversicherung (Testwert)",
+              "amount_cents": 10800
+            },
+            {
+              "code": "AV",
+              "label": "Arbeitslosenversicherung (Testwert)",
+              "amount_cents": 7200
+            }
+          ]
+        }
+      ],
+      "previews": [],
+      "runs": []
+    },
+    "erp_exports": [],
+    "export_previews": [],
+    "audit": [
+      {
+        "id": "HR-AUD-0001",
+        "timestamp": "2026-11-03T06:02:00+01:00",
+        "actor_id": "DEMO-EMP-006",
+        "employee_id": "DEMO-EMP-005",
+        "action": "absence.recorded",
+        "message": "Abwesenheit für Clara Qualität erfasst"
+      },
+      {
+        "id": "HR-AUD-0002",
+        "timestamp": "2026-11-02T11:45:00+01:00",
+        "actor_id": "DEMO-EMP-002",
+        "employee_id": "DEMO-EMP-002",
+        "action": "request.created",
+        "message": "HR-REQ-0005 · Mehrarbeit beantragt"
+      }
+    ]
+  },
+  "serials": [
+    {
+      "id": "SN-10001",
+      "status": "planned",
+      "last_operation": "-"
+    },
+    {
+      "id": "SN-10002",
+      "status": "planned",
+      "last_operation": "-"
+    },
+    {
+      "id": "SN-10003",
+      "status": "planned",
+      "last_operation": "-"
+    },
+    {
+      "id": "SN-10004",
+      "status": "planned",
+      "last_operation": "-"
+    },
+    {
+      "id": "SN-10005",
+      "status": "planned",
+      "last_operation": "-"
+    }
+  ],
+  "mes": {
+    "site": "Demo Werk Berlin",
+    "area": "Demo Werkhalle 1",
+    "shift": {
+      "name": "Frühschicht",
+      "starts_at": "06:00",
+      "ends_at": "14:00",
+      "supervisor": "Paula Planung"
+    },
+    "operators": [
+      {
+        "id": "DEMO-EMP-001",
+        "name": "Mara Montage",
+        "initials": "MM",
+        "role": "Montagemitarbeiterin",
+        "workstation": "WS-MECH"
+      },
+      {
+        "id": "DEMO-EMP-002",
+        "name": "Emil Elektronik",
+        "initials": "EE",
+        "role": "Elektroniker",
+        "workstation": "WS-ELEC"
+      },
+      {
+        "id": "DEMO-EMP-003",
+        "name": "Fiona Firmware",
+        "initials": "FF",
+        "role": "Firmwaretechnikerin",
+        "workstation": "WS-FW"
+      },
+      {
+        "id": "DEMO-EMP-004",
+        "name": "Theo Test",
+        "initials": "TT",
+        "role": "Prüftechniker",
+        "workstation": "WS-TEST-A"
+      },
+      {
+        "id": "DEMO-EMP-005",
+        "name": "Clara Qualität",
+        "initials": "CQ",
+        "role": "Qualitätsprüferin",
+        "workstation": "WS-QC"
+      }
+    ],
+    "jobs": [
+      {
+        "id": "JC-2027-0129",
+        "work_order": "WO-2027-0042",
+        "sales_order": "SO-4711",
+        "project": "KOM-2027-4711",
+        "item_code": "SCU-100",
+        "item_name": "Sonar Control Unit",
+        "revision": "C",
+        "operation": "Mechanische Montage",
+        "sequence": 10,
+        "workstation": "WS-MECH",
+        "assigned_operator": "DEMO-EMP-001",
+        "active_operator": null,
+        "predecessor": null,
+        "status": "completed",
+        "priority": "high",
+        "planned_start": "2027-01-08T06:00:00+01:00",
+        "due_at": "2027-01-08T08:00:00+01:00",
+        "planned_minutes": 60,
+        "target_qty": 5,
+        "completed_qty": 5,
+        "scrap_qty": 0,
+        "serial_tracking": true,
+        "serial_numbers": [
+          "SN-10001",
+          "SN-10002",
+          "SN-10003",
+          "SN-10004",
+          "SN-10005"
+        ],
+        "instructions": [
+          "Gehäuse und Typenschild auf Revision C prüfen.",
+          "Dichtung und Kabeldurchführungen nach Zeichnung einsetzen.",
+          "Baugruppe spannungsfrei in der Montagevorrichtung fixieren.",
+          "Schraubverbindungen mit dem vorgegebenen Drehmoment sichern."
+        ],
+        "checklist": [
+          {
+            "id": "housing",
+            "label": "Gehäuse ohne Beschädigung",
+            "required": true
+          },
+          {
+            "id": "seal",
+            "label": "Dichtung korrekt eingesetzt",
+            "required": true
+          },
+          {
+            "id": "torque",
+            "label": "Drehmoment dokumentiert",
+            "required": true
+          }
+        ],
+        "checklist_completed": [
+          "housing",
+          "seal",
+          "torque"
+        ],
+        "materials": [
+          {
+            "item": "CASE-100-C",
+            "name": "Gehäuse Revision C",
+            "planned": 5,
+            "issued": 5,
+            "unit": "Stk",
+            "lot": "CASE-C-011",
+            "status": "available"
+          },
+          {
+            "item": "CON-M12",
+            "name": "M12 Steckverbinder",
+            "planned": 10,
+            "issued": 10,
+            "unit": "Stk",
+            "lot": "M12-2609",
+            "status": "available"
+          }
+        ],
+        "documents": [
+          "DOC-DRW-100",
+          "DOC-WI-100"
+        ],
+        "time_logs": [
+          {
+            "operator_id": "DEMO-EMP-001",
+            "operator_name": "Mara Montage",
+            "activity": "Fertigungszeit",
+            "started_at": "2027-01-08T06:10:00+01:00",
+            "ended_at": "2027-01-08T07:08:00+01:00",
+            "minutes": 58,
+            "source": "terminal",
+            "note": "Los vollständig montiert"
+          }
+        ],
+        "issue": null,
+        "pause_reason": "",
+        "note": "Mechanische Montage freigegeben"
+      },
+      {
+        "id": "JC-2027-0130",
+        "work_order": "WO-2027-0042",
+        "sales_order": "SO-4711",
+        "project": "KOM-2027-4711",
+        "item_code": "SCU-100",
+        "item_name": "Sonar Control Unit",
+        "revision": "C",
+        "operation": "Elektronikmontage",
+        "sequence": 20,
+        "workstation": "WS-ELEC",
+        "assigned_operator": "DEMO-EMP-002",
+        "active_operator": null,
+        "predecessor": "JC-2027-0129",
+        "status": "ready",
+        "priority": "high",
+        "planned_start": "2027-01-08T08:00:00+01:00",
+        "due_at": "2027-01-08T11:00:00+01:00",
+        "planned_minutes": 90,
+        "target_qty": 5,
+        "completed_qty": 0,
+        "scrap_qty": 0,
+        "serial_tracking": true,
+        "serial_numbers": [],
+        "instructions": [
+          "ESD-Arbeitsplatz und persönliches Erdungsband prüfen.",
+          "Mainboard-Charge BE-24117 mit Materialbereitstellung abgleichen.",
+          "Mainboard und Netzteil gemäß Montageanweisung Rev. D einsetzen.",
+          "Steckverbinder J4 hör- und fühlbar verriegeln.",
+          "Seriennummer scannen und Sichtprüfung dokumentieren."
+        ],
+        "checklist": [
+          {
+            "id": "esd",
+            "label": "ESD-Prüfung durchgeführt",
+            "required": true
+          },
+          {
+            "id": "revision",
+            "label": "Material und Revision abgeglichen",
+            "required": true
+          },
+          {
+            "id": "j4",
+            "label": "Steckverbinder J4 verriegelt",
+            "required": true
+          },
+          {
+            "id": "visual",
+            "label": "Sichtprüfung bestanden",
+            "required": true
+          }
+        ],
+        "checklist_completed": [],
+        "materials": [
+          {
+            "item": "PCB-MAIN-42",
+            "name": "Mainboard",
+            "planned": 5,
+            "issued": 5,
+            "unit": "Stk",
+            "lot": "BE-24117",
+            "status": "available"
+          },
+          {
+            "item": "PSU-24V-80",
+            "name": "Netzteil 24 V",
+            "planned": 5,
+            "issued": 5,
+            "unit": "Stk",
+            "lot": "PSU-1008",
+            "status": "available"
+          },
+          {
+            "item": "HARNESS-100",
+            "name": "Kabelsatz",
+            "planned": 5,
+            "issued": 5,
+            "unit": "Stk",
+            "lot": "HAR-221",
+            "status": "available"
+          }
+        ],
+        "documents": [
+          "DOC-WI-100",
+          "DOC-DRW-100",
+          "DOC-CERT-MB"
+        ],
+        "time_logs": [],
+        "issue": null,
+        "pause_reason": "",
+        "note": ""
+      },
+      {
+        "id": "JC-2027-0131",
+        "work_order": "WO-2027-0042",
+        "sales_order": "SO-4711",
+        "project": "KOM-2027-4711",
+        "item_code": "SCU-100",
+        "item_name": "Sonar Control Unit",
+        "revision": "C",
+        "operation": "Firmware aufspielen",
+        "sequence": 30,
+        "workstation": "WS-FW",
+        "assigned_operator": "DEMO-EMP-003",
+        "active_operator": null,
+        "predecessor": "JC-2027-0130",
+        "status": "waiting",
+        "priority": "normal",
+        "planned_start": "2027-01-09T08:00:00+01:00",
+        "due_at": "2027-01-09T09:30:00+01:00",
+        "planned_minutes": 30,
+        "target_qty": 5,
+        "completed_qty": 0,
+        "scrap_qty": 0,
+        "serial_tracking": true,
+        "serial_numbers": [],
+        "instructions": [
+          "Seriennummer scannen und Produktvariante SCU-100 bestätigen.",
+          "Firmware-Paket FW-SCU-3.8.2 mit freigegebener Prüfsumme laden.",
+          "Bootloader starten und Flash-Vorgang vollständig abwarten.",
+          "Versionsstand auslesen und im Arbeitsgang speichern."
+        ],
+        "checklist": [
+          {
+            "id": "checksum",
+            "label": "Prüfsumme stimmt überein",
+            "required": true
+          },
+          {
+            "id": "flash",
+            "label": "Flash-Vorgang fehlerfrei",
+            "required": true
+          },
+          {
+            "id": "version",
+            "label": "Version 3.8.2 bestätigt",
+            "required": true
+          }
+        ],
+        "checklist_completed": [],
+        "materials": [
+          {
+            "item": "FW-SCU-3",
+            "name": "Firmware SCU v3.8.2",
+            "planned": 5,
+            "issued": 5,
+            "unit": "Lizenz",
+            "lot": "SHA256:8F21…A91C",
+            "status": "available"
+          }
+        ],
+        "documents": [
+          "DOC-WI-100"
+        ],
+        "time_logs": [],
+        "issue": null,
+        "pause_reason": "",
+        "note": ""
+      },
+      {
+        "id": "JC-2027-0132",
+        "work_order": "WO-2027-0042",
+        "sales_order": "SO-4711",
+        "project": "KOM-2027-4711",
+        "item_code": "SCU-100",
+        "item_name": "Sonar Control Unit",
+        "revision": "C",
+        "operation": "Funktionstest",
+        "sequence": 40,
+        "workstation": "WS-TEST-A",
+        "assigned_operator": "DEMO-EMP-004",
+        "active_operator": null,
+        "predecessor": "JC-2027-0131",
+        "status": "waiting",
+        "priority": "normal",
+        "planned_start": "2027-01-09T10:00:00+01:00",
+        "due_at": "2027-01-09T16:00:00+01:00",
+        "planned_minutes": 120,
+        "target_qty": 5,
+        "completed_qty": 0,
+        "scrap_qty": 0,
+        "serial_tracking": true,
+        "serial_numbers": [],
+        "instructions": [
+          "Prüfstand auf gültige Kalibrierung und Nullpunkt prüfen.",
+          "Geräteseriennummer scannen und Prüfplan Rev. B öffnen.",
+          "Versorgungsspannung, Stromaufnahme und Temperatur erfassen.",
+          "CAN-Kommunikation dreimal ausführen und Rohdaten speichern."
+        ],
+        "checklist": [
+          {
+            "id": "calibration",
+            "label": "Prüfmittel kalibriert",
+            "required": true
+          },
+          {
+            "id": "voltage",
+            "label": "Spannung innerhalb Toleranz",
+            "required": true
+          },
+          {
+            "id": "temperature",
+            "label": "Temperaturtest bestanden",
+            "required": true
+          },
+          {
+            "id": "can",
+            "label": "CAN-Kommunikation bestanden",
+            "required": true
+          }
+        ],
+        "checklist_completed": [],
+        "quality_characteristics": [
+          {
+            "name": "Versorgungsspannung",
+            "target": 24.0,
+            "tolerance": "± 0,5",
+            "unit": "V"
+          },
+          {
+            "name": "Stromaufnahme",
+            "target": 1.8,
+            "tolerance": "≤ 2,2",
+            "unit": "A"
+          },
+          {
+            "name": "Gehäusetemperatur",
+            "target": 42.0,
+            "tolerance": "≤ 55",
+            "unit": "°C"
+          }
+        ],
+        "materials": [],
+        "documents": [
+          "DOC-QP-100",
+          "DOC-DRW-100"
+        ],
+        "time_logs": [],
+        "issue": null,
+        "pause_reason": "",
+        "note": ""
+      },
+      {
+        "id": "JC-2027-0133",
+        "work_order": "WO-2027-0042",
+        "sales_order": "SO-4711",
+        "project": "KOM-2027-4711",
+        "item_code": "SCU-100",
+        "item_name": "Sonar Control Unit",
+        "revision": "C",
+        "operation": "Endprüfung",
+        "sequence": 50,
+        "workstation": "WS-QC",
+        "assigned_operator": "DEMO-EMP-005",
+        "active_operator": null,
+        "predecessor": "JC-2027-0132",
+        "status": "waiting",
+        "priority": "normal",
+        "planned_start": "2027-01-11T06:00:00+01:00",
+        "due_at": "2027-01-11T09:45:00+01:00",
+        "planned_minutes": 45,
+        "target_qty": 5,
+        "completed_qty": 0,
+        "scrap_qty": 0,
+        "serial_tracking": true,
+        "serial_numbers": [],
+        "instructions": [
+          "Prüfergebnisse und offene Abweichungen je Seriennummer prüfen.",
+          "Typenschild, Revision und Gerätekennzeichnung abgleichen.",
+          "Vollständigkeit des Abnahmeprotokolls bestätigen.",
+          "Gerät für Fertigwarenlager oder Nacharbeit freigeben."
+        ],
+        "checklist": [
+          {
+            "id": "results",
+            "label": "Alle Prüfergebnisse vollständig",
+            "required": true
+          },
+          {
+            "id": "label",
+            "label": "Kennzeichnung korrekt",
+            "required": true
+          },
+          {
+            "id": "deviations",
+            "label": "Keine offene Major-Abweichung",
+            "required": true
+          },
+          {
+            "id": "release",
+            "label": "Lieferfreigabe erteilt",
+            "required": true
+          }
+        ],
+        "checklist_completed": [],
+        "materials": [],
+        "documents": [
+          "DOC-QP-100",
+          "DOC-ATP-4711"
+        ],
+        "time_logs": [],
+        "issue": null,
+        "pause_reason": "",
+        "note": ""
+      }
+    ],
+    "events": [
+      {
+        "timestamp": "2027-01-08T07:08:00+01:00",
+        "job_id": "JC-2027-0129",
+        "work_order": "WO-2027-0042",
+        "message": "Mechanische Montage mit 5 Gutteilen abgeschlossen",
+        "level": "info"
+      },
+      {
+        "timestamp": "2027-01-08T07:09:00+01:00",
+        "job_id": "JC-2027-0130",
+        "work_order": "WO-2027-0042",
+        "message": "Elektronikmontage zur Bearbeitung freigegeben",
+        "level": "info"
+      }
+    ]
+  },
   "documents": [
     {
       "id": "DOC-DRW-100",
@@ -264,7 +1962,11 @@
       "revision": "Rev. C",
       "item": "SCU-100",
       "filename": "SCU-100_Technische_Zeichnung_Rev-C.pdf",
-      "tags": ["SCU-100", "Revision-C", "Freigegeben"]
+      "tags": [
+        "SCU-100",
+        "Revision-C",
+        "Freigegeben"
+      ]
     },
     {
       "id": "DOC-WI-100",
@@ -273,7 +1975,11 @@
       "revision": "Rev. D",
       "item": "SCU-100",
       "filename": "SCU-100_Montageanweisung_Rev-D.pdf",
-      "tags": ["SCU-100", "Montage", "Freigegeben"]
+      "tags": [
+        "SCU-100",
+        "Montage",
+        "Freigegeben"
+      ]
     },
     {
       "id": "DOC-QP-100",
@@ -282,7 +1988,11 @@
       "revision": "Rev. B",
       "item": "SCU-100",
       "filename": "SCU-100_Pruefplan_Rev-B.pdf",
-      "tags": ["SCU-100", "Qualitaet", "Pruefstand"]
+      "tags": [
+        "SCU-100",
+        "Qualitaet",
+        "Pruefstand"
+      ]
     },
     {
       "id": "DOC-CERT-MB",
@@ -291,7 +2001,11 @@
       "revision": "Charge BE-24117",
       "item": "PCB-MAIN-42",
       "filename": "Mainboard_Lieferantenzertifikat_BE-24117.pdf",
-      "tags": ["PCB-MAIN-42", "Lieferant", "Charge-BE-24117"]
+      "tags": [
+        "PCB-MAIN-42",
+        "Lieferant",
+        "Charge-BE-24117"
+      ]
     },
     {
       "id": "DOC-ATP-4711",
@@ -300,14 +2014,65 @@
       "revision": "Entwurf",
       "item": "SCU-100",
       "filename": "Auftrag-4711_Abnahmeprotokoll.pdf",
-      "tags": ["SO-4711", "WO-2027-0042", "Abnahme"]
+      "tags": [
+        "SO-4711",
+        "WO-2027-0042",
+        "Abnahme"
+      ]
+    },
+    {
+      "id": "DOC-HR-CV-001",
+      "title": "Bewerbungsprofil Lea Muster",
+      "type": "Bewerbungsunterlage",
+      "revision": "Eingang 22.10.2026",
+      "item": "APP-0001",
+      "filename": "Bewerbung_APP-0001_Lea-Muster.pdf",
+      "tags": [
+        "HR-Recruiting",
+        "APP-0001",
+        "Vertraulich"
+      ]
+    },
+    {
+      "id": "DOC-HR-PAY-001",
+      "title": "Muster-Entgeltabrechnung Oktober 2026",
+      "type": "Entgeltabrechnung",
+      "revision": "Demonstrationsbeleg",
+      "item": "DEMO-EMP-001",
+      "filename": "Entgeltabrechnung_PAY-2026-10_DEMO-EMP-001.pdf",
+      "tags": [
+        "HR-Payroll",
+        "PAY-2026-10",
+        "Vertraulich",
+        "Demo"
+      ]
     }
   ],
   "systems": [
-    {"name": "ERPNext", "purpose": "CRM, ERP, MRP, Fertigung, Accounting", "mode": "optional full profile", "port": 8081},
-    {"name": "Paperless-ngx", "purpose": "DMS, OCR, Suche, Versionen", "mode": "optional full profile", "port": 8010},
-    {"name": "Integration Layer", "purpose": "API, Demo-Orchestrierung, AI-Tools", "mode": "active", "port": 8080},
-    {"name": "MkDocs", "purpose": "Prozess-, User- und Admin-Dokumentation", "mode": "active", "port": 8001}
+    {
+      "name": "ERPNext",
+      "purpose": "CRM, ERP, MRP, Fertigung, Accounting",
+      "mode": "optional full profile",
+      "port": 8081
+    },
+    {
+      "name": "Paperless-ngx",
+      "purpose": "DMS, OCR, Suche, Versionen",
+      "mode": "optional full profile",
+      "port": 8010
+    },
+    {
+      "name": "Integration Layer",
+      "purpose": "API, Demo-Orchestrierung, AI-Tools",
+      "mode": "active",
+      "port": 8080
+    },
+    {
+      "name": "MkDocs",
+      "purpose": "Prozess-, User- und Admin-Dokumentation",
+      "mode": "active",
+      "port": 8001
+    }
   ],
   "quality_incident": null,
   "timeline": [
@@ -323,5 +2088,5191 @@
       "system": "ERPNext CRM",
       "level": "info"
     }
-  ]
+  ],
+  "workplace": {
+    "supplier_delivery_history": [
+      {
+        "id": "DEL-2026-1101",
+        "supplier": "Baltic Electronics",
+        "status": "on_time"
+      },
+      {
+        "id": "DEL-2026-1102",
+        "supplier": "NordForm Metalltechnik GmbH",
+        "status": "on_time"
+      },
+      {
+        "id": "DEL-2026-1103",
+        "supplier": "Power Systems Europe GmbH",
+        "status": "on_time"
+      },
+      {
+        "id": "DEL-2026-1104",
+        "supplier": "Display Components Europe",
+        "status": "on_time"
+      },
+      {
+        "id": "DEL-2026-1105",
+        "supplier": "Baltic Electronics",
+        "status": "late"
+      }
+    ]
+  },
+  "iam": {
+    "realm": "open-manufacturing",
+    "admin": {
+      "username": "platform-admin",
+      "name": "Plattform Administrator",
+      "roles": [
+        "platform-admin"
+      ]
+    },
+    "systems": [
+      "Portal",
+      "FLOWWORK",
+      "Redmine",
+      "Desksharing",
+      "MES",
+      "HR",
+      "ERPNext",
+      "DMS",
+      "Grafana",
+      "Open WebUI",
+      "Agentgateway",
+      "Dokumentation"
+    ],
+    "directory": {
+      "name": "FLOWCORP Active Directory",
+      "domain": "flowcorp.example.invalid",
+      "mode": "simulated",
+      "users": 51,
+      "groups": [
+        {
+          "name": "AD-GG-FLOW-PLATFORM-ADMIN",
+          "role": "platform-admin",
+          "description": "Vollzugriff auf alle Plattformbereiche",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PLATFORM-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-MANAGEMENT-USER",
+          "role": "management-user",
+          "description": "Managementcockpit und Kennzahlen",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-MANAGEMENT-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-SALES-USER",
+          "role": "sales-user",
+          "description": "CRM und Vertrieb",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-SALES-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PROCUREMENT-USER",
+          "role": "procurement-user",
+          "description": "Einkauf",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PROCUREMENT-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PLANNING-USER",
+          "role": "planning-user",
+          "description": "Disposition und Produktionsplanung",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PLANNING-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRODUCTION-USER",
+          "role": "production-user",
+          "description": "MES und Shopfloor",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRODUCTION-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-QUALITY-USER",
+          "role": "quality-user",
+          "description": "Qualitätsmanagement",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-QUALITY-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-WAREHOUSE-USER",
+          "role": "warehouse-user",
+          "description": "Lager und Logistik",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-WAREHOUSE-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-HR-USER",
+          "role": "hr-user",
+          "description": "HR-Self-Service",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-HR-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-HR-ADMIN",
+          "role": "hr-admin",
+          "description": "HR-Administration, Recruiting und Payroll",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-HR-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-FINANCE-USER",
+          "role": "finance-user",
+          "description": "Finanzen und Controlling",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-FINANCE-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PROJECT-USER",
+          "role": "project-user",
+          "description": "Projekt- und Dokumentenzugriff",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PROJECT-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-DMS-USER",
+          "role": "dms-user",
+          "description": "Freigegebene Dokumente",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-DMS-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-DESKSHARING-USER",
+          "role": "desksharing-user",
+          "description": "Arbeitsplatz suchen und buchen",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-DESKSHARING-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-DESKSHARING-ADMIN",
+          "role": "desksharing-admin",
+          "description": "Standorte und Buchungen verwalten",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-DESKSHARING-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-IT-USER",
+          "role": "it-user",
+          "description": "Technischer Betrieb",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-IT-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-GRAFANA-VIEWER",
+          "role": "grafana-viewer",
+          "description": "Operative Dashboards",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-GRAFANA-VIEWER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-AI-USER",
+          "role": "ai-user",
+          "description": "Lokaler KI-Assistent",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-AI-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-WORK-USER",
+          "role": "work-user",
+          "description": "FLOWWORK-Projekte, Tickets und Wiki",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-WORK-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-REQUIREMENTS-USER",
+          "role": "requirements-user",
+          "description": "Anforderungen, Baselines und Traceability",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-REQUIREMENTS-USER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-WORK-ADMIN",
+          "role": "work-admin",
+          "description": "FLOWWORK-Administration und Projektvorlagen",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-WORK-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        }
+      ],
+      "sync": "AD/LDAP → Keycloak User Federation",
+      "authorization_chain": "AD-Sicherheitsgruppe → Keycloak-Gruppe → Realm-Rolle → Anwendung",
+      "production_note": "Die Demo bildet die AD-Herkunft mit deterministischen Gruppen ab; im Livebetrieb ersetzt die LDAP-Föderation diesen Import."
+    },
+    "users": [
+      {
+        "id": "USR-001",
+        "username": "demo01",
+        "first_name": "Anna",
+        "last_name": "Schneider",
+        "name": "Anna Schneider",
+        "email": "demo01@example.invalid",
+        "department": "Vertrieb",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "sales-user",
+          "management-user",
+          "grafana-viewer",
+          "requirements-user",
+          "platform-admin"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-002",
+        "username": "demo02",
+        "first_name": "Jonas",
+        "last_name": "Weber",
+        "name": "Jonas Weber",
+        "email": "demo02@example.invalid",
+        "department": "Vertrieb",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "sales-user",
+          "management-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-003",
+        "username": "demo03",
+        "first_name": "Miriam",
+        "last_name": "Becker",
+        "name": "Miriam Becker",
+        "email": "demo03@example.invalid",
+        "department": "Vertrieb",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "sales-user",
+          "management-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-004",
+        "username": "demo04",
+        "first_name": "David",
+        "last_name": "Fischer",
+        "name": "David Fischer",
+        "email": "demo04@example.invalid",
+        "department": "Vertrieb",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "sales-user",
+          "management-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-005",
+        "username": "demo05",
+        "first_name": "Leonie",
+        "last_name": "Wagner",
+        "name": "Leonie Wagner",
+        "email": "demo05@example.invalid",
+        "department": "Vertrieb",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "sales-user",
+          "management-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-006",
+        "username": "demo06",
+        "first_name": "Felix",
+        "last_name": "Hoffmann",
+        "name": "Felix Hoffmann",
+        "email": "demo06@example.invalid",
+        "department": "Einkauf",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "procurement-user"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-007",
+        "username": "demo07",
+        "first_name": "Sophie",
+        "last_name": "Koch",
+        "name": "Sophie Koch",
+        "email": "demo07@example.invalid",
+        "department": "Einkauf",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "procurement-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-008",
+        "username": "demo08",
+        "first_name": "Daniel",
+        "last_name": "Richter",
+        "name": "Daniel Richter",
+        "email": "demo08@example.invalid",
+        "department": "Einkauf",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "procurement-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-009",
+        "username": "demo09",
+        "first_name": "Nina",
+        "last_name": "Klein",
+        "name": "Nina Klein",
+        "email": "demo09@example.invalid",
+        "department": "Einkauf",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "procurement-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-010",
+        "username": "demo10",
+        "first_name": "Lukas",
+        "last_name": "Wolf",
+        "name": "Lukas Wolf",
+        "email": "demo10@example.invalid",
+        "department": "Einkauf",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "procurement-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-011",
+        "username": "demo11",
+        "first_name": "Clara",
+        "last_name": "Schröder",
+        "name": "Clara Schröder",
+        "email": "demo11@example.invalid",
+        "department": "Disposition",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "planning-user",
+          "requirements-user"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-012",
+        "username": "demo12",
+        "first_name": "Tobias",
+        "last_name": "Neumann",
+        "name": "Tobias Neumann",
+        "email": "demo12@example.invalid",
+        "department": "Disposition",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "planning-user",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-013",
+        "username": "demo13",
+        "first_name": "Laura",
+        "last_name": "Schwarz",
+        "name": "Laura Schwarz",
+        "email": "demo13@example.invalid",
+        "department": "Disposition",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "planning-user",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-014",
+        "username": "demo14",
+        "first_name": "Jan",
+        "last_name": "Zimmermann",
+        "name": "Jan Zimmermann",
+        "email": "demo14@example.invalid",
+        "department": "Disposition",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "planning-user",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-015",
+        "username": "demo15",
+        "first_name": "Emilia",
+        "last_name": "Braun",
+        "name": "Emilia Braun",
+        "email": "demo15@example.invalid",
+        "department": "Disposition",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "planning-user",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-016",
+        "username": "demo16",
+        "first_name": "Tim",
+        "last_name": "Krüger",
+        "name": "Tim Krüger",
+        "email": "demo16@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-017",
+        "username": "demo17",
+        "first_name": "Johanna",
+        "last_name": "Hartmann",
+        "name": "Johanna Hartmann",
+        "email": "demo17@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-018",
+        "username": "demo18",
+        "first_name": "Max",
+        "last_name": "Lange",
+        "name": "Max Lange",
+        "email": "demo18@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-019",
+        "username": "demo19",
+        "first_name": "Sarah",
+        "last_name": "Schmitt",
+        "name": "Sarah Schmitt",
+        "email": "demo19@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-020",
+        "username": "demo20",
+        "first_name": "Paul",
+        "last_name": "Werner",
+        "name": "Paul Werner",
+        "email": "demo20@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-021",
+        "username": "demo21",
+        "first_name": "Julia",
+        "last_name": "Schmitz",
+        "name": "Julia Schmitz",
+        "email": "demo21@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-022",
+        "username": "demo22",
+        "first_name": "Simon",
+        "last_name": "Krause",
+        "name": "Simon Krause",
+        "email": "demo22@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-023",
+        "username": "demo23",
+        "first_name": "Marie",
+        "last_name": "Meier",
+        "name": "Marie Meier",
+        "email": "demo23@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-024",
+        "username": "demo24",
+        "first_name": "Niklas",
+        "last_name": "Lehmann",
+        "name": "Niklas Lehmann",
+        "email": "demo24@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-025",
+        "username": "demo25",
+        "first_name": "Lisa",
+        "last_name": "Schmid",
+        "name": "Lisa Schmid",
+        "email": "demo25@example.invalid",
+        "department": "Produktion",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "production-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-026",
+        "username": "demo26",
+        "first_name": "Ben",
+        "last_name": "Schulz",
+        "name": "Ben Schulz",
+        "email": "demo26@example.invalid",
+        "department": "Qualität",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "quality-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-027",
+        "username": "demo27",
+        "first_name": "Katharina",
+        "last_name": "Maier",
+        "name": "Katharina Maier",
+        "email": "demo27@example.invalid",
+        "department": "Qualität",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "quality-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-028",
+        "username": "demo28",
+        "first_name": "Moritz",
+        "last_name": "Köhler",
+        "name": "Moritz Köhler",
+        "email": "demo28@example.invalid",
+        "department": "Qualität",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "quality-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-029",
+        "username": "demo29",
+        "first_name": "Franziska",
+        "last_name": "Herrmann",
+        "name": "Franziska Herrmann",
+        "email": "demo29@example.invalid",
+        "department": "Qualität",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "quality-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-030",
+        "username": "demo30",
+        "first_name": "Leon",
+        "last_name": "König",
+        "name": "Leon König",
+        "email": "demo30@example.invalid",
+        "department": "Qualität",
+        "site_id": "BER",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "quality-user",
+          "grafana-viewer",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-031",
+        "username": "demo31",
+        "first_name": "Theresa",
+        "last_name": "Walter",
+        "name": "Theresa Walter",
+        "email": "demo31@example.invalid",
+        "department": "Lager",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "warehouse-user",
+          "grafana-viewer"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-032",
+        "username": "demo32",
+        "first_name": "Elias",
+        "last_name": "Mayer",
+        "name": "Elias Mayer",
+        "email": "demo32@example.invalid",
+        "department": "Lager",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "warehouse-user",
+          "grafana-viewer"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-033",
+        "username": "demo33",
+        "first_name": "Vanessa",
+        "last_name": "Huber",
+        "name": "Vanessa Huber",
+        "email": "demo33@example.invalid",
+        "department": "Lager",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "warehouse-user",
+          "grafana-viewer"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-034",
+        "username": "demo34",
+        "first_name": "Florian",
+        "last_name": "Kaiser",
+        "name": "Florian Kaiser",
+        "email": "demo34@example.invalid",
+        "department": "Lager",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "warehouse-user",
+          "grafana-viewer"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-035",
+        "username": "demo35",
+        "first_name": "Carolin",
+        "last_name": "Fuchs",
+        "name": "Carolin Fuchs",
+        "email": "demo35@example.invalid",
+        "department": "Lager",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "warehouse-user",
+          "grafana-viewer"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-036",
+        "username": "demo36",
+        "first_name": "Noah",
+        "last_name": "Peters",
+        "name": "Noah Peters",
+        "email": "demo36@example.invalid",
+        "department": "Personal",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "hr-user",
+          "hr-admin"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-037",
+        "username": "demo37",
+        "first_name": "Alina",
+        "last_name": "Lang",
+        "name": "Alina Lang",
+        "email": "demo37@example.invalid",
+        "department": "Personal",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "hr-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-038",
+        "username": "demo38",
+        "first_name": "Sebastian",
+        "last_name": "Scholz",
+        "name": "Sebastian Scholz",
+        "email": "demo38@example.invalid",
+        "department": "Personal",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "hr-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-039",
+        "username": "demo39",
+        "first_name": "Amelie",
+        "last_name": "Möller",
+        "name": "Amelie Möller",
+        "email": "demo39@example.invalid",
+        "department": "Personal",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "hr-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-040",
+        "username": "demo40",
+        "first_name": "Philipp",
+        "last_name": "Weiß",
+        "name": "Philipp Weiß",
+        "email": "demo40@example.invalid",
+        "department": "Finanzen",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "finance-user",
+          "management-user",
+          "grafana-viewer"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-041",
+        "username": "demo41",
+        "first_name": "Isabel",
+        "last_name": "Jung",
+        "name": "Isabel Jung",
+        "email": "demo41@example.invalid",
+        "department": "Finanzen",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "finance-user",
+          "management-user",
+          "grafana-viewer"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-042",
+        "username": "demo42",
+        "first_name": "Matteo",
+        "last_name": "Hahn",
+        "name": "Matteo Hahn",
+        "email": "demo42@example.invalid",
+        "department": "Finanzen",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "finance-user",
+          "management-user",
+          "grafana-viewer"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-043",
+        "username": "demo43",
+        "first_name": "Luisa",
+        "last_name": "Schubert",
+        "name": "Luisa Schubert",
+        "email": "demo43@example.invalid",
+        "department": "Finanzen",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "finance-user",
+          "management-user",
+          "grafana-viewer"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-044",
+        "username": "demo44",
+        "first_name": "Alexander",
+        "last_name": "Vogel",
+        "name": "Alexander Vogel",
+        "email": "demo44@example.invalid",
+        "department": "Projekte & Engineering",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "project-user",
+          "management-user",
+          "ai-user",
+          "requirements-user",
+          "work-admin"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-045",
+        "username": "demo45",
+        "first_name": "Helena",
+        "last_name": "Friedrich",
+        "name": "Helena Friedrich",
+        "email": "demo45@example.invalid",
+        "department": "Projekte & Engineering",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "project-user",
+          "management-user",
+          "ai-user",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-046",
+        "username": "demo46",
+        "first_name": "Nico",
+        "last_name": "Günther",
+        "name": "Nico Günther",
+        "email": "demo46@example.invalid",
+        "department": "Projekte & Engineering",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "project-user",
+          "management-user",
+          "ai-user",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-047",
+        "username": "demo47",
+        "first_name": "Eva",
+        "last_name": "Frank",
+        "name": "Eva Frank",
+        "email": "demo47@example.invalid",
+        "department": "Projekte & Engineering",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "project-user",
+          "management-user",
+          "ai-user",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-048",
+        "username": "demo48",
+        "first_name": "Robert",
+        "last_name": "Berger",
+        "name": "Robert Berger",
+        "email": "demo48@example.invalid",
+        "department": "Projekte & Engineering",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "project-user",
+          "management-user",
+          "ai-user",
+          "requirements-user"
+        ],
+        "manager": false
+      },
+      {
+        "id": "USR-049",
+        "username": "demo49",
+        "first_name": "Maja",
+        "last_name": "Roth",
+        "name": "Maja Roth",
+        "email": "demo49@example.invalid",
+        "department": "IT",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "it-user",
+          "ai-user",
+          "work-admin",
+          "desksharing-admin"
+        ],
+        "manager": true
+      },
+      {
+        "id": "USR-050",
+        "username": "demo50",
+        "first_name": "Christian",
+        "last_name": "Beck",
+        "name": "Christian Beck",
+        "email": "demo50@example.invalid",
+        "department": "IT",
+        "site_id": "HAM",
+        "roles": [
+          "desksharing-user",
+          "dms-user",
+          "work-user",
+          "it-user",
+          "ai-user"
+        ],
+        "manager": false
+      }
+    ]
+  },
+  "desksharing": {
+    "settings": {
+      "booking_horizon_days": 180,
+      "slots": [
+        "full_day",
+        "morning",
+        "afternoon"
+      ],
+      "checkin_grace_minutes": 60
+    },
+    "sites": [
+      {
+        "id": "BER",
+        "name": "Berlin · Werk & Büro",
+        "address": "Industriestraße 24, 10587 Berlin",
+        "timezone": "Europe/Berlin",
+        "building_code": "BER-01",
+        "entry_label": "Haupteingang am Empfang Berlin",
+        "desk_count": 50,
+        "floors": [
+          "EG",
+          "1. OG"
+        ]
+      },
+      {
+        "id": "HAM",
+        "name": "Hamburg · Projektbüro",
+        "address": "Am Sandtorkai 18, 20457 Hamburg",
+        "timezone": "Europe/Berlin",
+        "building_code": "HAM-01",
+        "entry_label": "Haupteingang am Empfang Hamburg",
+        "desk_count": 50,
+        "floors": [
+          "EG",
+          "1. OG"
+        ]
+      }
+    ],
+    "rooms": [
+      {
+        "id": "BER-EG-FOK",
+        "site_id": "BER",
+        "floor": "EG",
+        "name": "Fokusraum Spree",
+        "zone": "Fokus",
+        "capacity": 8,
+        "map": {
+          "x": 3,
+          "y": 5,
+          "width": 28,
+          "height": 46,
+          "door_x": 31,
+          "door_y": 52
+        },
+        "directions": "links vom zentralen Flur"
+      },
+      {
+        "id": "BER-EG-TEAM",
+        "site_id": "BER",
+        "floor": "EG",
+        "name": "Teamraum Kreuzberg",
+        "zone": "Team",
+        "capacity": 10,
+        "map": {
+          "x": 35,
+          "y": 5,
+          "width": 62,
+          "height": 46,
+          "door_x": 69,
+          "door_y": 52
+        },
+        "directions": "rechts vom zentralen Flur"
+      },
+      {
+        "id": "BER-EG-PROJ",
+        "site_id": "BER",
+        "floor": "EG",
+        "name": "Projektraum Tegel",
+        "zone": "Projekt",
+        "capacity": 7,
+        "map": {
+          "x": 3,
+          "y": 57,
+          "width": 94,
+          "height": 35,
+          "door_x": 50,
+          "door_y": 92
+        },
+        "directions": "geradeaus hinter dem zentralen Flur"
+      },
+      {
+        "id": "BER-1OG-FOK",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "name": "Fokusraum Havel",
+        "zone": "Fokus",
+        "capacity": 8,
+        "map": {
+          "x": 3,
+          "y": 5,
+          "width": 28,
+          "height": 46,
+          "door_x": 31,
+          "door_y": 52
+        },
+        "directions": "links vom zentralen Flur"
+      },
+      {
+        "id": "BER-1OG-TEAM",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "name": "Teamraum Mitte",
+        "zone": "Team",
+        "capacity": 10,
+        "map": {
+          "x": 35,
+          "y": 5,
+          "width": 62,
+          "height": 46,
+          "door_x": 69,
+          "door_y": 52
+        },
+        "directions": "rechts vom zentralen Flur"
+      },
+      {
+        "id": "BER-1OG-PROJ",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "name": "Projektraum Tempelhof",
+        "zone": "Projekt",
+        "capacity": 7,
+        "map": {
+          "x": 3,
+          "y": 57,
+          "width": 94,
+          "height": 35,
+          "door_x": 50,
+          "door_y": 92
+        },
+        "directions": "geradeaus hinter dem zentralen Flur"
+      },
+      {
+        "id": "HAM-EG-FOK",
+        "site_id": "HAM",
+        "floor": "EG",
+        "name": "Fokusraum Alster",
+        "zone": "Fokus",
+        "capacity": 8,
+        "map": {
+          "x": 3,
+          "y": 5,
+          "width": 28,
+          "height": 46,
+          "door_x": 31,
+          "door_y": 52
+        },
+        "directions": "links vom zentralen Flur"
+      },
+      {
+        "id": "HAM-EG-TEAM",
+        "site_id": "HAM",
+        "floor": "EG",
+        "name": "Teamraum HafenCity",
+        "zone": "Team",
+        "capacity": 10,
+        "map": {
+          "x": 35,
+          "y": 5,
+          "width": 62,
+          "height": 46,
+          "door_x": 69,
+          "door_y": 52
+        },
+        "directions": "rechts vom zentralen Flur"
+      },
+      {
+        "id": "HAM-EG-PROJ",
+        "site_id": "HAM",
+        "floor": "EG",
+        "name": "Projektraum Elbe",
+        "zone": "Projekt",
+        "capacity": 7,
+        "map": {
+          "x": 3,
+          "y": 57,
+          "width": 94,
+          "height": 35,
+          "door_x": 50,
+          "door_y": 92
+        },
+        "directions": "geradeaus hinter dem zentralen Flur"
+      },
+      {
+        "id": "HAM-1OG-FOK",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "name": "Fokusraum Fleet",
+        "zone": "Fokus",
+        "capacity": 8,
+        "map": {
+          "x": 3,
+          "y": 5,
+          "width": 28,
+          "height": 46,
+          "door_x": 31,
+          "door_y": 52
+        },
+        "directions": "links vom zentralen Flur"
+      },
+      {
+        "id": "HAM-1OG-TEAM",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "name": "Teamraum Speicherstadt",
+        "zone": "Team",
+        "capacity": 10,
+        "map": {
+          "x": 35,
+          "y": 5,
+          "width": 62,
+          "height": 46,
+          "door_x": 69,
+          "door_y": 52
+        },
+        "directions": "rechts vom zentralen Flur"
+      },
+      {
+        "id": "HAM-1OG-PROJ",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "name": "Projektraum Blankenese",
+        "zone": "Projekt",
+        "capacity": 7,
+        "map": {
+          "x": 3,
+          "y": 57,
+          "width": 94,
+          "height": 35,
+          "door_x": 50,
+          "door_y": 92
+        },
+        "directions": "geradeaus hinter dem zentralen Flur"
+      }
+    ],
+    "desks": [
+      {
+        "id": "BER-D001",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "BER-EG-FOK",
+        "number": 1,
+        "label": "BER · EG · 01",
+        "map_x": 10,
+        "map_y": 14,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D002",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "BER-EG-FOK",
+        "number": 2,
+        "label": "BER · EG · 02",
+        "map_x": 22,
+        "map_y": 14,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D003",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "BER-EG-FOK",
+        "number": 3,
+        "label": "BER · EG · 03",
+        "map_x": 10,
+        "map_y": 24,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D004",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "BER-EG-FOK",
+        "number": 4,
+        "label": "BER · EG · 04",
+        "map_x": 22,
+        "map_y": 24,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D005",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "BER-EG-FOK",
+        "number": 5,
+        "label": "BER · EG · 05",
+        "map_x": 10,
+        "map_y": 34,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D006",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "BER-EG-FOK",
+        "number": 6,
+        "label": "BER · EG · 06",
+        "map_x": 22,
+        "map_y": 34,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D007",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "BER-EG-FOK",
+        "number": 7,
+        "label": "BER · EG · 07",
+        "map_x": 10,
+        "map_y": 44,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D008",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "BER-EG-FOK",
+        "number": 8,
+        "label": "BER · EG · 08",
+        "map_x": 22,
+        "map_y": 44,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D009",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 9,
+        "label": "BER · EG · 09",
+        "map_x": 42,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D010",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 10,
+        "label": "BER · EG · 10",
+        "map_x": 53,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "BER-D011",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 11,
+        "label": "BER · EG · 11",
+        "map_x": 64,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D012",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 12,
+        "label": "BER · EG · 12",
+        "map_x": 75,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D013",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 13,
+        "label": "BER · EG · 13",
+        "map_x": 86,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D014",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 14,
+        "label": "BER · EG · 14",
+        "map_x": 42,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D015",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 15,
+        "label": "BER · EG · 15",
+        "map_x": 53,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D016",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 16,
+        "label": "BER · EG · 16",
+        "map_x": 64,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D017",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 17,
+        "label": "BER · EG · 17",
+        "map_x": 75,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D018",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "BER-EG-TEAM",
+        "number": 18,
+        "label": "BER · EG · 18",
+        "map_x": 86,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D019",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "BER-EG-PROJ",
+        "number": 19,
+        "label": "BER · EG · 19",
+        "map_x": 11,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D020",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "BER-EG-PROJ",
+        "number": 20,
+        "label": "BER · EG · 20",
+        "map_x": 23,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "BER-D021",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "BER-EG-PROJ",
+        "number": 21,
+        "label": "BER · EG · 21",
+        "map_x": 35,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D022",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "BER-EG-PROJ",
+        "number": 22,
+        "label": "BER · EG · 22",
+        "map_x": 47,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D023",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "BER-EG-PROJ",
+        "number": 23,
+        "label": "BER · EG · 23",
+        "map_x": 59,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D024",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "BER-EG-PROJ",
+        "number": 24,
+        "label": "BER · EG · 24",
+        "map_x": 71,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D025",
+        "site_id": "BER",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "BER-EG-PROJ",
+        "number": 25,
+        "label": "BER · EG · 25",
+        "map_x": 83,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D026",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "BER-1OG-FOK",
+        "number": 26,
+        "label": "BER · 1. OG · 01",
+        "map_x": 10,
+        "map_y": 14,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D027",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "BER-1OG-FOK",
+        "number": 27,
+        "label": "BER · 1. OG · 02",
+        "map_x": 22,
+        "map_y": 14,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D028",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "BER-1OG-FOK",
+        "number": 28,
+        "label": "BER · 1. OG · 03",
+        "map_x": 10,
+        "map_y": 24,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D029",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "BER-1OG-FOK",
+        "number": 29,
+        "label": "BER · 1. OG · 04",
+        "map_x": 22,
+        "map_y": 24,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D030",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "BER-1OG-FOK",
+        "number": 30,
+        "label": "BER · 1. OG · 05",
+        "map_x": 10,
+        "map_y": 34,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "BER-D031",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "BER-1OG-FOK",
+        "number": 31,
+        "label": "BER · 1. OG · 06",
+        "map_x": 22,
+        "map_y": 34,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D032",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "BER-1OG-FOK",
+        "number": 32,
+        "label": "BER · 1. OG · 07",
+        "map_x": 10,
+        "map_y": 44,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D033",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "BER-1OG-FOK",
+        "number": 33,
+        "label": "BER · 1. OG · 08",
+        "map_x": 22,
+        "map_y": 44,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D034",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 34,
+        "label": "BER · 1. OG · 09",
+        "map_x": 42,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D035",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 35,
+        "label": "BER · 1. OG · 10",
+        "map_x": 53,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D036",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 36,
+        "label": "BER · 1. OG · 11",
+        "map_x": 64,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D037",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 37,
+        "label": "BER · 1. OG · 12",
+        "map_x": 75,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D038",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 38,
+        "label": "BER · 1. OG · 13",
+        "map_x": 86,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D039",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 39,
+        "label": "BER · 1. OG · 14",
+        "map_x": 42,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D040",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 40,
+        "label": "BER · 1. OG · 15",
+        "map_x": 53,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "BER-D041",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 41,
+        "label": "BER · 1. OG · 16",
+        "map_x": 64,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D042",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 42,
+        "label": "BER · 1. OG · 17",
+        "map_x": 75,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D043",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "BER-1OG-TEAM",
+        "number": 43,
+        "label": "BER · 1. OG · 18",
+        "map_x": 86,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D044",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "BER-1OG-PROJ",
+        "number": 44,
+        "label": "BER · 1. OG · 19",
+        "map_x": 11,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D045",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "BER-1OG-PROJ",
+        "number": 45,
+        "label": "BER · 1. OG · 20",
+        "map_x": 23,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D046",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "BER-1OG-PROJ",
+        "number": 46,
+        "label": "BER · 1. OG · 21",
+        "map_x": 35,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D047",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "BER-1OG-PROJ",
+        "number": 47,
+        "label": "BER · 1. OG · 22",
+        "map_x": 47,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D048",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "BER-1OG-PROJ",
+        "number": 48,
+        "label": "BER · 1. OG · 23",
+        "map_x": 59,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D049",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "BER-1OG-PROJ",
+        "number": 49,
+        "label": "BER · 1. OG · 24",
+        "map_x": 71,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "BER-D050",
+        "site_id": "BER",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "BER-1OG-PROJ",
+        "number": 50,
+        "label": "BER · 1. OG · 25",
+        "map_x": 83,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D001",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "HAM-EG-FOK",
+        "number": 1,
+        "label": "HAM · EG · 01",
+        "map_x": 10,
+        "map_y": 14,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D002",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "HAM-EG-FOK",
+        "number": 2,
+        "label": "HAM · EG · 02",
+        "map_x": 22,
+        "map_y": 14,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D003",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "HAM-EG-FOK",
+        "number": 3,
+        "label": "HAM · EG · 03",
+        "map_x": 10,
+        "map_y": 24,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D004",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "HAM-EG-FOK",
+        "number": 4,
+        "label": "HAM · EG · 04",
+        "map_x": 22,
+        "map_y": 24,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D005",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "HAM-EG-FOK",
+        "number": 5,
+        "label": "HAM · EG · 05",
+        "map_x": 10,
+        "map_y": 34,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D006",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "HAM-EG-FOK",
+        "number": 6,
+        "label": "HAM · EG · 06",
+        "map_x": 22,
+        "map_y": 34,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D007",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "HAM-EG-FOK",
+        "number": 7,
+        "label": "HAM · EG · 07",
+        "map_x": 10,
+        "map_y": 44,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D008",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Fokus",
+        "room_id": "HAM-EG-FOK",
+        "number": 8,
+        "label": "HAM · EG · 08",
+        "map_x": 22,
+        "map_y": 44,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D009",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 9,
+        "label": "HAM · EG · 09",
+        "map_x": 42,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D010",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 10,
+        "label": "HAM · EG · 10",
+        "map_x": 53,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D011",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 11,
+        "label": "HAM · EG · 11",
+        "map_x": 64,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D012",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 12,
+        "label": "HAM · EG · 12",
+        "map_x": 75,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D013",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 13,
+        "label": "HAM · EG · 13",
+        "map_x": 86,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D014",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 14,
+        "label": "HAM · EG · 14",
+        "map_x": 42,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D015",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 15,
+        "label": "HAM · EG · 15",
+        "map_x": 53,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D016",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 16,
+        "label": "HAM · EG · 16",
+        "map_x": 64,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D017",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 17,
+        "label": "HAM · EG · 17",
+        "map_x": 75,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D018",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Team",
+        "room_id": "HAM-EG-TEAM",
+        "number": 18,
+        "label": "HAM · EG · 18",
+        "map_x": 86,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D019",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "HAM-EG-PROJ",
+        "number": 19,
+        "label": "HAM · EG · 19",
+        "map_x": 11,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D020",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "HAM-EG-PROJ",
+        "number": 20,
+        "label": "HAM · EG · 20",
+        "map_x": 23,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D021",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "HAM-EG-PROJ",
+        "number": 21,
+        "label": "HAM · EG · 21",
+        "map_x": 35,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D022",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "HAM-EG-PROJ",
+        "number": 22,
+        "label": "HAM · EG · 22",
+        "map_x": 47,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D023",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "HAM-EG-PROJ",
+        "number": 23,
+        "label": "HAM · EG · 23",
+        "map_x": 59,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D024",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "HAM-EG-PROJ",
+        "number": 24,
+        "label": "HAM · EG · 24",
+        "map_x": 71,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D025",
+        "site_id": "HAM",
+        "floor": "EG",
+        "zone": "Projekt",
+        "room_id": "HAM-EG-PROJ",
+        "number": 25,
+        "label": "HAM · EG · 25",
+        "map_x": 83,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D026",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "HAM-1OG-FOK",
+        "number": 26,
+        "label": "HAM · 1. OG · 01",
+        "map_x": 10,
+        "map_y": 14,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D027",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "HAM-1OG-FOK",
+        "number": 27,
+        "label": "HAM · 1. OG · 02",
+        "map_x": 22,
+        "map_y": 14,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D028",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "HAM-1OG-FOK",
+        "number": 28,
+        "label": "HAM · 1. OG · 03",
+        "map_x": 10,
+        "map_y": 24,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D029",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "HAM-1OG-FOK",
+        "number": 29,
+        "label": "HAM · 1. OG · 04",
+        "map_x": 22,
+        "map_y": 24,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D030",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "HAM-1OG-FOK",
+        "number": 30,
+        "label": "HAM · 1. OG · 05",
+        "map_x": 10,
+        "map_y": 34,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D031",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "HAM-1OG-FOK",
+        "number": 31,
+        "label": "HAM · 1. OG · 06",
+        "map_x": 22,
+        "map_y": 34,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D032",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "HAM-1OG-FOK",
+        "number": 32,
+        "label": "HAM · 1. OG · 07",
+        "map_x": 10,
+        "map_y": 44,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D033",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Fokus",
+        "room_id": "HAM-1OG-FOK",
+        "number": 33,
+        "label": "HAM · 1. OG · 08",
+        "map_x": 22,
+        "map_y": 44,
+        "type": "focus",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D034",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 34,
+        "label": "HAM · 1. OG · 09",
+        "map_x": 42,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D035",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 35,
+        "label": "HAM · 1. OG · 10",
+        "map_x": 53,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D036",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 36,
+        "label": "HAM · 1. OG · 11",
+        "map_x": 64,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D037",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 37,
+        "label": "HAM · 1. OG · 12",
+        "map_x": 75,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D038",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 38,
+        "label": "HAM · 1. OG · 13",
+        "map_x": 86,
+        "map_y": 20,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D039",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 39,
+        "label": "HAM · 1. OG · 14",
+        "map_x": 42,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D040",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 40,
+        "label": "HAM · 1. OG · 15",
+        "map_x": 53,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D041",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 41,
+        "label": "HAM · 1. OG · 16",
+        "map_x": 64,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D042",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 42,
+        "label": "HAM · 1. OG · 17",
+        "map_x": 75,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D043",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Team",
+        "room_id": "HAM-1OG-TEAM",
+        "number": 43,
+        "label": "HAM · 1. OG · 18",
+        "map_x": 86,
+        "map_y": 38,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D044",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "HAM-1OG-PROJ",
+        "number": 44,
+        "label": "HAM · 1. OG · 19",
+        "map_x": 11,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D045",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "HAM-1OG-PROJ",
+        "number": 45,
+        "label": "HAM · 1. OG · 20",
+        "map_x": 23,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D046",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "HAM-1OG-PROJ",
+        "number": 46,
+        "label": "HAM · 1. OG · 21",
+        "map_x": 35,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D047",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "HAM-1OG-PROJ",
+        "number": 47,
+        "label": "HAM · 1. OG · 22",
+        "map_x": 47,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D048",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "HAM-1OG-PROJ",
+        "number": 48,
+        "label": "HAM · 1. OG · 23",
+        "map_x": 59,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Höhenverstellbar"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D049",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "HAM-1OG-PROJ",
+        "number": 49,
+        "label": "HAM · 1. OG · 24",
+        "map_x": 71,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Dual-Monitor"
+        ],
+        "accessible": false,
+        "status": "active"
+      },
+      {
+        "id": "HAM-D050",
+        "site_id": "HAM",
+        "floor": "1. OG",
+        "zone": "Projekt",
+        "room_id": "HAM-1OG-PROJ",
+        "number": 50,
+        "label": "HAM · 1. OG · 25",
+        "map_x": 83,
+        "map_y": 74,
+        "type": "standard",
+        "features": [
+          "27-Zoll-Monitor",
+          "USB-C-Dock",
+          "Barrierearm"
+        ],
+        "accessible": true,
+        "status": "active"
+      }
+    ],
+    "bookings": [
+      {
+        "id": "DSB-0001",
+        "user_id": "USR-001",
+        "desk_id": "BER-D001",
+        "date": "2026-11-05",
+        "slot": "full_day",
+        "status": "checked_in",
+        "created_at": "2026-10-28T08:15:00+00:00"
+      },
+      {
+        "id": "DSB-0002",
+        "user_id": "USR-006",
+        "desk_id": "BER-D012",
+        "date": "2026-11-05",
+        "slot": "morning",
+        "status": "booked",
+        "created_at": "2026-10-29T10:00:00+00:00"
+      },
+      {
+        "id": "DSB-0003",
+        "user_id": "USR-016",
+        "desk_id": "BER-D029",
+        "date": "2026-11-05",
+        "slot": "full_day",
+        "status": "booked",
+        "created_at": "2026-10-30T09:30:00+00:00"
+      },
+      {
+        "id": "DSB-0004",
+        "user_id": "USR-021",
+        "desk_id": "BER-D042",
+        "date": "2026-11-05",
+        "slot": "full_day",
+        "status": "booked",
+        "created_at": "2026-10-30T10:00:00+00:00"
+      },
+      {
+        "id": "DSB-0005",
+        "user_id": "USR-031",
+        "desk_id": "HAM-D003",
+        "date": "2026-11-05",
+        "slot": "full_day",
+        "status": "booked",
+        "created_at": "2026-10-30T11:00:00+00:00"
+      },
+      {
+        "id": "DSB-0006",
+        "user_id": "USR-041",
+        "desk_id": "HAM-D017",
+        "date": "2026-11-05",
+        "slot": "afternoon",
+        "status": "booked",
+        "created_at": "2026-10-31T07:45:00+00:00"
+      },
+      {
+        "id": "DSB-0007",
+        "user_id": "USR-044",
+        "desk_id": "HAM-D032",
+        "date": "2026-11-05",
+        "slot": "full_day",
+        "status": "checked_in",
+        "created_at": "2026-11-01T08:00:00+00:00"
+      },
+      {
+        "id": "DSB-0008",
+        "user_id": "USR-049",
+        "desk_id": "HAM-D046",
+        "date": "2026-11-05",
+        "slot": "full_day",
+        "status": "booked",
+        "created_at": "2026-11-01T08:20:00+00:00"
+      },
+      {
+        "id": "DSB-0009",
+        "user_id": "USR-003",
+        "desk_id": "BER-D020",
+        "date": "2026-11-06",
+        "slot": "full_day",
+        "status": "booked",
+        "created_at": "2026-11-02T09:00:00+00:00"
+      },
+      {
+        "id": "DSB-0010",
+        "user_id": "USR-034",
+        "desk_id": "HAM-D028",
+        "date": "2026-11-06",
+        "slot": "full_day",
+        "status": "booked",
+        "created_at": "2026-11-02T09:10:00+00:00"
+      }
+    ],
+    "audit": []
+  },
+  "finance": {
+    "as_of": "2026-11-04",
+    "currency": "EUR",
+    "orders": [
+      {
+        "id": "SO-4711",
+        "project_id": "KOM-2027-4711",
+        "customer": "NordMarine Systems GmbH",
+        "product": "SCU-100",
+        "stage": "Produktion",
+        "status": "in_progress",
+        "order_value": 62500,
+        "probability": 95,
+        "planned_cost": 45500,
+        "actual_cost": 31200,
+        "forecast_cost": 46800,
+        "progress": 68,
+        "expected_invoice_date": "2027-01-20",
+        "risk": "on_track",
+        "owner": "Paula Planung"
+      },
+      {
+        "id": "SO-4720",
+        "project_id": "KOM-2027-4720",
+        "customer": "Baltic Offshore Robotics AG",
+        "product": "AUV Control Rack",
+        "stage": "Produktion",
+        "status": "in_progress",
+        "order_value": 145000,
+        "probability": 80,
+        "planned_cost": 101500,
+        "actual_cost": 48600,
+        "forecast_cost": 108500,
+        "progress": 43,
+        "expected_invoice_date": "2027-02-12",
+        "risk": "at_risk",
+        "owner": "Paula Planung"
+      },
+      {
+        "id": "SO-4699",
+        "project_id": "KOM-2026-4699",
+        "customer": "Oceanic Survey Ltd.",
+        "product": "HMI Retrofit Kit",
+        "stage": "Endprüfung",
+        "status": "in_progress",
+        "order_value": 48000,
+        "probability": 100,
+        "planned_cost": 31500,
+        "actual_cost": 29700,
+        "forecast_cost": 32900,
+        "progress": 92,
+        "expected_invoice_date": "2026-11-18",
+        "risk": "on_track",
+        "owner": "Clara Qualität"
+      },
+      {
+        "id": "SO-4734",
+        "project_id": "KOM-2027-4734",
+        "customer": "Hanseatic Sensorik GmbH",
+        "product": "Edge Gateway 200",
+        "stage": "Engineering",
+        "status": "released",
+        "order_value": 84000,
+        "probability": 70,
+        "planned_cost": 57000,
+        "actual_cost": 11400,
+        "forecast_cost": 59600,
+        "progress": 21,
+        "expected_invoice_date": "2027-03-25",
+        "risk": "on_track",
+        "owner": "System Engineering"
+      },
+      {
+        "id": "QTN-2027-0088",
+        "project_id": "PRE-2027-0088",
+        "customer": "Arctic Marine AS",
+        "product": "SCU-100 Erweiterung",
+        "stage": "Vertrieb",
+        "status": "quotation",
+        "order_value": 31500,
+        "probability": 45,
+        "planned_cost": 21800,
+        "actual_cost": 1200,
+        "forecast_cost": 22400,
+        "progress": 8,
+        "expected_invoice_date": "2027-04-30",
+        "risk": "at_risk",
+        "owner": "Anna Schneider"
+      }
+    ],
+    "cash_forecast": [
+      {
+        "month": "2024-11",
+        "opening_balance": 190000,
+        "inflow": 122500,
+        "outflow": 122100,
+        "closing_balance": 190400
+      },
+      {
+        "month": "2024-12",
+        "opening_balance": 190400,
+        "inflow": 140000,
+        "outflow": 130900,
+        "closing_balance": 199500
+      },
+      {
+        "month": "2025-01",
+        "opening_balance": 199500,
+        "inflow": 118000,
+        "outflow": 113900,
+        "closing_balance": 203600
+      },
+      {
+        "month": "2025-02",
+        "opening_balance": 203600,
+        "inflow": 105000,
+        "outflow": 107500,
+        "closing_balance": 201100
+      },
+      {
+        "month": "2025-03",
+        "opening_balance": 201100,
+        "inflow": 121500,
+        "outflow": 113300,
+        "closing_balance": 209300
+      },
+      {
+        "month": "2025-04",
+        "opening_balance": 209300,
+        "inflow": 121000,
+        "outflow": 120100,
+        "closing_balance": 210200
+      },
+      {
+        "month": "2025-05",
+        "opening_balance": 210200,
+        "inflow": 123000,
+        "outflow": 120900,
+        "closing_balance": 212300
+      },
+      {
+        "month": "2025-06",
+        "opening_balance": 212300,
+        "inflow": 124500,
+        "outflow": 118500,
+        "closing_balance": 218300
+      },
+      {
+        "month": "2025-07",
+        "opening_balance": 218300,
+        "inflow": 132000,
+        "outflow": 122300,
+        "closing_balance": 228000
+      },
+      {
+        "month": "2025-08",
+        "opening_balance": 228000,
+        "inflow": 117000,
+        "outflow": 123100,
+        "closing_balance": 221900
+      },
+      {
+        "month": "2025-09",
+        "opening_balance": 221900,
+        "inflow": 135500,
+        "outflow": 128900,
+        "closing_balance": 228500
+      },
+      {
+        "month": "2025-10",
+        "opening_balance": 228500,
+        "inflow": 134000,
+        "outflow": 125500,
+        "closing_balance": 237000
+      },
+      {
+        "month": "2025-11",
+        "opening_balance": 237000,
+        "inflow": 126000,
+        "outflow": 124300,
+        "closing_balance": 238700
+      },
+      {
+        "month": "2025-12",
+        "opening_balance": 238700,
+        "inflow": 143500,
+        "outflow": 133100,
+        "closing_balance": 249100
+      },
+      {
+        "month": "2026-01",
+        "opening_balance": 249100,
+        "inflow": 121500,
+        "outflow": 116100,
+        "closing_balance": 254500
+      },
+      {
+        "month": "2026-02",
+        "opening_balance": 254500,
+        "inflow": 108500,
+        "outflow": 109700,
+        "closing_balance": 253300
+      },
+      {
+        "month": "2026-03",
+        "opening_balance": 253300,
+        "inflow": 125000,
+        "outflow": 115500,
+        "closing_balance": 262800
+      },
+      {
+        "month": "2026-04",
+        "opening_balance": 262800,
+        "inflow": 124500,
+        "outflow": 122300,
+        "closing_balance": 265000
+      },
+      {
+        "month": "2026-05",
+        "opening_balance": 265000,
+        "inflow": 126500,
+        "outflow": 123100,
+        "closing_balance": 268400
+      },
+      {
+        "month": "2026-06",
+        "opening_balance": 268400,
+        "inflow": 128000,
+        "outflow": 120700,
+        "closing_balance": 275700
+      },
+      {
+        "month": "2026-07",
+        "opening_balance": 275700,
+        "inflow": 135500,
+        "outflow": 124500,
+        "closing_balance": 286700
+      },
+      {
+        "month": "2026-08",
+        "opening_balance": 286700,
+        "inflow": 120500,
+        "outflow": 125300,
+        "closing_balance": 281900
+      },
+      {
+        "month": "2026-09",
+        "opening_balance": 281900,
+        "inflow": 139000,
+        "outflow": 131100,
+        "closing_balance": 289800
+      },
+      {
+        "month": "2026-10",
+        "opening_balance": 289800,
+        "inflow": 137500,
+        "outflow": 127700,
+        "closing_balance": 299600
+      },
+      {
+        "month": "2026-11",
+        "opening_balance": 299600,
+        "inflow": 129500,
+        "outflow": 126500,
+        "closing_balance": 302600
+      },
+      {
+        "month": "2026-12",
+        "opening_balance": 302600,
+        "inflow": 147000,
+        "outflow": 135300,
+        "closing_balance": 314300
+      },
+      {
+        "month": "2027-01",
+        "opening_balance": 314300,
+        "inflow": 134000,
+        "outflow": 119800,
+        "closing_balance": 328500
+      },
+      {
+        "month": "2027-02",
+        "opening_balance": 328500,
+        "inflow": 115000,
+        "outflow": 113400,
+        "closing_balance": 330100
+      },
+      {
+        "month": "2027-03",
+        "opening_balance": 330100,
+        "inflow": 131500,
+        "outflow": 122200,
+        "closing_balance": 339400
+      },
+      {
+        "month": "2027-04",
+        "opening_balance": 339400,
+        "inflow": 137000,
+        "outflow": 126000,
+        "closing_balance": 350400
+      },
+      {
+        "month": "2027-05",
+        "opening_balance": 350400,
+        "inflow": 133000,
+        "outflow": 126800,
+        "closing_balance": 356600
+      },
+      {
+        "month": "2027-06",
+        "opening_balance": 356600,
+        "inflow": 134500,
+        "outflow": 127400,
+        "closing_balance": 363700
+      },
+      {
+        "month": "2027-07",
+        "opening_balance": 363700,
+        "inflow": 148000,
+        "outflow": 128200,
+        "closing_balance": 383500
+      },
+      {
+        "month": "2027-08",
+        "opening_balance": 383500,
+        "inflow": 127000,
+        "outflow": 129000,
+        "closing_balance": 381500
+      },
+      {
+        "month": "2027-09",
+        "opening_balance": 381500,
+        "inflow": 145500,
+        "outflow": 137800,
+        "closing_balance": 389200
+      },
+      {
+        "month": "2027-10",
+        "opening_balance": 389200,
+        "inflow": 150000,
+        "outflow": 131400,
+        "closing_balance": 407800
+      },
+      {
+        "month": "2027-11",
+        "opening_balance": 407800,
+        "inflow": 136000,
+        "outflow": 130200,
+        "closing_balance": 413600
+      },
+      {
+        "month": "2027-12",
+        "opening_balance": 413600,
+        "inflow": 153500,
+        "outflow": 142000,
+        "closing_balance": 425100
+      },
+      {
+        "month": "2028-01",
+        "opening_balance": 425100,
+        "inflow": 137500,
+        "outflow": 122000,
+        "closing_balance": 440600
+      },
+      {
+        "month": "2028-02",
+        "opening_balance": 440600,
+        "inflow": 118500,
+        "outflow": 115600,
+        "closing_balance": 443500
+      },
+      {
+        "month": "2028-03",
+        "opening_balance": 443500,
+        "inflow": 135000,
+        "outflow": 124400,
+        "closing_balance": 454100
+      },
+      {
+        "month": "2028-04",
+        "opening_balance": 454100,
+        "inflow": 140500,
+        "outflow": 128200,
+        "closing_balance": 466400
+      },
+      {
+        "month": "2028-05",
+        "opening_balance": 466400,
+        "inflow": 136500,
+        "outflow": 129000,
+        "closing_balance": 473900
+      },
+      {
+        "month": "2028-06",
+        "opening_balance": 473900,
+        "inflow": 138000,
+        "outflow": 129600,
+        "closing_balance": 482300
+      },
+      {
+        "month": "2028-07",
+        "opening_balance": 482300,
+        "inflow": 151500,
+        "outflow": 130400,
+        "closing_balance": 503400
+      },
+      {
+        "month": "2028-08",
+        "opening_balance": 503400,
+        "inflow": 130500,
+        "outflow": 131200,
+        "closing_balance": 502700
+      },
+      {
+        "month": "2028-09",
+        "opening_balance": 502700,
+        "inflow": 149000,
+        "outflow": 140000,
+        "closing_balance": 511700
+      },
+      {
+        "month": "2028-10",
+        "opening_balance": 511700,
+        "inflow": 153500,
+        "outflow": 133600,
+        "closing_balance": 531600
+      },
+      {
+        "month": "2028-11",
+        "opening_balance": 531600,
+        "inflow": 139500,
+        "outflow": 132400,
+        "closing_balance": 538700
+      }
+    ],
+    "open_items": [
+      {
+        "id": "AR-2026-1018",
+        "type": "AR",
+        "partner": "Oceanic Survey Ltd.",
+        "document": "INV-2026-1018",
+        "due_date": "2026-10-28",
+        "amount": 28750,
+        "status": "overdue",
+        "project_id": "KOM-2026-4699"
+      },
+      {
+        "id": "AR-2026-1042",
+        "type": "AR",
+        "partner": "NordMarine Systems GmbH",
+        "document": "INV-2026-1042",
+        "due_date": "2026-11-21",
+        "amount": 41250,
+        "status": "open",
+        "project_id": "KOM-2027-4711"
+      },
+      {
+        "id": "AP-2026-0811",
+        "type": "AP",
+        "partner": "PCB Solutions GmbH",
+        "document": "PINV-2026-0811",
+        "due_date": "2026-11-12",
+        "amount": 18400,
+        "status": "open",
+        "project_id": "KOM-2027-4711"
+      },
+      {
+        "id": "AP-2026-0822",
+        "type": "AP",
+        "partner": "Cloud Tools Europe",
+        "document": "PINV-2026-0822",
+        "due_date": "2026-11-18",
+        "amount": 7200,
+        "status": "open",
+        "project_id": "RND-EDGE-AI"
+      }
+    ],
+    "budgets": [
+      {
+        "id": "BUD-ENG-2027",
+        "name": "Engineering & Entwicklung",
+        "owner": "CTO",
+        "cost_center": "CC-ENG",
+        "budget": 480000,
+        "actual": 286000,
+        "forecast": 492000
+      },
+      {
+        "id": "BUD-PROD-2027",
+        "name": "Produktion",
+        "owner": "COO",
+        "cost_center": "CC-PROD",
+        "budget": 720000,
+        "actual": 438000,
+        "forecast": 701000
+      },
+      {
+        "id": "BUD-IT-2027",
+        "name": "IT & Software",
+        "owner": "CIO",
+        "cost_center": "CC-IT",
+        "budget": 210000,
+        "actual": 131000,
+        "forecast": 226000
+      },
+      {
+        "id": "BUD-SALES-2027",
+        "name": "Vertrieb",
+        "owner": "CSO",
+        "cost_center": "CC-SALES",
+        "budget": 185000,
+        "actual": 97000,
+        "forecast": 179000
+      }
+    ],
+    "expenses": [
+      {
+        "id": "EXP-0001",
+        "submitted_by": "demo38",
+        "description": "EMV-Prüfadapter für SCU-100",
+        "category": "Prüfmittel",
+        "cost_center": "CC-ENG",
+        "project_id": "KOM-2027-4711",
+        "amount": 486.5,
+        "receipt_reference": "DMS-REC-2026-0441",
+        "status": "pending",
+        "created_at": "2026-11-03T09:15:00+00:00",
+        "decision": null
+      }
+    ],
+    "assets": [
+      {
+        "id": "AST-0001",
+        "name": "Prüfstand A – Messsystem",
+        "asset_class": "Technische Anlagen",
+        "cost_center": "CC-QM",
+        "acquisition_date": "2025-04-01",
+        "acquisition_cost": 96000,
+        "useful_life_months": 96,
+        "monthly_depreciation": 1000,
+        "status": "active",
+        "source": "ERPNext"
+      },
+      {
+        "id": "AST-0002",
+        "name": "CAD Workstations 2026",
+        "asset_class": "IT-Hardware",
+        "cost_center": "CC-ENG",
+        "acquisition_date": "2026-02-15",
+        "acquisition_cost": 42000,
+        "useful_life_months": 36,
+        "monthly_depreciation": 1166.67,
+        "status": "active",
+        "source": "ERPNext"
+      }
+    ],
+    "subscriptions": [
+      {
+        "id": "SUB-0001",
+        "vendor": "Cloud Tools Europe",
+        "product": "Engineering ALM Cloud",
+        "annual_value": 43200,
+        "renewal_date": "2027-02-01",
+        "allocation": "CC-ENG",
+        "status": "active"
+      },
+      {
+        "id": "SUB-0002",
+        "vendor": "Security Scanner GmbH",
+        "product": "SCA & Container Security",
+        "annual_value": 18600,
+        "renewal_date": "2027-05-15",
+        "allocation": "CC-IT",
+        "status": "active"
+      }
+    ],
+    "rd_projects": [
+      {
+        "id": "RND-EDGE-AI",
+        "name": "Edge-AI Zustandsdiagnose",
+        "status": "active",
+        "owner": "System Engineering",
+        "research_cost": 74000,
+        "development_cost": 128000,
+        "forecast_cost": 236000,
+        "capitalization_candidate": true,
+        "technical_feasibility": "review",
+        "release_target": "2027-Q3"
+      },
+      {
+        "id": "RND-SCU-NEXT",
+        "name": "SCU Next Generation",
+        "status": "active",
+        "owner": "Hardware Engineering",
+        "research_cost": 52000,
+        "development_cost": 91000,
+        "forecast_cost": 188000,
+        "capitalization_candidate": false,
+        "technical_feasibility": "open",
+        "release_target": "2028-Q1"
+      }
+    ],
+    "quality_costs": [
+      {
+        "id": "QCO-0001",
+        "category": "Nacharbeit",
+        "project_id": "KOM-2027-4711",
+        "amount": 3200,
+        "period": "2026-10"
+      },
+      {
+        "id": "QCO-0002",
+        "category": "Ausschuss",
+        "project_id": "KOM-2027-4720",
+        "amount": 6850,
+        "period": "2026-10"
+      },
+      {
+        "id": "QCO-0003",
+        "category": "Prüfung",
+        "project_id": "KOM-2026-4699",
+        "amount": 4200,
+        "period": "2026-10"
+      }
+    ],
+    "warranty_cases": [
+      {
+        "id": "RMA-2026-0042",
+        "customer": "NordMarine Systems GmbH",
+        "product": "SCU-90",
+        "status": "analysis",
+        "amount": 7800,
+        "reserve": 12000,
+        "root_cause": "Steckverbinder / Feuchtigkeit"
+      },
+      {
+        "id": "RMA-2026-0037",
+        "customer": "Oceanic Survey Ltd.",
+        "product": "HMI-070",
+        "status": "repair",
+        "amount": 3400,
+        "reserve": 5000,
+        "root_cause": "Display-Kalibrierung"
+      }
+    ],
+    "integration_previews": [],
+    "integration_runs": [],
+    "audit": []
+  },
+  "quality": {
+    "operators": [
+      {
+        "id": "QOP-001",
+        "name": "Clara Qualität",
+        "role": "Wareneingangsprüfung",
+        "employee_id": "DEMO-EMP-005"
+      },
+      {
+        "id": "QOP-002",
+        "name": "Theo Test",
+        "role": "Prüftechnik",
+        "employee_id": "DEMO-EMP-004"
+      },
+      {
+        "id": "QOP-003",
+        "name": "Lena Lager",
+        "role": "Wareneingang",
+        "employee_id": "DEMO-EMP-007"
+      }
+    ],
+    "sampling_plans": [
+      {
+        "id": "SP-AQL-10",
+        "name": "AQL 1,0 · Normalprüfung",
+        "mode": "aql",
+        "description": "Konfigurierbares internes AQL-Verfahren; Tabellenwerte sind durch die freigegebene Unternehmensvorgabe zu ersetzen.",
+        "lot_ranges": [
+          {
+            "min": 1,
+            "max": 25,
+            "sample_size": 3,
+            "acceptance_number": 0,
+            "rejection_number": 1
+          },
+          {
+            "min": 26,
+            "max": 90,
+            "sample_size": 5,
+            "acceptance_number": 0,
+            "rejection_number": 1
+          },
+          {
+            "min": 91,
+            "max": 150,
+            "sample_size": 8,
+            "acceptance_number": 0,
+            "rejection_number": 1
+          },
+          {
+            "min": 151,
+            "max": 500,
+            "sample_size": 13,
+            "acceptance_number": 1,
+            "rejection_number": 2
+          },
+          {
+            "min": 501,
+            "max": 999999,
+            "sample_size": 20,
+            "acceptance_number": 1,
+            "rejection_number": 2
+          }
+        ]
+      },
+      {
+        "id": "SP-PERCENT-10",
+        "name": "10 Prozent · mindestens 3",
+        "mode": "percentage",
+        "percent": 10,
+        "minimum": 3,
+        "maximum": 20,
+        "acceptance_number": 0,
+        "description": "Prozentuale Stichprobe für mechanische Kaufteile."
+      },
+      {
+        "id": "SP-FULL",
+        "name": "100-Prozent-Prüfung",
+        "mode": "full",
+        "description": "Jede Seriennummer wird vollständig geprüft."
+      }
+    ],
+    "inspection_plans": [
+      {
+        "id": "IP-PCB-MAIN-42",
+        "name": "Mainboard Wareneingangsprüfung",
+        "item_code": "PCB-MAIN-42",
+        "revision": "C",
+        "status": "approved",
+        "sampling_plan_id": "SP-AQL-10",
+        "work_test_plan_id": "TP-0001",
+        "dms_document_id": "DOC-QP-100",
+        "approved_by": "Qualitätsleitung",
+        "approved_at": "2026-10-28T09:00:00+00:00",
+        "characteristics": [
+          {
+            "id": "PCB-WIDTH",
+            "name": "Leiterplattenbreite",
+            "type": "numeric",
+            "unit": "mm",
+            "target": 100.0,
+            "min_value": 99.8,
+            "max_value": 100.2,
+            "required": true,
+            "instrument_required": true,
+            "instrument_types": [
+              "caliper",
+              "cmm"
+            ],
+            "instruction": "An drei Punkten messen; der Gateway-Wert wird automatisch übernommen."
+          },
+          {
+            "id": "PCB-LABEL",
+            "name": "Artikel- und Revisionskennzeichnung",
+            "type": "boolean",
+            "expected": true,
+            "required": true,
+            "instrument_required": false,
+            "instruction": "Artikel PCB-MAIN-42 und Revision C müssen lesbar sein."
+          },
+          {
+            "id": "PCB-VISUAL",
+            "name": "Sichtprüfung Lötstellen und Beschädigung",
+            "type": "boolean",
+            "expected": true,
+            "required": true,
+            "instrument_required": false,
+            "instruction": "ESD-Schutz beachten und beide Seiten unter Beleuchtung prüfen."
+          }
+        ]
+      },
+      {
+        "id": "IP-HOUSING-100",
+        "name": "Gehäuse Wareneingangsprüfung",
+        "item_code": "HOUSING-100",
+        "revision": "B",
+        "status": "approved",
+        "sampling_plan_id": "SP-PERCENT-10",
+        "work_test_plan_id": "TP-0001",
+        "dms_document_id": "DOC-DRAW-100",
+        "approved_by": "Qualitätsleitung",
+        "approved_at": "2026-10-30T11:00:00+00:00",
+        "characteristics": [
+          {
+            "id": "HOUSING-LENGTH",
+            "name": "Gehäuselänge",
+            "type": "numeric",
+            "unit": "mm",
+            "target": 280.0,
+            "min_value": 279.5,
+            "max_value": 280.5,
+            "required": true,
+            "instrument_required": true,
+            "instrument_types": [
+              "caliper",
+              "cmm"
+            ],
+            "instruction": "Zwischen den bearbeiteten Stirnflächen messen."
+          },
+          {
+            "id": "HOUSING-COATING",
+            "name": "Beschichtung ohne Fehlstellen",
+            "type": "boolean",
+            "expected": true,
+            "required": true,
+            "instrument_required": false,
+            "instruction": "Sichtprüfung bei neutralem Licht durchführen."
+          }
+        ]
+      },
+      {
+        "id": "IP-PSU-24V",
+        "name": "Netzteil Ident- und Funktionstest",
+        "item_code": "PSU-24V-100W",
+        "revision": "A",
+        "status": "approved",
+        "sampling_plan_id": "SP-FULL",
+        "work_test_plan_id": "TP-0001",
+        "dms_document_id": "DOC-QP-100",
+        "approved_by": "Qualitätsleitung",
+        "approved_at": "2026-10-29T12:00:00+00:00",
+        "characteristics": [
+          {
+            "id": "PSU-VOLTAGE",
+            "name": "Ausgangsspannung",
+            "type": "numeric",
+            "unit": "V",
+            "target": 24.0,
+            "min_value": 23.5,
+            "max_value": 24.5,
+            "required": true,
+            "instrument_required": true,
+            "instrument_types": [
+              "multimeter",
+              "testbench"
+            ],
+            "instruction": "Netzteil am isolierten Prüfplatz unter Nennlast messen."
+          },
+          {
+            "id": "PSU-LABEL",
+            "name": "Typenschild und Seriennummer",
+            "type": "boolean",
+            "expected": true,
+            "required": true,
+            "instrument_required": false,
+            "instruction": "Typ, Spannung und Seriennummer gegen Lieferschein prüfen."
+          }
+        ]
+      }
+    ],
+    "instruments": [
+      {
+        "id": "MM-CAL-001",
+        "name": "Digitalmessschieber QS 01",
+        "type": "caliper",
+        "manufacturer": "Demo Metrology",
+        "serial_number": "CAL-2026-001",
+        "interface": "serial",
+        "gateway": "FLOWQ-EDGE-01",
+        "status": "active",
+        "last_calibrated_at": "2026-08-15",
+        "calibration_valid_until": "2030-08-15",
+        "calibration_certificate_document_id": "DMS-CAL-001"
+      },
+      {
+        "id": "MM-CMM-001",
+        "name": "Koordinatenmessgerät CMM 01",
+        "type": "cmm",
+        "manufacturer": "Demo Metrology",
+        "serial_number": "CMM-2024-041",
+        "interface": "opcua",
+        "gateway": "FLOWQ-EDGE-02",
+        "status": "active",
+        "last_calibrated_at": "2026-01-10",
+        "calibration_valid_until": "2026-11-20",
+        "calibration_certificate_document_id": "DMS-CAL-002"
+      },
+      {
+        "id": "MM-DMM-001",
+        "name": "Multimeter Prüfplatz A",
+        "type": "multimeter",
+        "manufacturer": "Demo Instruments",
+        "serial_number": "DMM-24001",
+        "interface": "rest",
+        "gateway": "FLOWQ-EDGE-03",
+        "status": "active",
+        "last_calibrated_at": "2026-09-01",
+        "calibration_valid_until": "2030-09-01",
+        "calibration_certificate_document_id": "DMS-CAL-003"
+      },
+      {
+        "id": "MM-CAL-OLD",
+        "name": "Digitalmessschieber Reserve",
+        "type": "caliper",
+        "manufacturer": "Demo Metrology",
+        "serial_number": "CAL-2019-008",
+        "interface": "usb",
+        "gateway": "FLOWQ-EDGE-01",
+        "status": "active",
+        "last_calibrated_at": "2024-01-12",
+        "calibration_valid_until": "2025-01-12",
+        "calibration_certificate_document_id": "DMS-CAL-OLD"
+      }
+    ],
+    "receipts": [
+      {
+        "id": "PREC-2027-0045",
+        "erp_reference": "PREC-2027-0045",
+        "purchase_order": "PO-2027-0031",
+        "supplier": "Baltic Electronics OÜ",
+        "supplier_delivery_note": "BE-DN-24117",
+        "project_id": "KOM-2027-4711",
+        "item_code": "PCB-MAIN-42",
+        "item_name": "Mainboard SCU-100",
+        "quantity_received": 120,
+        "uom": "Stk",
+        "batch": "BE-24117",
+        "serial_numbers": [],
+        "received_at": "2026-11-05T07:42:00+00:00",
+        "inspection_plan_id": "IP-PCB-MAIN-42",
+        "status": "awaiting_inspection",
+        "source_warehouse": "QS-Pruefung - OMD",
+        "accepted_warehouse": "Elektroniklager - OMD",
+        "rejected_warehouse": "Sperrlager - OMD",
+        "target_warehouse": null
+      },
+      {
+        "id": "PREC-2027-0046",
+        "erp_reference": "PREC-2027-0046",
+        "purchase_order": "PO-2027-0032",
+        "supplier": "NordForm Metalltechnik GmbH",
+        "supplier_delivery_note": "NF-77831",
+        "project_id": "KOM-2027-4711",
+        "item_code": "HOUSING-100",
+        "item_name": "Aluminiumgehäuse SCU-100",
+        "quantity_received": 24,
+        "uom": "Stk",
+        "batch": "NF-AL-77831",
+        "serial_numbers": [],
+        "received_at": "2026-11-05T08:10:00+00:00",
+        "inspection_plan_id": "IP-HOUSING-100",
+        "status": "awaiting_inspection",
+        "source_warehouse": "QS-Pruefung - OMD",
+        "accepted_warehouse": "Palettenlager - OMD",
+        "rejected_warehouse": "Sperrlager - OMD",
+        "target_warehouse": null
+      },
+      {
+        "id": "PREC-2027-0047",
+        "erp_reference": "PREC-2027-0047",
+        "purchase_order": "PO-2027-0033",
+        "supplier": "Power Systems Europe GmbH",
+        "supplier_delivery_note": "PSE-99107",
+        "project_id": "KOM-2027-4711",
+        "item_code": "PSU-24V-100W",
+        "item_name": "Netzteil 24 V / 100 W",
+        "quantity_received": 5,
+        "uom": "Stk",
+        "batch": "PSE-2026-1105",
+        "serial_numbers": [
+          "PSU-991071",
+          "PSU-991072",
+          "PSU-991073",
+          "PSU-991074",
+          "PSU-991075"
+        ],
+        "received_at": "2026-11-05T08:31:00+00:00",
+        "inspection_plan_id": "IP-PSU-24V",
+        "status": "awaiting_inspection",
+        "source_warehouse": "QS-Pruefung - OMD",
+        "accepted_warehouse": "Elektroniklager - OMD",
+        "rejected_warehouse": "Sperrlager - OMD",
+        "target_warehouse": null
+      }
+    ],
+    "inspections": [],
+    "measurement_events": [],
+    "ncrs": [],
+    "adapters": [
+      {
+        "id": "FLOWQ-EDGE-01",
+        "name": "USB-/Seriell-Gateway Wareneingang",
+        "protocol": "serial",
+        "status": "online",
+        "last_seen": "2026-11-05T08:35:00+00:00"
+      },
+      {
+        "id": "FLOWQ-EDGE-02",
+        "name": "OPC-UA-Gateway Messraum",
+        "protocol": "opcua",
+        "status": "online",
+        "last_seen": "2026-11-05T08:34:00+00:00"
+      },
+      {
+        "id": "FLOWQ-EDGE-03",
+        "name": "REST-Prüfplatzadapter",
+        "protocol": "rest",
+        "status": "online",
+        "last_seen": "2026-11-05T08:35:00+00:00"
+      }
+    ],
+    "audit": []
+  },
+  "work": {
+    "projects": [
+      {
+        "id": 1,
+        "identifier": "scu-100",
+        "name": "SCU-100 Produktentwicklung",
+        "description": "Kundenprojekt NordMarine · Kommission KOM-4711",
+        "status": 1,
+        "url": "http://localhost:8011/projects/scu-100"
+      },
+      {
+        "id": 2,
+        "identifier": "platform-rollout",
+        "name": "Open Manufacturing Rollout",
+        "description": "Einführung der integrierten Unternehmensplattform",
+        "status": 1,
+        "url": "http://localhost:8011/projects/platform-rollout"
+      }
+    ],
+    "issues": [
+      {
+        "id": "101",
+        "key": "#101",
+        "subject": "CAN-Kommunikation spezifizieren",
+        "description": "Schnittstellenparameter aus Kundenanforderung ableiten.",
+        "status": "In Bearbeitung",
+        "project": "SCU-100 Produktentwicklung",
+        "priority": "Hoch",
+        "assignee": "Helena Friedrich",
+        "due_date": "2026-11-08",
+        "done_ratio": 55,
+        "updated_on": "2026-11-04T08:00:00+00:00",
+        "url": "/work#issue-101",
+        "source": "demo"
+      },
+      {
+        "id": "102",
+        "key": "#102",
+        "subject": "EMV-Prüfplan freigeben",
+        "description": "Review und Freigabe des Verifikationsnachweises.",
+        "status": "Prüfung",
+        "project": "SCU-100 Produktentwicklung",
+        "priority": "Normal",
+        "assignee": "Moritz Köhler",
+        "due_date": "2026-11-06",
+        "done_ratio": 80,
+        "updated_on": "2026-11-04T08:00:00+00:00",
+        "url": "/work#issue-102",
+        "source": "demo"
+      },
+      {
+        "id": "103",
+        "key": "#103",
+        "subject": "Seriennummern-Rückmeldung im MES",
+        "description": "Pflichtprüfung und API-Mapping ergänzen.",
+        "status": "Erledigt",
+        "project": "Open Manufacturing Rollout",
+        "priority": "Hoch",
+        "assignee": "Tim Krüger",
+        "due_date": "2026-11-02",
+        "done_ratio": 100,
+        "updated_on": "2026-11-04T08:00:00+00:00",
+        "url": "/work#issue-103",
+        "source": "demo"
+      },
+      {
+        "id": "104",
+        "key": "#104",
+        "subject": "Lieferantendokumente mit Projekt verknüpfen",
+        "description": "DMS-Metadaten und Wiki-Anleitung abstimmen.",
+        "status": "Neu",
+        "project": "SCU-100 Produktentwicklung",
+        "priority": "Normal",
+        "assignee": "Felix Hoffmann",
+        "due_date": "2026-11-15",
+        "done_ratio": 0,
+        "updated_on": "2026-11-04T08:00:00+00:00",
+        "url": "/work#issue-104",
+        "source": "demo"
+      }
+    ],
+    "wiki": [
+      {
+        "title": "SCU-100_Requirements",
+        "version": 7,
+        "project": "SCU-100 Produktentwicklung",
+        "updated_on": "2026-11-04T08:00:00+00:00",
+        "url": "http://localhost:8011/projects/scu-100/wiki/SCU-100_Requirements"
+      },
+      {
+        "title": "SCU-100_Verification",
+        "version": 4,
+        "project": "SCU-100 Produktentwicklung",
+        "updated_on": "2026-11-04T08:00:00+00:00",
+        "url": "http://localhost:8011/projects/scu-100/wiki/SCU-100_Verification"
+      },
+      {
+        "title": "Platform_Betrieb",
+        "version": 3,
+        "project": "Open Manufacturing Rollout",
+        "updated_on": "2026-11-04T08:00:00+00:00",
+        "url": "http://localhost:8011/projects/platform-rollout/wiki/Platform_Betrieb"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "REQ-SCU-001",
+        "title": "CAN-Bus Kommunikation",
+        "text": "Die SCU muss Prozessdaten über CAN 2.0B mit 500 kbit/s austauschen.",
+        "type": "Interface",
+        "priority": "Must",
+        "owner": "Helena Friedrich",
+        "parent_id": null,
+        "acceptance_criteria": "Kommunikation mit 95 % Buslast über 8 Stunden fehlerfrei.",
+        "status": "approved",
+        "version": 3,
+        "issue_id": "#101",
+        "wiki_title": "SCU-100_Requirements",
+        "verification": "TC-CAN-042",
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "updated_at": "2026-11-04T08:00:00+00:00",
+        "history": [
+          {
+            "version": 3,
+            "actor": "System Engineering",
+            "at": "2026-11-04T08:00:00+00:00",
+            "note": "Review freigegeben"
+          }
+        ]
+      },
+      {
+        "id": "REQ-SCU-002",
+        "title": "Eindeutige Seriennummer",
+        "text": "Jedes ausgelieferte Gerät muss eine eindeutige, rückverfolgbare Seriennummer besitzen.",
+        "type": "System",
+        "priority": "Must",
+        "owner": "Moritz Köhler",
+        "parent_id": null,
+        "acceptance_criteria": "Seriennummer ist in ERP, MES und Prüfprotokoll identisch.",
+        "status": "verified",
+        "version": 2,
+        "issue_id": "#103",
+        "wiki_title": "SCU-100_Verification",
+        "verification": "E2E-SERIAL-007",
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "updated_at": "2026-11-04T08:00:00+00:00",
+        "history": [
+          {
+            "version": 2,
+            "actor": "Qualität",
+            "at": "2026-11-04T08:00:00+00:00",
+            "note": "E2E-Test bestanden"
+          }
+        ]
+      },
+      {
+        "id": "REQ-SCU-003",
+        "title": "EMV-Störfestigkeit",
+        "text": "Das Gerät muss die vereinbarten industriellen EMV-Grenzwerte einhalten.",
+        "type": "Hardware",
+        "priority": "Must",
+        "owner": "Moritz Köhler",
+        "parent_id": null,
+        "acceptance_criteria": "Freigegebener Prüfbericht ohne Major-Abweichung.",
+        "status": "review",
+        "version": 4,
+        "issue_id": "#102",
+        "wiki_title": "SCU-100_Verification",
+        "verification": "EMV-REPORT-PENDING",
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "updated_at": "2026-11-04T08:00:00+00:00",
+        "history": [
+          {
+            "version": 4,
+            "actor": "Qualität",
+            "at": "2026-11-04T08:00:00+00:00",
+            "note": "Prüfbericht im Review"
+          }
+        ]
+      },
+      {
+        "id": "REQ-SCU-004",
+        "title": "Dokumentenlieferung zum Meilenstein",
+        "text": "Freigegebene Produktdokumente müssen zehn Arbeitstage vor FAT vollständig vorliegen.",
+        "type": "Stakeholder",
+        "priority": "Should",
+        "owner": "Alexander Vogel",
+        "parent_id": null,
+        "acceptance_criteria": "DMS-Dashboard zeigt 100 % termingerecht und freigegeben.",
+        "status": "draft",
+        "version": 1,
+        "issue_id": "#104",
+        "wiki_title": "SCU-100_Requirements",
+        "verification": null,
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "updated_at": "2026-11-04T08:00:00+00:00",
+        "history": [
+          {
+            "version": 1,
+            "actor": "Projektleitung",
+            "at": "2026-11-04T08:00:00+00:00",
+            "note": "Anforderung angelegt"
+          }
+        ]
+      },
+      {
+        "id": "REQ-SCU-005",
+        "title": "Fehlersichere Zeitbuchung",
+        "text": "Arbeitsgänge dürfen nur auf freigegebene Aufträge und aktive Mitarbeiter gebucht werden.",
+        "type": "Software",
+        "priority": "Must",
+        "owner": "Tim Krüger",
+        "parent_id": "REQ-SCU-002",
+        "acceptance_criteria": "Ungültige Kombinationen werden mit nachvollziehbarer Meldung abgewiesen.",
+        "status": "approved",
+        "version": 2,
+        "issue_id": null,
+        "wiki_title": "SCU-100_Requirements",
+        "verification": "MES-TIME-012",
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "updated_at": "2026-11-04T08:00:00+00:00",
+        "history": [
+          {
+            "version": 2,
+            "actor": "Product Owner",
+            "at": "2026-11-04T08:00:00+00:00",
+            "note": "Akzeptanzkriterium ergänzt"
+          }
+        ]
+      }
+    ],
+    "baselines": [
+      {
+        "id": "BL-SCU-001",
+        "name": "System Requirements Review 1",
+        "description": "Freigegebener Stand zum SRR",
+        "status": "frozen",
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "created_by": "System Engineering",
+        "items": [
+          {
+            "requirement_id": "REQ-SCU-001",
+            "version": 3,
+            "status": "approved",
+            "checksum_source": "REQ-SCU-001:3"
+          },
+          {
+            "requirement_id": "REQ-SCU-002",
+            "version": 2,
+            "status": "verified",
+            "checksum_source": "REQ-SCU-002:2"
+          }
+        ]
+      }
+    ],
+    "activity": [
+      {
+        "actor": "Qualität",
+        "message": "REQ-SCU-003 in Review gesetzt",
+        "at": "2026-11-04T08:00:00+00:00"
+      },
+      {
+        "actor": "System Engineering",
+        "message": "Baseline BL-SCU-001 eingefroren",
+        "at": "2026-11-04T08:00:00+00:00"
+      }
+    ],
+    "catalogs": [
+      {
+        "id": "CAT-001",
+        "name": "Wiederverwendbare Plattformanforderungen",
+        "description": "Freigegebene Anforderungen für Produktvarianten",
+        "item_ids": [
+          "REQ-SCU-001",
+          "REQ-SCU-002"
+        ]
+      }
+    ],
+    "field_definitions": [
+      {
+        "id": "FLD-001",
+        "key": "SOURCE",
+        "name": "Quelle",
+        "field_type": "text",
+        "required": false,
+        "options": [],
+        "applies_to": [
+          "Stakeholder"
+        ]
+      },
+      {
+        "id": "FLD-002",
+        "key": "RELEASE",
+        "name": "Zielrelease",
+        "field_type": "select",
+        "required": false,
+        "options": [
+          "SCU 1.0",
+          "SCU 1.1",
+          "SCU Next"
+        ],
+        "applies_to": [
+          "System",
+          "Software",
+          "Hardware"
+        ]
+      },
+      {
+        "id": "FLD-003",
+        "key": "ESTIMATE",
+        "name": "Aufwand (h)",
+        "field_type": "integer",
+        "required": false,
+        "options": [],
+        "applies_to": [
+          "Software"
+        ]
+      },
+      {
+        "id": "FLD-004",
+        "key": "INTERFACE_PROTOCOL",
+        "name": "Protokoll",
+        "field_type": "select",
+        "required": false,
+        "options": [
+          "CAN",
+          "Ethernet",
+          "OPC UA",
+          "REST"
+        ],
+        "applies_to": [
+          "Interface"
+        ]
+      },
+      {
+        "id": "FLD-005",
+        "key": "SAFETY_LEVEL",
+        "name": "Safety Level",
+        "field_type": "select",
+        "required": true,
+        "options": [
+          "QM",
+          "SIL 1",
+          "SIL 2",
+          "SIL 3"
+        ],
+        "applies_to": [
+          "Safety"
+        ]
+      }
+    ],
+    "item_types": [
+      {
+        "id": "TYPE-001",
+        "key": "Stakeholder",
+        "name": "Stakeholder-Anforderung",
+        "prefix": "STK",
+        "field_keys": [
+          "SOURCE"
+        ],
+        "workflow": [
+          "draft",
+          "review",
+          "approved",
+          "verified",
+          "rejected"
+        ]
+      },
+      {
+        "id": "TYPE-002",
+        "key": "System",
+        "name": "Systemanforderung",
+        "prefix": "SYS",
+        "field_keys": [
+          "RELEASE"
+        ],
+        "workflow": [
+          "draft",
+          "review",
+          "approved",
+          "verified",
+          "rejected"
+        ]
+      },
+      {
+        "id": "TYPE-003",
+        "key": "Software",
+        "name": "Softwareanforderung",
+        "prefix": "SWR",
+        "field_keys": [
+          "RELEASE",
+          "ESTIMATE"
+        ],
+        "workflow": [
+          "draft",
+          "review",
+          "approved",
+          "verified",
+          "rejected"
+        ]
+      },
+      {
+        "id": "TYPE-004",
+        "key": "Hardware",
+        "name": "Hardwareanforderung",
+        "prefix": "HWR",
+        "field_keys": [
+          "RELEASE"
+        ],
+        "workflow": [
+          "draft",
+          "review",
+          "approved",
+          "verified",
+          "rejected"
+        ]
+      },
+      {
+        "id": "TYPE-005",
+        "key": "Interface",
+        "name": "Schnittstellenanforderung",
+        "prefix": "IF",
+        "field_keys": [
+          "INTERFACE_PROTOCOL"
+        ],
+        "workflow": [
+          "draft",
+          "review",
+          "approved",
+          "verified",
+          "rejected"
+        ]
+      },
+      {
+        "id": "TYPE-006",
+        "key": "Safety",
+        "name": "Safety-Anforderung",
+        "prefix": "SAFE",
+        "field_keys": [
+          "SAFETY_LEVEL"
+        ],
+        "workflow": [
+          "draft",
+          "review",
+          "approved",
+          "verified",
+          "rejected"
+        ]
+      },
+      {
+        "id": "TYPE-007",
+        "key": "TestCase",
+        "name": "Testfall",
+        "prefix": "TC",
+        "field_keys": [],
+        "workflow": [
+          "draft",
+          "approved",
+          "retired"
+        ]
+      },
+      {
+        "id": "TYPE-008",
+        "key": "Risk",
+        "name": "Risiko",
+        "prefix": "RISK",
+        "field_keys": [],
+        "workflow": [
+          "open",
+          "mitigated",
+          "accepted",
+          "closed"
+        ]
+      }
+    ],
+    "relationship_rules": [
+      {
+        "id": "RULE-001",
+        "name": "Stakeholder zu System",
+        "upstream_type": "Stakeholder",
+        "downstream_types": [
+          "System"
+        ],
+        "relationship_type": "derives",
+        "min_downstream": 1,
+        "max_downstream": null,
+        "coverage": true,
+        "exclusive": false,
+        "active": true
+      },
+      {
+        "id": "RULE-002",
+        "name": "Systemzerlegung",
+        "upstream_type": "System",
+        "downstream_types": [
+          "Software",
+          "Hardware",
+          "Interface",
+          "Safety"
+        ],
+        "relationship_type": "derives",
+        "min_downstream": 1,
+        "max_downstream": null,
+        "coverage": true,
+        "exclusive": false,
+        "active": true
+      },
+      {
+        "id": "RULE-003",
+        "name": "Anforderung zu Testfall",
+        "upstream_type": "Requirement",
+        "downstream_types": [
+          "TestCase"
+        ],
+        "relationship_type": "verifies",
+        "min_downstream": 1,
+        "max_downstream": null,
+        "coverage": true,
+        "exclusive": false,
+        "active": true
+      },
+      {
+        "id": "RULE-004",
+        "name": "Risiko zu Anforderung",
+        "upstream_type": "Risk",
+        "downstream_types": [
+          "Stakeholder",
+          "System",
+          "Software",
+          "Hardware",
+          "Interface",
+          "Safety"
+        ],
+        "relationship_type": "mitigates",
+        "min_downstream": 1,
+        "max_downstream": null,
+        "coverage": false,
+        "exclusive": false,
+        "active": true
+      },
+      {
+        "id": "RULE-005",
+        "name": "Freie Referenz",
+        "upstream_type": "*",
+        "downstream_types": [
+          "*"
+        ],
+        "relationship_type": "references",
+        "min_downstream": 0,
+        "max_downstream": null,
+        "coverage": false,
+        "exclusive": false,
+        "active": true
+      }
+    ],
+    "relationship_types": [
+      {
+        "id": "RT-001",
+        "key": "derives",
+        "name": "leitet ab",
+        "reverse_name": "wird abgeleitet aus"
+      },
+      {
+        "id": "RT-002",
+        "key": "implements",
+        "name": "implementiert",
+        "reverse_name": "wird implementiert durch"
+      },
+      {
+        "id": "RT-003",
+        "key": "verifies",
+        "name": "wird verifiziert durch",
+        "reverse_name": "verifiziert"
+      },
+      {
+        "id": "RT-004",
+        "key": "mitigates",
+        "name": "wird mitigiert durch",
+        "reverse_name": "mitigiert"
+      },
+      {
+        "id": "RT-005",
+        "key": "references",
+        "name": "referenziert",
+        "reverse_name": "wird referenziert von"
+      }
+    ],
+    "relationships": [
+      {
+        "id": "REL-0001",
+        "source_id": "REQ-SCU-004",
+        "source_type": "Stakeholder",
+        "target_id": "REQ-SCU-002",
+        "target_type": "System",
+        "relationship_type": "derives",
+        "description": "Projektlieferung erfordert eindeutige Produktidentifikation",
+        "suspect": false,
+        "suspect_reason": null,
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "created_by": "System Engineering"
+      },
+      {
+        "id": "REL-0002",
+        "source_id": "REQ-SCU-002",
+        "source_type": "System",
+        "target_id": "REQ-SCU-005",
+        "target_type": "Software",
+        "relationship_type": "derives",
+        "description": "MES-Zeitbuchung nutzt die freigegebene Auftragsidentität",
+        "suspect": false,
+        "suspect_reason": null,
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "created_by": "System Engineering"
+      },
+      {
+        "id": "REL-0003",
+        "source_id": "REQ-SCU-001",
+        "source_type": "Interface",
+        "target_id": "TC-CAN-042",
+        "target_type": "TestCase",
+        "relationship_type": "verifies",
+        "description": "CAN-Dauerlauf",
+        "suspect": false,
+        "suspect_reason": null,
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "created_by": "Qualität"
+      },
+      {
+        "id": "REL-0004",
+        "source_id": "REQ-SCU-002",
+        "source_type": "System",
+        "target_id": "TC-SERIAL-007",
+        "target_type": "TestCase",
+        "relationship_type": "verifies",
+        "description": "ERP-MES-DMS Seriennummernkette",
+        "suspect": false,
+        "suspect_reason": null,
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "created_by": "Qualität"
+      },
+      {
+        "id": "REL-0005",
+        "source_id": "RISK-SCU-001",
+        "source_type": "Risk",
+        "target_id": "REQ-SCU-001",
+        "target_type": "Interface",
+        "relationship_type": "mitigates",
+        "description": "CAN-Dauerlauf reduziert Integrationsrisiko",
+        "suspect": false,
+        "suspect_reason": null,
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "created_by": "System Engineering"
+      }
+    ],
+    "reviews": [
+      {
+        "id": "REV-0001",
+        "title": "System Requirements Review · SCU-100",
+        "description": "Fachliche Prüfung von CAN, Seriennummer und EMV-Anforderungen",
+        "status": "in_progress",
+        "revision": 1,
+        "moderator": "System Engineering",
+        "deadline": "2026-11-12",
+        "require_signature": true,
+        "allow_comments_in_item": true,
+        "items": [
+          {
+            "item_id": "REQ-SCU-001",
+            "item_type": "Interface",
+            "version": 3,
+            "title": "CAN-Bus Kommunikation"
+          },
+          {
+            "item_id": "REQ-SCU-002",
+            "item_type": "System",
+            "version": 2,
+            "title": "Eindeutige Seriennummer"
+          },
+          {
+            "item_id": "REQ-SCU-003",
+            "item_type": "Hardware",
+            "version": 4,
+            "title": "EMV-Störfestigkeit"
+          }
+        ],
+        "participants": [
+          {
+            "name": "Demo Benutzer",
+            "email": "demo@example.invalid",
+            "role": "approver",
+            "decision": "pending",
+            "completed_at": null,
+            "signature": null
+          },
+          {
+            "name": "Moritz Köhler",
+            "email": "moritz@example.invalid",
+            "role": "reviewer",
+            "decision": "completed",
+            "completed_at": "2026-11-04T09:10:00+00:00",
+            "signature": null
+          }
+        ],
+        "comments": [
+          {
+            "id": "CMT-0001",
+            "item_id": "REQ-SCU-003",
+            "author": "Moritz Köhler",
+            "text": "Bitte den Grenzwert aus dem Prüfplan ergänzen. @helena",
+            "status": "open",
+            "created_at": "2026-11-04T09:00:00+00:00",
+            "mentions": [
+              "helena"
+            ]
+          }
+        ],
+        "created_at": "2026-11-04T08:30:00+00:00",
+        "created_by": "System Engineering",
+        "completed_at": null
+      }
+    ],
+    "risks": [
+      {
+        "id": "RISK-SCU-001",
+        "title": "CAN-Kommunikationsausfall unter hoher Buslast",
+        "type": "Risk",
+        "description": "Hohe Buslast kann zu verspäteten Prozessdaten führen.",
+        "probability": 3,
+        "impact": 5,
+        "rating": 15,
+        "mitigation": "Dauerlauftest und Bus-Off-Recovery verifizieren",
+        "owner": "System Engineering",
+        "status": "open",
+        "version": 1,
+        "created_at": "2026-11-04T08:00:00+00:00"
+      }
+    ],
+    "test_cases": [
+      {
+        "id": "TC-CAN-042",
+        "title": "CAN-Dauerlauf bei 95 Prozent Buslast",
+        "type": "TestCase",
+        "status": "approved",
+        "owner": "Qualität",
+        "preconditions": "SCU mit Serienfirmware und CAN-Prüfstand verbunden",
+        "steps": [
+          {
+            "order": 1,
+            "action": "Buslast auf 95 Prozent einstellen",
+            "expected": "Keine Error Frames"
+          },
+          {
+            "order": 2,
+            "action": "Dauerlauf acht Stunden ausführen",
+            "expected": "Keine Kommunikationsunterbrechung"
+          }
+        ],
+        "expected_result": "Fehlerfreier Dauerlauf ohne Bus-Off",
+        "version": 2,
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "created_by": "Qualität"
+      },
+      {
+        "id": "TC-SERIAL-007",
+        "title": "Seriennummer über ERP, MES und DMS verfolgen",
+        "type": "TestCase",
+        "status": "approved",
+        "owner": "Qualität",
+        "preconditions": "Fertigungsauftrag und Seriennummer sind angelegt",
+        "steps": [
+          {
+            "order": 1,
+            "action": "Seriennummer im MES rückmelden",
+            "expected": "ERP-Bestand wird aktualisiert"
+          },
+          {
+            "order": 2,
+            "action": "Prüfprotokoll im DMS öffnen",
+            "expected": "Identische Seriennummer ist vorhanden"
+          }
+        ],
+        "expected_result": "Identische Seriennummer in allen drei Systemen",
+        "version": 1,
+        "created_at": "2026-11-04T08:00:00+00:00",
+        "created_by": "Qualität"
+      }
+    ],
+    "test_plans": [
+      {
+        "id": "TP-0001",
+        "name": "SCU-100 Systemverifikation",
+        "description": "Systemtests vor FAT",
+        "test_case_ids": [
+          "TC-CAN-042",
+          "TC-SERIAL-007"
+        ],
+        "owner": "Qualität",
+        "status": "active",
+        "created_at": "2026-11-04T08:00:00+00:00"
+      }
+    ],
+    "test_runs": [
+      {
+        "id": "RUN-0001",
+        "plan_id": "TP-0001",
+        "name": "SCU-100 Systemverifikation · Build 2026.11",
+        "status": "in_progress",
+        "outcome": "open",
+        "executions": [
+          {
+            "test_case_id": "TC-CAN-042",
+            "result": "passed",
+            "executed_by": "Moritz Köhler",
+            "executed_at": "2026-11-04T07:30:00+00:00",
+            "evidence": "DMS-TEST-CAN-042",
+            "defect_issue_id": null
+          },
+          {
+            "test_case_id": "TC-SERIAL-007",
+            "result": "not_run",
+            "executed_by": null,
+            "executed_at": null,
+            "evidence": null,
+            "defect_issue_id": null
+          }
+        ]
+      }
+    ],
+    "variants": []
+  }
 }

@@ -24,6 +24,8 @@ def request(path: str, method: str = "GET", payload: dict | None = None) -> dict
 
 health = request("/health")
 assert health["status"] == "ok"
+readiness = request("/ready")
+assert readiness["ready"], readiness
 state = request("/api/demo")
 assert state["order"]["id"] == "SO-4711"
 answer = request("/api/assistant/ask", "POST", {"question": "Wie ist der Status von Auftrag 4711?"})

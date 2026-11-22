@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass
 
 from .config import Settings
+from .redmine import RedmineClient
 
 
 @dataclass
@@ -36,13 +38,16 @@ def integration_status(settings: Settings) -> list[dict[str, object]]:
             "/api/",
         ),
     ]
-    return [asdict(item) for item in integrations]
+    return [asdict(item) for item in integrations] + [RedmineClient(settings).status()]
 
 
 def paperless_search(query: str, settings: Settings) -> dict[str, object]:
     if not settings.paperless_api_token:
         return {"mode": "simulated", "query": query, "results": []}
-    url = f"{settings.paperless_base_url.rstrip('/')}/api/documents/?query={query}"
+    encoded_query = urllib.parse.urlencode({"query": query})
+    url = (
+        f"{settings.paperless_base_url.rstrip('/')}/api/documents/?{encoded_query}"
+    )
     request = urllib.request.Request(
         url, headers={"Authorization": f"Token {settings.paperless_api_token}"}
     )

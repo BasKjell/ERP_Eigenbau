@@ -60,19 +60,32 @@ nav:
   - Prozesse:
       - Order-to-Cash:
           - Gesamtprozess: processes/order-to-cash/overview.md
+          - Rollen, Abteilungen und Stammdaten: processes/order-to-cash/responsibilities.md
+          - Projekte, Kommissionen und Lager: processes/order-to-cash/projects-warehouses.md
           - CRM und Auftrag: processes/order-to-cash/crm-sales.md
           - MRP und Einkauf: processes/order-to-cash/procurement.md
           - Planung und Fertigung: processes/order-to-cash/production.md
+          - Ressourcen und Zeitbuchung: processes/order-to-cash/resources-time.md
           - Qualität und DMS: processes/order-to-cash/quality.md
           - Lieferung und Buchhaltung: processes/order-to-cash/delivery-accounting.md
   - Anwender:
+      - Unternehmensportal und App-Launcher: user-guides/company-portal.md
+      - Prozesskatalog je Anwendung: user-guides/tool-process-catalog.md
+      - Persönlicher KI-Arbeitsplatz: user-guides/future-workplace.md
+      - FLOWWORK Tickets und Requirements: user-guides/flowwork.md
       - Management-Demo: user-guides/presentation.md
+      - Management und Finanzen: user-guides/finance.md
+      - HR, Anwesenheit und Kalender: user-guides/hr.md
+      - MES-Arbeitsplatz: user-guides/mes.md
+      - FLOWQ Wareneingangsprüfung: user-guides/quality.md
+      - Desksharing: user-guides/desksharing.md
       - Shopfloor: user-guides/shopfloor.md
       - Dokumente: user-guides/dms.md
   - Werkzeuge:
       - Katalog und Matrix: tools/index.md
       - Benutzeranleitungen:
           - Management-Portal: tools/user/portal.md
+          - FLOWHR: tools/user/flowhr.md
           - Plattform-MCP: tools/user/mcp.md
           - ERPNext: tools/user/erpnext.md
           - Paperless-ngx: tools/user/paperless.md
@@ -86,12 +99,15 @@ nav:
           - Docker Compose: tools/user/docker-compose.md
       - Administrationsanleitungen:
           - Management-Portal: tools/admin/portal.md
+          - Redmine / FLOWWORK: tools/admin/redmine.md
+          - FLOWHR: tools/admin/flowhr.md
           - Plattform-MCP: tools/admin/mcp.md
           - ERPNext: tools/admin/erpnext.md
           - Paperless-ngx: tools/admin/paperless.md
           - Keycloak: tools/admin/keycloak.md
           - Ollama / AI-Assistent: tools/admin/ollama.md
           - Open WebUI: tools/admin/open-webui.md
+          - FLOWGATE / Agentgateway: tools/admin/agentgateway.md
           - Grafana: tools/admin/grafana.md
           - Prometheus: tools/admin/prometheus.md
           - PostgreSQL / pgvector: tools/admin/postgresql.md
@@ -100,16 +116,28 @@ nav:
   - Systeme:
       - Systemübersicht: systems/overview.md
   - Schnittstellen:
+      - Migration und API-Import: interfaces/migration-api.md
+      - Keycloak, Rollen und SSO: interfaces/iam-sso.md
+      - Redmine, Wiki und Requirements: interfaces/redmine-requirements.md
+      - FLOWHR zu ERPNext: interfaces/hr-erpnext.md
+      - Management-Reporting und Finanzen: interfaces/finance-reporting.md
+      - Recruiting, Payroll, DMS und ERP: interfaces/hr-dms-payroll.md
       - ERPNext zu MES: interfaces/erpnext-mes.md
+      - FLOWQ Messgeräte und ERP: interfaces/quality-measurement.md
       - Paperless-ngx: interfaces/paperless.md
       - AI-Tools: interfaces/ai-tools.md
       - MCP-Server: interfaces/mcp.md
   - Administration:
       - Lokaler Betrieb: admin/local-operation.md
+      - Live-Readiness und Tests: admin/live-readiness-testing.md
+      - Demodaten per API: admin/demo-data-lifecycle.md
       - Konfiguration: admin/configuration.md
       - Änderungen und DoD: admin/change-management.md
   - Architektur:
       - Zielbild: architecture/overview.md
       - Entscheidungen: architecture/decisions.md
       - Sicherheit: architecture/security.md
-  - Demo-Daten: demo/data-model.md
+      - IAM-Sicherheitskonzept (BSI): architecture/iam-security-concept.md
+  - Demo-Daten:
+      - Datensatz und Referenzen: demo/data-model.md
+      - Stammdatenkatalog und Lücken: demo/master-data-catalog.md

@@ -5,7 +5,9 @@ from mcp.server.mcpserver import MCPServer
 from .config import settings
 from .knowledge import KnowledgeError, KnowledgeService
 
-knowledge = KnowledgeService(settings.documentation_dir)
+knowledge = KnowledgeService(
+    settings.documentation_dir, settings.documentation_public_url
+)
 mcp = MCPServer("ERP Process Wiki")
 
 
@@ -17,7 +19,7 @@ def list_documentation_sections() -> dict[str, object]:
 
 @mcp.tool()
 def search_process_documentation(query: str, max_results: int = 10) -> dict[str, object]:
-    """Search the local process, user and administration documentation."""
+    """Search local documentation; summarize results and cite every returned URL."""
     try:
         return knowledge.search(query, max_results)
     except KnowledgeError as exc:
@@ -25,8 +27,17 @@ def search_process_documentation(query: str, max_results: int = 10) -> dict[str,
 
 
 @mcp.tool()
+def get_documentation_context(question: str, max_results: int = 5) -> dict[str, object]:
+    """Get concise grounded context for a user question, including clickable Wiki links."""
+    try:
+        return knowledge.get_context(question, max_results)
+    except KnowledgeError as exc:
+        return {"tool": "get_documentation_context", "status": "error", "error": str(exc)}
+
+
+@mcp.tool()
 def get_documentation_page(path: str, max_characters: int = 20000) -> dict[str, object]:
-    """Read one Markdown page below docs/ using its search-result path."""
+    """Read one Markdown page and cite its returned URL when answering the user."""
     try:
         return knowledge.get_page(path, max_characters)
     except KnowledgeError as exc:

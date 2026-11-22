@@ -1,0 +1,343 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "title": "Executive Cockpit",
+      "type": "link",
+      "url": "/d/management-executive",
+      "targetBlank": false
+    },
+    {
+      "title": "FLOWFIN",
+      "type": "link",
+      "url": "http://localhost:8088/finance",
+      "targetBlank": true
+    }
+  ],
+  "panels": [
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "time",
+              "text": "time",
+              "type": "timestamp"
+            },
+            {
+              "selector": "Nacharbeit",
+              "text": "Nacharbeit",
+              "type": "number"
+            },
+            {
+              "selector": "Ausschuss",
+              "text": "Ausschuss",
+              "type": "number"
+            },
+            {
+              "selector": "Prüfung",
+              "text": "Prüfung",
+              "type": "number"
+            },
+            {
+              "selector": "Gewährleistung",
+              "text": "Gewährleistung",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "timeseries",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.quality_monthly",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Cost of Quality & Warranty",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/(actual_cost|forecast_cost)/"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "portfolio_type",
+              "text": "portfolio_type",
+              "type": "string"
+            },
+            {
+              "selector": "portfolio_id",
+              "text": "portfolio_id",
+              "type": "string"
+            },
+            {
+              "selector": "name",
+              "text": "name",
+              "type": "string"
+            },
+            {
+              "selector": "owner_name",
+              "text": "owner_name",
+              "type": "string"
+            },
+            {
+              "selector": "status",
+              "text": "status",
+              "type": "string"
+            },
+            {
+              "selector": "actual_cost",
+              "text": "actual_cost",
+              "type": "number"
+            },
+            {
+              "selector": "forecast_cost",
+              "text": "forecast_cost",
+              "type": "number"
+            },
+            {
+              "selector": "target_date",
+              "text": "target_date",
+              "type": "timestamp"
+            },
+            {
+              "selector": "risk",
+              "text": "risk",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.innovation_portfolio",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "F&E- und Software-Portfolio",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "platform-live-api"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "amount"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "amount"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "id",
+              "text": "quality_id",
+              "type": "string"
+            },
+            {
+              "selector": "category",
+              "text": "category",
+              "type": "string"
+            },
+            {
+              "selector": "project_id",
+              "text": "project_id",
+              "type": "string"
+            },
+            {
+              "selector": "amount",
+              "text": "amount",
+              "type": "number"
+            },
+            {
+              "selector": "period",
+              "text": "period",
+              "type": "timestamp"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "platform-live-api"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "$.quality_costs",
+          "source": "url",
+          "type": "json",
+          "url": "http://platform-api:8080/api/reporting/live",
+          "url_options": {
+            "method": "GET"
+          }
+        }
+      ],
+      "title": "Qualitäts- und Gewährleistungskosten nach Projekt",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": [
+    "engineering",
+    "live",
+    "management",
+    "quality",
+    "software"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-12M",
+    "to": "now+18M"
+  },
+  "timezone": "browser",
+  "title": "Management – Engineering & Qualität",
+  "uid": "management-innovation-quality",
+  "version": 2
+}

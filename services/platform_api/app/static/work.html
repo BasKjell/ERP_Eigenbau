@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="FLOWWORK Tickets, Wiki und Requirements auf Redmine-Basis" />
+    <title>FLOWWORK · Projekte & Requirements</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/work.css" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+  </head>
+  <body>
+    <div class="work-shell">
+      <aside class="work-sidebar">
+        <div class="work-brand-row">
+          <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+          <a class="work-brand" href="/work"><span>FW</span><b>FLOWWORK</b></a>
+        </div>
+        <label class="project-switcher"><span>AKTIVES PROJEKT</span><select id="project-select"><option>SCU-100 Produktentwicklung</option></select></label>
+        <nav class="work-nav" aria-label="FLOWWORK Navigation">
+          <button class="active" data-view="dashboard"><span>⌂</span>Übersicht</button>
+          <button data-view="board"><span>▦</span>Agiles Board <i id="board-count">0</i></button>
+          <button data-view="issues"><span>✓</span>Aufgaben</button>
+          <div class="nav-separator">REQUIREMENTS</div>
+          <button data-view="requirements"><span>R</span>Anforderungen <i id="requirement-count">0</i></button>
+          <button data-view="traceability"><span>⌘</span>Traceability</button>
+          <button data-view="reviews"><span>◎</span>Review Center <i id="review-count">0</i></button>
+          <button data-view="baselines"><span>◆</span>Baselines</button>
+          <div class="nav-separator">VERIFIKATION</div>
+          <button data-view="tests"><span>✓</span>Tests & Nachweise</button>
+          <button data-view="risks"><span>!</span>Risiken</button>
+          <div class="nav-separator">WISSEN</div>
+          <button data-view="wiki"><span>▤</span>Projekt-Wiki</button>
+          <button data-view="configuration"><span>⚙</span>Konfiguration</button>
+        </nav>
+        <div class="sidebar-footer">
+          <div><i id="redmine-dot"></i><span><b id="redmine-mode">Redmine</b><small id="redmine-state">wird geprüft</small></span></div>
+          <a href="http://localhost:8001" target="_blank">Prozessanleitungen ↗</a>
+        </div>
+      </aside>
+
+      <div class="work-page">
+        <header class="work-topbar">
+          <label class="work-search"><span>⌕</span><input id="work-search" type="search" placeholder="Tickets, Anforderungen und Wiki durchsuchen" /></label>
+          <div class="topbar-actions">
+            <button id="new-requirement-top" class="button secondary" type="button">+ Anforderung</button>
+            <button id="new-issue-top" class="button primary" type="button">+ Aufgabe</button>
+            <div class="work-identity"><span id="work-avatar">DB</span><div><b id="work-user">Demo Benutzer</b><small id="work-role">FLOWWORK</small></div></div>
+          </div>
+        </header>
+
+        <main class="work-main">
+          <section id="view-dashboard" class="view active">
+            <div class="view-heading dashboard-heading">
+              <div><span class="eyebrow">PROJEKT-COCKPIT</span><h1 id="active-project-name">SCU-100 Produktentwicklung</h1><p id="active-project-description">Kundenprojekt NordMarine · Kommission KOM-4711</p></div>
+              <div class="heading-actions"><span id="sync-chip" class="sync-chip">Redmine Demo</span><button id="refresh" class="icon-button" type="button" aria-label="Aktualisieren">↻</button></div>
+            </div>
+            <div id="work-metrics" class="work-metrics"></div>
+            <div class="dashboard-grid">
+              <article class="panel span-2">
+                <div class="panel-heading"><div><span class="eyebrow">MEINE ARBEIT</span><h2>Nächste Aufgaben</h2></div><button data-open-view="issues">Alle Aufgaben →</button></div>
+                <div id="my-issues" class="issue-list"></div>
+              </article>
+              <article class="panel progress-panel">
+                <div class="panel-heading"><div><span class="eyebrow">TRACEABILITY</span><h2>Abdeckung</h2></div></div>
+                <div id="trace-gauge" class="trace-gauge"></div>
+                <div id="trace-summary" class="trace-summary"></div>
+              </article>
+              <article class="panel span-2">
+                <div class="panel-heading"><div><span class="eyebrow">REQUIREMENTS</span><h2>Änderungen & Reviews</h2></div><button data-open-view="requirements">Requirement Center →</button></div>
+                <div id="requirement-preview" class="requirement-preview"></div>
+              </article>
+              <article class="panel activity-panel">
+                <div class="panel-heading"><div><span class="eyebrow">AKTIVITÄT</span><h2>Projektverlauf</h2></div></div>
+                <div id="work-activity" class="work-activity"></div>
+              </article>
+            </div>
+          </section>
+
+          <section id="view-board" class="view">
+            <div class="view-heading"><div><span class="eyebrow">REDMINE · AGILE SICHT</span><h1>Aufgaben-Board</h1><p>Statusübergreifende Sicht auf alle Projekttickets.</p></div><button class="button primary" data-new-issue>+ Aufgabe</button></div>
+            <div id="kanban" class="kanban"></div>
+          </section>
+
+          <section id="view-issues" class="view">
+            <div class="view-heading"><div><span class="eyebrow">REDMINE · ISSUES</span><h1>Aufgaben & Tickets</h1><p>Planung, Verantwortliche, Termine und Bearbeitungsstand.</p></div><button class="button primary" data-new-issue>+ Aufgabe</button></div>
+            <article class="panel table-panel"><div id="issue-table" class="data-table"></div></article>
+          </section>
+
+          <section id="view-requirements" class="view">
+            <div class="view-heading"><div><span class="eyebrow">REQUIREMENT CENTER</span><h1>Anforderungen</h1><p>Versioniert, reviewfähig und direkt mit Ticket, Wiki und Verifikation verknüpft.</p></div><button class="button primary" data-new-requirement>+ Anforderung</button></div>
+            <div class="requirement-toolbar"><div class="segmented"><button class="active" data-req-filter="all">Alle</button><button data-req-filter="open">Offen</button><button data-req-filter="approved">Freigegeben</button><button data-req-filter="verified">Verifiziert</button></div><span id="requirement-filter-count"></span></div>
+            <article class="panel table-panel"><div id="requirement-table" class="data-table"></div></article>
+          </section>
+
+          <section id="view-traceability" class="view">
+            <div class="view-heading"><div><span class="eyebrow">END-TO-END TRACEABILITY</span><h1>Nachverfolgbarkeit</h1><p>Von der Anforderung über Umsetzung und Wissen bis zum Verifikationsnachweis.</p></div><span id="trace-status" class="sync-chip"></span></div>
+            <article class="panel table-panel"><div id="trace-table" class="trace-table"></div></article>
+            <div class="analysis-grid"><article class="panel"><div class="panel-heading"><div><span class="eyebrow">RELATIONSHIP MODEL</span><h2>Regelabdeckung</h2></div></div><div id="coverage-list" class="compact-list"></div></article><article class="panel"><div class="panel-heading"><div><span class="eyebrow">CHANGE IMPACT</span><h2>Suspect Links</h2></div></div><div id="suspect-list" class="compact-list"></div></article></div>
+          </section>
+
+          <section id="view-reviews" class="view">
+            <div class="view-heading"><div><span class="eyebrow">REVIEW CENTER</span><h1>Reviews & Freigaben</h1><p>Moderierte Review-Pakete mit Kommentaren, Entscheidungen, Fristen und elektronischen Signaturen.</p></div><button id="new-review" class="button primary">+ Review starten</button></div>
+            <div id="review-metrics" class="work-metrics compact-metrics"></div>
+            <div id="review-grid" class="review-grid"></div>
+          </section>
+
+          <section id="view-baselines" class="view">
+            <div class="view-heading"><div><span class="eyebrow">KONFIGURATIONSMANAGEMENT</span><h1>Baselines</h1><p>Eingefrorene Anforderungsstände für Reviews, Freigaben und spätere Audits.</p></div><button id="new-baseline" class="button primary">+ Baseline</button></div>
+            <div id="baseline-grid" class="baseline-grid"></div>
+          </section>
+
+          <section id="view-tests" class="view">
+            <div class="view-heading"><div><span class="eyebrow">TEST MANAGEMENT</span><h1>Verifikation & Validierung</h1><p>Testfälle aus Anforderungen ableiten, in Testplänen bündeln und mit Evidenzen ausführen.</p></div><div class="heading-actions"><button id="new-test-plan" class="button secondary">+ Testplan</button><button id="new-test-case" class="button primary">+ Testfall</button></div></div>
+            <div id="test-metrics" class="work-metrics compact-metrics"></div>
+            <div class="analysis-grid"><article class="panel table-panel"><div class="panel-heading padded"><div><span class="eyebrow">TEST CASES</span><h2>Testfälle</h2></div></div><div id="test-case-table" class="data-table"></div></article><article class="panel"><div class="panel-heading"><div><span class="eyebrow">TEST RUNS</span><h2>Aktuelle Läufe</h2></div></div><div id="test-run-list" class="compact-list"></div></article></div>
+          </section>
+
+          <section id="view-risks" class="view">
+            <div class="view-heading"><div><span class="eyebrow">RISK & SAFETY</span><h1>Risiken</h1><p>Risiken bewerten, Maßnahmen dokumentieren und direkt mit Anforderungen verknüpfen.</p></div><button id="new-risk" class="button primary">+ Risiko</button></div>
+            <div id="risk-grid" class="risk-grid"></div>
+          </section>
+
+          <section id="view-wiki" class="view">
+            <div class="view-heading"><div><span class="eyebrow">REDMINE WIKI</span><h1>Projektwissen</h1><p>Technische Entscheidungen, Spezifikationen und Anleitungen im Ticketkontext.</p></div><a class="button secondary" href="http://localhost:8011/projects/scu-100/wiki" target="_blank">Redmine Wiki ↗</a></div>
+            <div id="wiki-grid" class="wiki-grid"></div>
+          </section>
+
+          <section id="view-configuration" class="view">
+            <div class="view-heading"><div><span class="eyebrow">ORGANISATION ADMIN</span><h1>Requirements-Konfiguration</h1><p>Eigene Itemtypen, Felder, Beziehungstypen und Traceability-Regeln ohne Codeänderung verwalten.</p></div><div class="heading-actions"><a class="button secondary" href="/api/work/export?format=reqif">ReqIF Export</a><a class="button secondary" href="/api/work/export?format=json">JSON Export</a></div></div>
+            <div class="config-actions"><button id="new-item-type" class="button secondary">+ Itemtyp</button><button id="new-field" class="button secondary">+ Eigenes Feld</button><button id="new-relationship-type" class="button secondary">+ Beziehungstyp</button><button id="new-relationship-rule" class="button primary">+ Relationship-Regel</button><button id="new-relationship" class="button secondary">+ Beziehung</button></div>
+            <div class="config-grid"><article class="panel"><div class="panel-heading"><div><span class="eyebrow">SCHEMA</span><h2>Itemtypen & Felder</h2></div></div><div id="item-type-list" class="compact-list"></div><div id="field-list" class="chip-list"></div></article><article class="panel"><div class="panel-heading"><div><span class="eyebrow">TRACEABILITY INFORMATION MODEL</span><h2>Relationship-Regeln</h2></div></div><div id="rule-list" class="compact-list"></div></article></div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog id="issue-dialog" class="work-dialog">
+      <form id="issue-form" method="dialog">
+        <div class="dialog-head"><div><span class="eyebrow">NEUES REDMINE-TICKET</span><h2>Aufgabe anlegen</h2></div><button value="cancel" aria-label="Schließen">×</button></div>
+        <label>Titel<input name="subject" required minlength="3" placeholder="Was ist zu erledigen?" /></label>
+        <label>Beschreibung<textarea name="description" rows="5" placeholder="Ziel, Kontext und Definition of Done"></textarea></label>
+        <div class="form-grid"><label>Priorität<select name="priority"><option>Normal</option><option>Hoch</option><option>Dringend</option><option>Niedrig</option></select></label><label>Fällig am<input name="due_date" type="date" /></label></div>
+        <div class="form-grid"><label>Verantwortlich<input name="assignee" placeholder="Name oder Team" /></label><label>Anforderung<select name="requirement_id" id="issue-requirement"><option value="">Keine Verknüpfung</option></select></label></div>
+        <div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" value="default" class="button primary">Aufgabe anlegen</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="requirement-dialog" class="work-dialog wide">
+      <form id="requirement-form" method="dialog">
+        <div class="dialog-head"><div><span class="eyebrow">NEUE ANFORDERUNG</span><h2>Requirement erfassen</h2></div><button value="cancel" aria-label="Schließen">×</button></div>
+        <div class="form-grid"><label>Typ<select name="type" id="requirement-type"></select></label><label>Priorität<select name="priority"><option>Must</option><option>Should</option><option>Could</option></select></label></div>
+        <label>Titel<input name="title" required minlength="5" placeholder="Kurzer, eindeutiger Titel" /></label>
+        <label>Anforderungstext<textarea name="text" rows="4" required placeholder="Das System muss …"></textarea></label>
+        <label>Akzeptanzkriterien<textarea name="acceptance_criteria" rows="3" placeholder="Messbarer Nachweis für die Erfüllung"></textarea></label>
+        <div class="form-grid"><label>Owner<input name="owner" required value="System Engineering" /></label><label>Übergeordnete Anforderung<select name="parent_id" id="requirement-parent"><option value="">Keine</option></select></label></div>
+        <div id="custom-fields-container" class="custom-fields"></div>
+        <div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" value="default" class="button primary">Anforderung anlegen</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="review-dialog" class="work-dialog wide"><form id="review-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">REVIEW CENTER</span><h2>Review starten</h2></div><button value="cancel" aria-label="Schließen">×</button></div><label>Titel<input name="title" required value="System Requirements Review" /></label><label>Beschreibung<textarea name="description" rows="3"></textarea></label><div class="form-grid"><label>Approver<input name="approver" required value="Demo Benutzer" /></label><label>Reviewer<input name="reviewer" value="Qualität" /></label></div><div class="form-grid"><label>Frist<input name="deadline" type="date" /></label><label class="check-label"><input name="require_signature" type="checkbox" checked /> Elektronische Signatur verlangen</label></div><fieldset><legend>Review-Umfang</legend><div id="review-items" class="selection-list"></div></fieldset><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Review starten</button></div></form></dialog>
+
+    <dialog id="test-case-dialog" class="work-dialog wide"><form id="test-case-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">TEST MANAGEMENT</span><h2>Testfall anlegen</h2></div><button value="cancel">×</button></div><label>Titel<input name="title" required /></label><div class="form-grid"><label>Owner<input name="owner" required value="Qualität" /></label><label>Anforderung<select name="requirement_id" id="test-requirement"></select></label></div><label>Vorbedingungen<textarea name="preconditions" rows="2"></textarea></label><label>Testschritte – eine Zeile je Schritt<textarea name="steps" rows="4" required placeholder="Buslast einstellen&#10;Dauerlauf starten&#10;Fehlerzähler prüfen"></textarea></label><label>Erwartetes Ergebnis<textarea name="expected_result" rows="2" required></textarea></label><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Testfall anlegen</button></div></form></dialog>
+
+    <dialog id="test-plan-dialog" class="work-dialog"><form id="test-plan-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">TEST MANAGEMENT</span><h2>Testplan anlegen</h2></div><button value="cancel">×</button></div><label>Name<input name="name" required /></label><label>Beschreibung<textarea name="description" rows="2"></textarea></label><label>Owner<input name="owner" required value="Qualität" /></label><fieldset><legend>Testfälle</legend><div id="test-plan-cases" class="selection-list"></div></fieldset><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Plan und Testlauf anlegen</button></div></form></dialog>
+
+    <dialog id="risk-dialog" class="work-dialog wide"><form id="risk-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">RISK MANAGEMENT</span><h2>Risiko erfassen</h2></div><button value="cancel">×</button></div><label>Titel<input name="title" required /></label><label>Beschreibung<textarea name="description" rows="2"></textarea></label><div class="form-grid"><label>Wahrscheinlichkeit (1–5)<input name="probability" type="number" min="1" max="5" value="3" /></label><label>Auswirkung (1–5)<input name="impact" type="number" min="1" max="5" value="4" /></label></div><label>Maßnahme<textarea name="mitigation" rows="3" required></textarea></label><div class="form-grid"><label>Owner<input name="owner" required value="System Engineering" /></label><label>Anforderung<select name="requirement_id" id="risk-requirement"></select></label></div><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Risiko anlegen</button></div></form></dialog>
+
+    <dialog id="field-dialog" class="work-dialog"><form id="field-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">SCHEMA</span><h2>Eigenes Feld</h2></div><button value="cancel">×</button></div><div class="form-grid"><label>Name<input name="name" required /></label><label>Technischer Schlüssel<input name="key" placeholder="z. B. CUSTOMER_REF" /></label></div><div class="form-grid"><label>Datentyp<select name="field_type"><option value="text">Text</option><option value="rich_text">Rich Text</option><option value="integer">Ganzzahl</option><option value="date">Datum</option><option value="flag">Ja/Nein</option><option value="url">URL</option><option value="select">Auswahlliste</option><option value="multi_select">Mehrfachauswahl</option></select></label><label>Itemtyp<select name="applies_to" id="field-item-type"></select></label></div><label>Optionen (kommagetrennt)<input name="options" /></label><label class="check-label"><input name="required" type="checkbox" /> Pflichtfeld</label><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Feld anlegen</button></div></form></dialog>
+
+    <dialog id="item-type-dialog" class="work-dialog"><form id="item-type-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">SCHEMA</span><h2>Itemtyp anlegen</h2></div><button value="cancel">×</button></div><div class="form-grid"><label>Name<input name="name" required /></label><label>Präfix<input name="prefix" required maxlength="12" /></label></div><label>Technischer Schlüssel<input name="key" /></label><label>Beschreibung<textarea name="description" rows="3"></textarea></label><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Itemtyp anlegen</button></div></form></dialog>
+
+    <dialog id="relationship-type-dialog" class="work-dialog"><form id="relationship-type-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">TRACEABILITY</span><h2>Beziehungstyp anlegen</h2></div><button value="cancel">×</button></div><label>Name in Vorwärtsrichtung<input name="name" required placeholder="erfüllt" /></label><label>Name in Rückwärtsrichtung<input name="reverse_name" required placeholder="wird erfüllt durch" /></label><label>Technischer Schlüssel<input name="key" /></label><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Typ anlegen</button></div></form></dialog>
+
+    <dialog id="relationship-rule-dialog" class="work-dialog wide"><form id="relationship-rule-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">RELATIONSHIP MODEL</span><h2>Regel anlegen</h2></div><button value="cancel">×</button></div><label>Name<input name="name" required /></label><div class="form-grid"><label>Upstream-Itemtyp<select name="upstream_type" id="rule-upstream"></select></label><label>Downstream-Itemtyp<select name="downstream_type" id="rule-downstream"></select></label></div><div class="form-grid"><label>Beziehungstyp<select name="relationship_type" id="rule-relationship-type"></select></label><label>Mindestens<input name="min_downstream" type="number" min="0" value="1" /></label></div><label class="check-label"><input name="coverage" type="checkbox" checked /> In Coverage einbeziehen</label><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Regel anlegen</button></div></form></dialog>
+
+    <dialog id="relationship-dialog" class="work-dialog"><form id="relationship-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow">TRACEABILITY</span><h2>Beziehung anlegen</h2></div><button value="cancel">×</button></div><label>Quelle<select name="source_id" id="relationship-source"></select></label><label>Beziehung<select name="relationship_type" id="relationship-type"></select></label><label>Ziel<select name="target_id" id="relationship-target"></select></label><label>Begründung<textarea name="description" rows="2"></textarea></label><div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" class="button primary">Verknüpfen</button></div></form></dialog>
+
+    <dialog id="baseline-dialog" class="work-dialog">
+      <form id="baseline-form" method="dialog">
+        <div class="dialog-head"><div><span class="eyebrow">BASELINE ERZEUGEN</span><h2>Stand einfrieren</h2></div><button value="cancel" aria-label="Schließen">×</button></div>
+        <label>Name<input name="name" required value="Requirements Baseline" /></label>
+        <label>Beschreibung<textarea name="description" rows="4" placeholder="Review, Meilenstein oder Lieferstand"></textarea></label>
+        <p class="dialog-note">Die aktuelle Version aller gefilterten Anforderungen wird unveränderbar referenziert.</p>
+        <div class="dialog-actions"><button value="cancel" class="button secondary">Abbrechen</button><button type="submit" value="default" class="button primary">Baseline einfrieren</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="requirement-detail" class="requirement-detail"><div id="requirement-detail-content"></div></dialog>
+    <div id="work-toast" class="work-toast" role="status"></div>
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/work.js?v=20261110" defer></script>
+  </body>
+</html>

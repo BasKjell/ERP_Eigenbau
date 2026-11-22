@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "projects": [
+    {
+      "identifier": "scu-100",
+      "name": "SCU-100 Produktentwicklung",
+      "description": "[OM-DEMO] Kundenprojekt NordMarine Systems · Kommission KOM-4711",
+      "wiki": [
+        {
+          "title": "Projektstart",
+          "text": "h1. SCU-100 Projektstart\n\n* Kommission: KOM-4711\n* Kunde: NordMarine Systems\n* Requirements: [[SCU-100_Requirements]]\n* Verifikation: [[SCU-100_Verification]]"
+        },
+        {
+          "title": "SCU-100_Requirements",
+          "text": "h1. SCU-100 Requirements\n\nDie versionierten Anforderungen werden in FLOWWORK geführt.\n\n* REQ-SCU-001 → CAN-Kommunikation\n* REQ-SCU-002 → MES-Seriennummern-Rückmeldung\n* REQ-SCU-003 → EMV-Prüfplan"
+        },
+        {
+          "title": "SCU-100_Verification",
+          "text": "h1. Verifikationsstrategie\n\nJede Must-Anforderung benötigt einen Test, Prüfbericht oder dokumentierten Abnahmenachweis."
+        }
+      ],
+      "issues": [
+        {
+          "subject": "[REQ-SCU-001] CAN-Kommunikation spezifizieren",
+          "description": "[OM-DEMO] Schnittstellenparameter ableiten und im Wiki dokumentieren.",
+          "due_date": "2026-11-08",
+          "done_ratio": 50
+        },
+        {
+          "subject": "[REQ-SCU-003] EMV-Prüfplan freigeben",
+          "description": "[OM-DEMO] Review und Freigabe des Verifikationsnachweises.",
+          "due_date": "2026-11-12",
+          "done_ratio": 80
+        },
+        {
+          "subject": "Lieferantendokumente mit Projekt verknüpfen",
+          "description": "[OM-DEMO] DMS-Metadaten und Wiki-Anleitung abstimmen.",
+          "due_date": "2026-11-15",
+          "done_ratio": 0
+        }
+      ]
+    },
+    {
+      "identifier": "platform-rollout",
+      "name": "Open Manufacturing Rollout",
+      "description": "[OM-DEMO] Einführung der integrierten Unternehmensplattform",
+      "wiki": [
+        {
+          "title": "Projektstart",
+          "text": "h1. Plattform-Rollout\n\nBetrieb, Schnittstellen und Abnahmekriterien der Open Manufacturing Platform."
+        }
+      ],
+      "issues": [
+        {
+          "subject": "[REQ-SCU-002] Seriennummern-Rückmeldung im MES",
+          "description": "[OM-DEMO] Pflichtprüfung und API-Mapping ergänzen.",
+          "due_date": "2026-11-02",
+          "done_ratio": 100
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="FLOWHR Anwesenheit und Zeitwirtschaft" />
+    <title>FLOWHR · Anwesenheit & Zeit</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/hr.css" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+        <a class="brand" href="/hr" aria-label="FLOWHR Startseite">
+          <span class="brand-mark"><i></i><i></i><i></i></span>
+          <span><b>FLOW</b>HR</span>
+        </a>
+        <nav class="side-nav" aria-label="HR Navigation">
+          <button class="nav-item active" type="button" data-view="overview"><span>⌂</span><b>Übersicht</b></button>
+          <button class="nav-item" type="button" data-view="calendar"><span>▦</span><b>Kalender</b></button>
+          <button class="nav-item" type="button" data-view="requests"><span>✓</span><b>Anträge</b><i id="request-badge">0</i></button>
+          <button class="nav-item" type="button" data-view="team"><span>◉</span><b>Team</b><i id="approval-badge">0</i></button>
+          <button class="nav-item" type="button" data-view="recruiting"><span>◎</span><b>Bewerbungen</b><i id="application-badge">0</i></button>
+          <button class="nav-item" type="button" data-view="payroll"><span>€</span><b>Lohnabrechnung</b></button>
+          <button class="nav-item" type="button" data-view="erp"><span>⇄</span><b>ERP-Übergabe</b></button>
+        </nav>
+        <div class="side-links">
+          <a href="/desksharing"><span>▦</span> FLOWSPACE</a>
+          <a href="/mes"><span>▤</span> FLOWMES</a>
+          <a href="/work"><span>R</span> FLOWWORK</a>
+          <a href="/management"><span>↗</span> FLOWMANAGE</a>
+          <a href="http://localhost:8001" target="_blank"><span>?</span> FLOWDOCS</a>
+        </div>
+        <div class="system-state"><i></i><span>System verbunden</span></div>
+      </aside>
+
+      <div class="page">
+        <header class="topbar">
+          <div>
+            <span class="product-label">PERSONAL & ZEITWIRTSCHAFT</span>
+            <h1 id="page-title">Mein Arbeitstag</h1>
+          </div>
+          <div class="top-tools">
+            <label class="date-control"><span>Datum</span><input id="selected-date" type="date" /></label>
+            <label class="employee-control">
+              <span id="employee-avatar">PP</span>
+              <select id="employee" aria-label="Mitarbeiter auswählen"></select>
+            </label>
+            <time id="clock">--:--:--</time>
+          </div>
+        </header>
+
+        <main>
+          <section id="view-overview" class="view active">
+            <div class="welcome-grid">
+              <article class="punch-card">
+                <div class="punch-copy">
+                  <span class="eyebrow">HEUTE · <b id="today-label">–</b></span>
+                  <h2>Hallo, <span id="first-name">Paula</span>.</h2>
+                  <p id="presence-copy">Dein Anwesenheitsstatus wird geladen.</p>
+                  <div id="presence-detail" class="presence-detail"></div>
+                </div>
+                <div class="punch-action">
+                  <div id="presence-ring" class="presence-ring"><span id="presence-dot"></span><b id="presence-time">--:--</b><small id="presence-status">Status</small></div>
+                  <button id="punch-button" class="button punch" type="button">Kommen buchen</button>
+                </div>
+              </article>
+              <article class="rules-card">
+                <span class="eyebrow">ARBEITSZEITMODELL</span>
+                <h3>Gleitzeit · 40 Stunden</h3>
+                <dl>
+                  <div><dt>Kernzeit</dt><dd id="core-time">09:00–15:00</dd></div>
+                  <div><dt>Tages-Soll</dt><dd id="day-target">8:00 h</dd></div>
+                  <div><dt>Mindestpause</dt><dd id="break-rule">30 min</dd></div>
+                </dl>
+                <div id="rule-warning" class="rule-warning" hidden></div>
+              </article>
+            </div>
+
+            <section id="metric-grid" class="metric-grid" aria-label="Zeitkennzahlen"></section>
+
+            <div class="overview-grid">
+              <article class="panel">
+                <div class="panel-head"><div><span class="eyebrow">BUCHUNGEN</span><h2>Mein heutiger Verlauf</h2></div><button id="correction-button" class="link-button" type="button">Korrektur beantragen</button></div>
+                <div id="attendance-timeline" class="attendance-timeline"></div>
+              </article>
+              <article class="panel">
+                <div class="panel-head"><div><span class="eyebrow">TEAMSTATUS</span><h2>Wer ist da?</h2></div><button class="link-button" type="button" data-open-view="team">Alle anzeigen</button></div>
+                <div id="team-preview" class="team-preview"></div>
+              </article>
+              <article class="panel wide">
+                <div class="panel-head"><div><span class="eyebrow">NÄCHSTE TERMINE</span><h2>Abwesenheiten und Anträge</h2></div><button class="button primary small" id="new-request-overview" type="button">+ Neuer Antrag</button></div>
+                <div id="upcoming-events" class="upcoming-events"></div>
+              </article>
+            </div>
+          </section>
+
+          <section id="view-calendar" class="view">
+            <div class="view-heading">
+              <div><span class="eyebrow">ABWESENHEITSPLANUNG</span><h2>Kalender</h2><p>Urlaub, Überstundenabbau, mobiles Arbeiten, Dienstreisen und Feiertage.</p></div>
+              <div class="heading-actions"><div class="segmented"><button class="active" data-scope="self" type="button">Mein Kalender</button><button data-scope="team" type="button">Team</button></div><button class="button primary" id="new-request-calendar" type="button">+ Antrag</button></div>
+            </div>
+            <article class="calendar-panel">
+              <div class="calendar-toolbar"><button id="calendar-prev" type="button">‹</button><h3 id="calendar-title">November 2026</h3><button id="calendar-next" type="button">›</button><button id="calendar-today" class="today-button" type="button">Heute</button></div>
+              <div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+              <div id="calendar-grid" class="calendar-grid"></div>
+              <div class="calendar-legend"><span class="vacation">Urlaub</span><span class="absence">Abwesend</span><span class="time_off">Überstundenabbau</span><span class="remote_work">Mobiles Arbeiten</span><span class="overtime">Mehrarbeit</span><span class="business_trip">Dienstreise</span><span class="holiday">Feiertag</span><span class="pending">Beantragt</span></div>
+            </article>
+          </section>
+
+          <section id="view-requests" class="view">
+            <div class="view-heading">
+              <div><span class="eyebrow">SELF SERVICE</span><h2>Meine Anträge</h2><p>Status, Genehmigung und verbleibende Konten auf einen Blick.</p></div>
+              <button class="button primary" id="new-request-main" type="button">+ Neuer Antrag</button>
+            </div>
+            <div class="request-summary" id="request-summary"></div>
+            <article class="panel"><div id="request-table" class="request-table"></div></article>
+          </section>
+
+          <section id="view-team" class="view">
+            <div class="view-heading">
+              <div><span class="eyebrow">FÜHRUNGSKRAFT</span><h2>Anwesenheitsdisplay & Freigaben</h2><p>Aktueller Status ohne Offenlegung vertraulicher Abwesenheitsgründe.</p></div>
+              <span id="team-date" class="date-chip"></span>
+            </div>
+            <div id="team-display" class="team-display"></div>
+            <article class="panel approvals-panel"><div class="panel-head"><div><span class="eyebrow">WORKFLOW</span><h2>Offene Genehmigungen</h2></div></div><div id="approval-list" class="approval-list"></div></article>
+          </section>
+
+          <section id="view-recruiting" class="view">
+            <div class="view-heading">
+              <div><span class="eyebrow">RECRUITING & DMS</span><h2>Bewerbermanagement</h2><p>Von der Stellenausschreibung bis zur Entscheidung, mit geschützter Bewerberakte und Löschprüfung.</p></div>
+              <div class="heading-actions"><label class="admin-selector">HR-Rolle<select id="recruiting-actor" aria-label="Recruiting-Benutzer"></select></label><button class="button primary" id="new-application" type="button">+ Bewerbung</button></div>
+            </div>
+            <div id="recruiting-metrics" class="metric-grid"></div>
+            <div class="people-grid">
+              <article class="panel">
+                <div class="panel-head"><div><span class="eyebrow">STELLEN</span><h2>Offene Bedarfe</h2></div></div>
+                <div id="vacancy-list" class="vacancy-list"></div>
+              </article>
+              <article class="panel wide-panel">
+                <div class="panel-head"><div><span class="eyebrow">PIPELINE</span><h2>Bewerbungen und DMS-Akten</h2></div><span id="recruiting-dms-mode" class="mode-chip">Demo</span></div>
+                <div id="application-list" class="application-list"></div>
+              </article>
+              <article class="panel policy-panel">
+                <span class="eyebrow">DATENSCHUTZ</span>
+                <h3>Zweckgebundener Zugriff</h3>
+                <p>Nur <b>HR-Recruiting</b> und DMS-Administration sehen Bewerberunterlagen. Nach Abschluss läuft eine terminierte Lösch- oder Sperrprüfung.</p>
+                <dl id="recruiting-policy"></dl>
+              </article>
+            </div>
+          </section>
+
+          <section id="view-payroll" class="view">
+            <div class="view-heading">
+              <div><span class="eyebrow">ENTGELTABRECHNUNG</span><h2>Kontrollierter Abrechnungslauf</h2><p>Zeitabschluss, Stammdatenprüfung, Vier-Augen-Freigabe, Browser-PDF sowie DMS- und ERP-Übergabe.</p></div>
+              <div class="heading-actions"><label class="admin-selector">HR-Rolle<select id="payroll-actor" aria-label="Payroll-Benutzer"></select></label><label class="admin-selector">Zeitraum<select id="payroll-period" aria-label="Abrechnungszeitraum"></select></label></div>
+            </div>
+            <div id="payroll-notice" class="legal-notice"></div>
+            <div id="payroll-metrics" class="metric-grid"></div>
+            <div class="payroll-grid">
+              <article class="panel payroll-control">
+                <div class="panel-head"><div><span class="eyebrow">WORKFLOW</span><h2>Abrechnung steuern</h2></div><span id="payroll-status" class="mode-chip">offen</span></div>
+                <ol class="control-steps">
+                  <li><span>1</span><div><b>Anwesenheit sperren</b><small id="attendance-lock">–</small></div></li>
+                  <li><span>2</span><div><b>Vorschau berechnen</b><small>Helena Personal · Payroll-Vorbereitung</small></div></li>
+                  <li><span>3</span><div><b>Vier-Augen-Freigabe</b><small>Konrad Kontrolle · getrennte Rolle</small></div></li>
+                  <li><span>4</span><div><b>DMS & ERP übergeben</b><small>Vertrauliche PDFs und Buchungsbeleg</small></div></li>
+                </ol>
+                <div class="workflow-actions"><button id="prepare-payroll" class="button primary" type="button">Vorschau erstellen</button><button id="approve-payroll" class="button success" type="button">Freigeben</button><button id="deliver-payroll" class="button secondary" type="button">DMS & ERP übergeben</button></div>
+                <p id="payroll-role-hint" class="dialog-note"></p>
+              </article>
+              <article class="panel payroll-summary">
+                <div class="panel-head"><div><span class="eyebrow">ABRECHNUNG</span><h2>Vorschau und Ergebnis</h2></div><span id="payroll-interface-mode" class="mode-chip">Demo</span></div>
+                <div id="payroll-preview" class="payroll-preview"></div>
+              </article>
+              <article class="panel wide">
+                <div class="panel-head"><div><span class="eyebrow">STAMMDATEN</span><h2>Beschäftigte und Prüfstatus</h2></div></div>
+                <div id="payroll-profiles" class="data-table"></div>
+              </article>
+              <article class="panel wide">
+                <div class="panel-head"><div><span class="eyebrow">AUSGABEN</span><h2>Abrechnungen im Browser öffnen</h2></div></div>
+                <div id="payroll-outputs" class="document-output-list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section id="view-erp" class="view">
+            <div class="view-heading">
+              <div><span class="eyebrow">INTEGRATION</span><h2>Anwesenheit an ERPNext übergeben</h2><p>Abgeschlossene Kommen-/Gehen-Intervalle werden nach Vorschau idempotent als Timesheet übertragen.</p></div>
+              <span id="erp-mode" class="mode-chip">Demo</span>
+            </div>
+            <div class="erp-grid">
+              <article class="panel export-card">
+                <span class="eyebrow">ÜBERGABEVORSCHAU</span>
+                <h3 id="export-person">–</h3>
+                <p>Aktivitätsart <b>Anwesenheitszeit</b>; keine Vermischung mit Job-Card-, Fertigungs- oder Projektzeiten.</p>
+                <label>Abrechnungstag<input id="export-date" type="date" /></label>
+                <button id="preview-export" class="button primary" type="button">Übergabe prüfen</button>
+                <div id="export-preview" class="export-preview"><p>Noch keine Vorschau erzeugt.</p></div>
+              </article>
+              <article class="panel">
+                <div class="panel-head"><div><span class="eyebrow">PROTOKOLL</span><h2>Letzte Übergaben</h2></div></div>
+                <div id="export-history" class="export-history"></div>
+              </article>
+              <article class="panel wide">
+                <div class="panel-head"><div><span class="eyebrow">AUDIT</span><h2>Nachvollziehbare Änderungen</h2></div></div>
+                <div id="audit-list" class="audit-list"></div>
+              </article>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog id="request-dialog" class="dialog">
+      <form id="request-form" method="dialog">
+        <div class="dialog-head"><div><span class="eyebrow">SELF SERVICE</span><h2>Neuen Antrag stellen</h2></div><button type="button" data-close-dialog="request-dialog" aria-label="Schließen">×</button></div>
+        <label>Antragstyp<select name="type" id="request-type"><option value="vacation">Urlaub</option><option value="sick">Krankmeldung</option><option value="time_off">Überstundenabbau</option><option value="overtime">Mehrarbeit</option><option value="remote_work">Mobiles Arbeiten</option><option value="business_trip">Dienstreise</option><option value="correction">Zeitkorrektur</option></select></label>
+        <div class="form-grid"><label>Von<input name="start_date" id="request-start" type="date" required /></label><label>Bis<input name="end_date" id="request-end" type="date" required /></label></div>
+        <div id="time-fields" class="form-grid" hidden><label>Von Uhrzeit<input name="from_time" type="time" /></label><label>Bis Uhrzeit<input name="to_time" type="time" /></label></div>
+        <label id="minutes-field" hidden>Minuten<input name="minutes" type="number" min="15" max="720" step="15" value="60" /></label>
+        <label>Begründung<textarea name="reason" rows="4" required placeholder="Kurzer, sachlicher Grund für die Genehmigung"></textarea></label>
+        <div class="dialog-note">Der Antrag wird an die hinterlegte Führungskraft geleitet. Eigene Anträge können nicht selbst genehmigt werden.</div>
+        <div class="dialog-actions"><button class="button secondary" type="button" data-close-dialog="request-dialog">Abbrechen</button><button class="button primary" type="submit" value="default">Antrag senden</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="decision-dialog" class="dialog">
+      <form id="decision-form" method="dialog">
+        <div class="dialog-head"><div><span class="eyebrow">GENEHMIGUNG</span><h2 id="decision-title">Antrag entscheiden</h2></div><button type="button" data-close-dialog="decision-dialog" aria-label="Schließen">×</button></div>
+        <input id="decision-request-id" type="hidden" />
+        <label>Kommentar<textarea id="decision-comment" rows="4" placeholder="Optionaler Hinweis an den Antragsteller"></textarea></label>
+        <div class="dialog-actions"><button id="reject-request" class="button danger" type="button">Ablehnen</button><button id="approve-request" class="button success" type="button">Genehmigen</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="application-dialog" class="dialog">
+      <form id="application-form" method="dialog">
+        <div class="dialog-head"><div><span class="eyebrow">RECRUITING</span><h2>Bewerbung erfassen</h2></div><button type="button" data-close-dialog="application-dialog" aria-label="Schließen">×</button></div>
+        <label>Offene Stelle<select name="vacancy_id" id="application-vacancy" required></select></label>
+        <label>Name<input name="candidate_name" required maxlength="160" placeholder="Vor- und Nachname" /></label>
+        <div class="form-grid"><label>E-Mail<input name="email" type="email" required maxlength="254" placeholder="name@example.invalid" /></label><label>Telefon<input name="phone" maxlength="80" /></label></div>
+        <label>Quelle<select name="source"><option>Karriereseite</option><option>Mitarbeiterempfehlung</option><option>Direktbewerbung</option><option>Agentur</option></select></label>
+        <div class="dialog-note">Die Datenschutzhinweis-Version und Löschprüfung werden automatisch protokolliert. Unterlagen gehören ausschließlich in die geschützte DMS-Akte.</div>
+        <div class="dialog-actions"><button class="button secondary" type="button" data-close-dialog="application-dialog">Abbrechen</button><button class="button primary" type="submit">Bewerbung anlegen</button></div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/hr.js" defer></script>
+  </body>
+</html>

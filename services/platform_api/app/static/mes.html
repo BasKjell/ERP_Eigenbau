@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="FLOWMES Shopfloor-Arbeitsplatz" />
+    <title>FLOWMES · Shopfloor</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/mes.css" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+  </head>
+  <body>
+    <div class="mes-shell">
+      <aside class="rail" aria-label="MES Navigation">
+        <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+        <a class="rail-brand" href="/mes" aria-label="FLOWMES Startseite">
+          <span class="rail-logo"><i></i><i></i><i></i></span>
+          <strong>FM</strong>
+        </a>
+        <nav class="rail-nav">
+          <button class="rail-link active" type="button" title="Arbeitsplatz"><span>▦</span><small>Arbeit</small></button>
+          <button class="rail-link" type="button" title="Qualität"><span>◇</span><small>Qualität</small></button>
+          <button class="rail-link" type="button" title="FLOWDOC Dokumente"><span>▤</span><small>DOC</small></button>
+          <a class="rail-link" href="/work" title="FLOWWORK"><span>R</span><small>WORK</small></a>
+          <a class="rail-link" href="/management" title="FLOWMANAGE"><span>↗</span><small>MANAGE</small></a>
+          <a class="rail-link" href="/hr" title="FLOWHR"><span>◉</span><small>HR</small></a>
+          <a class="rail-link" href="/desksharing" title="FLOWSPACE"><span>□</span><small>SPACE</small></a>
+        </nav>
+        <div class="rail-status" title="System verbunden"><i></i><span>Online</span></div>
+      </aside>
+
+      <div class="mes-page">
+        <header class="mes-header">
+          <div class="mes-title">
+            <span class="product-name">FLOWMES</span>
+            <span class="product-area" id="plant-area">Shopfloor · wird geladen</span>
+          </div>
+          <div class="header-tools">
+            <div class="shift-chip"><span class="signal"></span><span><small id="shift-name">Frühschicht</small><b id="shift-time">06:00–14:00</b></span></div>
+            <label class="operator-select">
+              <span id="operator-avatar">EE</span>
+              <select id="operator" aria-label="Bedienperson auswählen"></select>
+            </label>
+            <time id="clock" class="clock" aria-label="Aktuelle Uhrzeit">--:--:--</time>
+          </div>
+        </header>
+
+        <main class="mes-main">
+          <section class="shift-overview" aria-labelledby="overview-title">
+            <div>
+              <span class="kicker">MEINE SCHICHT</span>
+              <h1 id="overview-title">Guten Morgen, <span id="operator-first-name">Emil</span>.</h1>
+              <p id="overview-copy">Dein nächster Arbeitsgang ist vorbereitet.</p>
+            </div>
+            <div id="mes-metrics" class="mes-metrics" aria-label="Schichtkennzahlen"></div>
+          </section>
+
+          <section class="workbench">
+            <aside class="queue-panel">
+              <div class="panel-heading">
+                <div><span class="kicker">ARBEITSVORRAT</span><h2>Aufgaben</h2></div>
+                <span id="queue-count" class="count-badge">0</span>
+              </div>
+              <div class="queue-filters" role="group" aria-label="Aufgabenfilter">
+                <button class="filter active" type="button" data-filter="mine">Meine</button>
+                <button class="filter" type="button" data-filter="all">Alle</button>
+                <button class="filter" type="button" data-filter="critical">Kritisch</button>
+              </div>
+              <div id="job-queue" class="job-queue" aria-live="polite"></div>
+              <div class="queue-footer"><span><i></i> Echtzeitstatus</span><button id="refresh" type="button">Aktualisieren ↻</button></div>
+            </aside>
+
+            <section id="job-workspace" class="job-workspace" aria-live="polite">
+              <div class="workspace-loading"><span></span><p>Arbeitsplatz wird geladen …</p></div>
+            </section>
+
+            <aside class="context-panel">
+              <section class="context-card next-card">
+                <span class="kicker light">NÄCHSTER SCHRITT</span>
+                <div id="next-step" class="next-step"></div>
+              </section>
+              <section class="context-card">
+                <div class="context-title"><div><span class="kicker">ARBEITSUNTERLAGEN</span><h3>Freigegebene Dokumente</h3></div><span id="dms-state" class="dms-state">DMS</span></div>
+                <div id="mes-documents" class="mes-documents"><p class="muted">Dokumente werden geladen …</p></div>
+              </section>
+              <section class="context-card event-card">
+                <div class="context-title"><div><span class="kicker">LIVE</span><h3>Letzte Meldungen</h3></div></div>
+                <div id="mes-events" class="mes-events"></div>
+              </section>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog id="pause-dialog" class="mes-dialog">
+      <form method="dialog" id="pause-form">
+        <div class="dialog-head"><div><span class="kicker">ARBEIT UNTERBRECHEN</span><h2>Pause buchen</h2></div><button class="icon-button" value="cancel" aria-label="Schließen">×</button></div>
+        <label>Grund<select name="reason" required><option value="Material fehlt">Material fehlt</option><option value="Technische Klärung">Technische Klärung</option><option value="Maschinenstörung">Maschinenstörung</option><option value="Planmäßige Pause">Planmäßige Pause</option></select></label>
+        <label>Bemerkung<textarea name="note" rows="3" placeholder="Optionaler Hinweis für die Schichtübergabe"></textarea></label>
+        <div class="dialog-actions"><button class="button secondary" value="cancel">Abbrechen</button><button class="button warning" type="submit" value="default">Pause buchen</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="time-dialog" class="mes-dialog">
+      <form method="dialog" id="time-form">
+        <div class="dialog-head"><div><span class="kicker">KORREKTURBUCHUNG</span><h2>Zeit nachtragen</h2></div><button class="icon-button" value="cancel" aria-label="Schließen">×</button></div>
+        <div class="form-grid"><label>Minuten<input name="minutes" type="number" min="1" max="720" value="15" required /></label><label>Tätigkeit<select name="activity"><option>Fertigungszeit</option><option>Rüstzeit</option><option>Qualitätsprüfung</option><option>Nacharbeit</option></select></label></div>
+        <label>Begründung<textarea name="note" rows="3" placeholder="Warum wird die Zeit manuell ergänzt?"></textarea></label>
+        <div class="dialog-actions"><button class="button secondary" value="cancel">Abbrechen</button><button class="button primary" type="submit" value="default">Zeit buchen</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="complete-dialog" class="mes-dialog wide-dialog">
+      <form method="dialog" id="complete-form">
+        <div class="dialog-head"><div><span class="kicker">RÜCKMELDUNG</span><h2>Arbeitsgang abschließen</h2></div><button class="icon-button" value="cancel" aria-label="Schließen">×</button></div>
+        <div class="completion-hint"><span>✓</span><p>Pflichtprüfungen aus der Arbeitsanweisung werden mit der Rückmeldung dokumentiert.</p></div>
+        <div class="form-grid"><label>Gutmenge<input id="complete-qty" name="completed_qty" type="number" min="1" required /></label><label>Ausschuss<input name="scrap_qty" type="number" min="0" value="0" required /></label></div>
+        <label id="serial-field">Seriennummern <small>eine Nummer pro Zeile</small><textarea id="complete-serials" name="serial_numbers" rows="5" placeholder="SN-10001"></textarea></label>
+        <label>Bemerkung<textarea name="note" rows="3" placeholder="Ergebnis, Abweichung oder Übergabehinweis"></textarea></label>
+        <div class="dialog-actions"><button class="button secondary" value="cancel">Abbrechen</button><button class="button success" type="submit" value="default">Verbindlich rückmelden</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="issue-dialog" class="mes-dialog">
+      <form method="dialog" id="issue-form">
+        <div class="dialog-head"><div><span class="kicker danger-text">ABWEICHUNG</span><h2>Störung melden</h2></div><button class="icon-button" value="cancel" aria-label="Schließen">×</button></div>
+        <label>Kategorie<select name="category"><option>Materialfehler</option><option>Maschinenstörung</option><option>Qualitätsabweichung</option><option>Dokument unklar</option><option>Sonstiges</option></select></label>
+        <label>Beschreibung<textarea name="description" rows="5" required placeholder="Was ist passiert? Welche Seriennummer oder welches Material ist betroffen?"></textarea></label>
+        <div class="dialog-actions"><button class="button secondary" value="cancel">Abbrechen</button><button class="button danger" type="submit" value="default">Arbeitsgang sperren</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="resolve-dialog" class="mes-dialog">
+      <form method="dialog" id="resolve-form">
+        <div class="dialog-head"><div><span class="kicker">NACHARBEIT</span><h2>Störung beheben</h2></div><button class="icon-button" value="cancel" aria-label="Schließen">×</button></div>
+        <label>Durchgeführte Maßnahme<textarea name="resolution" rows="5" required placeholder="Fehlerursache und Abstellmaßnahme dokumentieren"></textarea></label>
+        <div class="dialog-actions"><button class="button secondary" value="cancel">Abbrechen</button><button class="button success" type="submit" value="default">Wieder freigeben</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="document-dialog" class="document-dialog">
+      <div class="document-dialog-head"><div><span class="kicker">DMS-DOKUMENT</span><h2 id="document-title">Arbeitsunterlage</h2></div><button id="close-document" class="icon-button" aria-label="Dokument schließen">×</button></div>
+      <iframe id="document-frame" title="Dokumentvorschau"></iframe>
+    </dialog>
+
+    <div id="mes-toast" class="mes-toast" role="status"></div>
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/mes.js" defer></script>
+  </body>
+</html>

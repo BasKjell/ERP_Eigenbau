@@ -2,6 +2,18 @@
 testpaths = ["services/platform_api/tests"]
 addopts = "-q"
 
+[tool.coverage.run]
+branch = true
+source = ["app"]
+
+[tool.coverage.report]
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_covered = true
+
 [tool.ruff]
 line-length = 100
 target-version = "py313"

@@ -1,8 +1,10 @@
 import asyncio
+import json
 from pathlib import Path
 from typing import Any
 
 from app.business_tools import list_late_purchase_orders, list_production_orders
+from app import main as main_module
 from app.config import Settings, settings
 from app.dms_mcp_server import mcp as dms_mcp
 from app.erp_read import ERPReadService
@@ -12,6 +14,7 @@ from app.main import app, store
 from app.master_data import AuditLog, MasterDataError, MasterDataService
 from app.mcp_server import mcp
 from app.paperless_client import PaperlessClient
+from app.store import ScenarioStore
 from fastapi.testclient import TestClient
 from mcp import Client
 
@@ -28,6 +31,297 @@ def test_health_and_initial_state() -> None:
     assert state["order"]["id"] == "SO-4711"
     assert state["order"]["product"] == "SCU-100"
     assert len(state["process"]) == 12
+
+
+def test_existing_demo_state_is_upgraded_with_mes_and_hr_without_reset(tmp_path: Path) -> None:
+    seed = json.loads(settings.seed_file.read_text(encoding="utf-8"))
+    existing = json.loads(json.dumps(seed))
+    existing.pop("mes")
+    existing.pop("hr")
+    existing["process"][0]["status"] = "done"
+    seed_file = tmp_path / "seed.json"
+    data_file = tmp_path / "state.json"
+    seed_file.write_text(json.dumps(seed), encoding="utf-8")
+    data_file.write_text(json.dumps(existing), encoding="utf-8")
+
+    upgraded = ScenarioStore(data_file, seed_file).get()
+    assert "mes" in upgraded
+    assert "hr" in upgraded
+    assert upgraded["process"][0]["status"] == "done"
+
+
+def test_hr_page_dashboard_calendar_and_workflows() -> None:
+    page = client.get("/hr")
+    assert page.status_code == 200
+    assert "FLOWHR" in page.text
+    assert 'data-close-dialog="request-dialog"' in page.text
+    assert '<option value="sick">Krankmeldung</option>' in page.text
+
+    dashboard = client.get(
+        "/api/hr/dashboard",
+        params={"employee_id": "DEMO-EMP-006", "selected_date": "2026-11-03"},
+    ).json()
+    assert dashboard["is_manager"] is True
+    assert len(dashboard["team"]) == 6
+    assert dashboard["metrics"]["team_pending_approvals"] == 3
+
+    calendar = client.get(
+        "/api/hr/calendar",
+        params={"employee_id": "DEMO-EMP-006", "month": "2026-11", "scope": "team"},
+    ).json()
+    assert {item["type"] for item in calendar["events"]} >= {
+        "vacation",
+        "absence",
+        "remote_work",
+    }
+
+    request = client.post(
+        "/api/hr/requests",
+        json={
+            "employee_id": "DEMO-EMP-001",
+            "type": "vacation",
+            "start_date": "2026-12-07",
+            "end_date": "2026-12-11",
+            "reason": "Urlaub für API-Test",
+        },
+    )
+    assert request.status_code == 200
+    request_id = request.json()["id"]
+    own_decision = client.post(
+        f"/api/hr/requests/{request_id}/decision",
+        json={"approver_id": "DEMO-EMP-001", "decision": "approved"},
+    )
+    assert own_decision.status_code == 409
+    approval = client.post(
+        f"/api/hr/requests/{request_id}/decision",
+        json={
+            "approver_id": "DEMO-EMP-006",
+            "decision": "approved",
+            "comment": "Vertretung geklärt",
+        },
+    )
+    assert approval.status_code == 200
+    assert approval.json()["status"] == "approved"
+
+
+def test_hr_erp_export_requires_preview_and_is_idempotent() -> None:
+    preview = client.post(
+        "/api/hr/export/erp",
+        json={
+            "employee_id": "DEMO-EMP-001",
+            "date": "2026-11-02",
+            "confirm": False,
+        },
+    )
+    assert preview.status_code == 200
+    assert preview.json()["interval_count"] == 2
+
+    result = client.post(
+        "/api/hr/export/erp",
+        json={
+            "employee_id": "DEMO-EMP-001",
+            "date": "2026-11-02",
+            "confirm": True,
+            "confirmation_token": preview.json()["confirmation_token"],
+        },
+    )
+    assert result.status_code == 200
+    assert result.json()["status"] == "success"
+    repeated = client.post(
+        "/api/hr/export/erp",
+        json={
+            "employee_id": "DEMO-EMP-001",
+            "date": "2026-11-02",
+            "confirm": False,
+        },
+    )
+    assert repeated.json()["status"] == "already_exported"
+
+
+def test_recruiting_and_payroll_api_workflows_render_documents_inline() -> None:
+    page = client.get("/hr")
+    assert 'data-view="recruiting"' in page.text
+    assert 'data-view="payroll"' in page.text
+
+    recruiting = client.get(
+        "/api/hr/recruiting", params={"actor_id": "HR-USER-001"}
+    )
+    assert recruiting.status_code == 200
+    assert recruiting.json()["dms"]["access_group"] == "DMS-Bereich-HR-Recruiting"
+    created = client.post(
+        "/api/hr/recruiting/applications",
+        json={
+            "actor_id": "HR-USER-001",
+            "vacancy_id": "VAC-0001",
+            "candidate_name": "API Bewerber",
+            "email": "api.bewerber@example.invalid",
+            "source": "API-Test",
+        },
+    )
+    assert created.status_code == 200
+    application_id = created.json()["id"]
+    moved = client.post(
+        f"/api/hr/recruiting/applications/{application_id}/stage",
+        json={"actor_id": "HR-USER-001", "stage": "screening", "note": "geprüft"},
+    )
+    assert moved.json()["stage"] == "screening"
+    linked = client.post(
+        f"/api/hr/recruiting/applications/{application_id}/documents/link",
+        json={
+            "actor_id": "HR-USER-001",
+            "document_id": "DOC-HR-CV-001",
+            "document_type": "Lebenslauf",
+        },
+    )
+    assert linked.json()["access_group"] == "DMS-Bereich-HR-Recruiting"
+
+    preview = client.post(
+        "/api/hr/payroll/PAY-2026-10/prepare", json={"actor_id": "HR-USER-001"}
+    )
+    assert preview.status_code == 200
+    wrong_role = client.post(
+        "/api/hr/payroll/PAY-2026-10/approve",
+        json={
+            "actor_id": "HR-USER-001",
+            "confirmation_token": preview.json()["token"],
+        },
+    )
+    assert wrong_role.status_code == 409
+    approval = client.post(
+        "/api/hr/payroll/PAY-2026-10/approve",
+        json={
+            "actor_id": "HR-USER-002",
+            "confirmation_token": preview.json()["token"],
+        },
+    )
+    assert approval.status_code == 200
+    run_id = approval.json()["run"]["id"]
+    delivery = client.post(
+        f"/api/hr/payroll/runs/{run_id}/deliver",
+        json={"actor_id": "HR-USER-002"},
+    )
+    assert delivery.status_code == 200
+    assert delivery.json()["run"]["erp_reference"].startswith("SIM-JE-")
+
+    payslip = client.get(
+        f"/api/hr/payroll/runs/{run_id}/payslips/DEMO-EMP-001",
+        params={"actor_id": "HR-USER-001"},
+    )
+    assert payslip.status_code == 200
+    assert payslip.content.startswith(b"%PDF")
+    assert payslip.headers["content-disposition"].startswith("inline;")
+
+
+def test_mes_workplace_exposes_personal_queue_and_linked_documents() -> None:
+    page = client.get("/mes")
+    assert page.status_code == 200
+    assert "FLOWMES" in page.text
+
+    dashboard = client.get(
+        "/api/mes/dashboard", params={"operator_id": "DEMO-EMP-002"}
+    ).json()
+    assert dashboard["next_job"]["id"] == "JC-2027-0130"
+    assert dashboard["next_job"]["status"] == "ready"
+    assert dashboard["next_job"]["remaining_qty"] == 5
+    assert len(dashboard["next_job"]["route"]) == 5
+
+    documents = client.get("/api/mes/jobs/JC-2027-0130/documents").json()
+    assert {document["id"] for document in documents["linked_documents"]} == {
+        "DOC-WI-100",
+        "DOC-DRW-100",
+        "DOC-CERT-MB",
+    }
+    assert documents["dms_search"]["mode"] in {"simulated", "live", "error"}
+
+
+def test_mes_job_can_start_book_time_pause_and_report_issue() -> None:
+    job_id = "JC-2027-0130"
+    assert client.post(
+        f"/api/mes/jobs/{job_id}/start", json={"operator_id": "DEMO-EMP-001"}
+    ).status_code == 409
+
+    started = client.post(
+        f"/api/mes/jobs/{job_id}/start", json={"operator_id": "DEMO-EMP-002"}
+    ).json()
+    assert started["status"] == "in_progress"
+    assert started["time_logs"][-1]["ended_at"] is None
+
+    paused = client.post(
+        f"/api/mes/jobs/{job_id}/pause",
+        json={
+            "operator_id": "DEMO-EMP-002",
+            "reason": "Technische Klärung",
+            "note": "J4 prüfen",
+        },
+    ).json()
+    assert paused["status"] == "paused"
+    assert paused["time_logs"][-1]["minutes"] >= 1
+
+    booked = client.post(
+        f"/api/mes/jobs/{job_id}/time",
+        json={
+            "operator_id": "DEMO-EMP-002",
+            "minutes": 15,
+            "activity": "Rüstzeit",
+            "note": "ESD-Platz eingerichtet",
+        },
+    ).json()
+    assert booked["booked_minutes"] >= 16
+
+    issue = client.post(
+        f"/api/mes/jobs/{job_id}/issue",
+        json={
+            "operator_id": "DEMO-EMP-002",
+            "category": "Materialfehler",
+            "description": "Steckverbinder beschädigt",
+        },
+    ).json()
+    assert issue["status"] == "blocked"
+    assert issue["issue"]["status"] == "open"
+
+    resolved = client.post(
+        f"/api/mes/jobs/{job_id}/issue/resolve",
+        json={
+            "operator_id": "DEMO-EMP-002",
+            "resolution": "Steckverbinder ersetzt und Sichtprüfung wiederholt",
+        },
+    ).json()
+    assert resolved["status"] == "ready"
+    assert resolved["issue"]["status"] == "resolved"
+
+
+def test_mes_completion_enforces_checklist_and_releases_next_operation() -> None:
+    job_id = "JC-2027-0130"
+    start = {"operator_id": "DEMO-EMP-002"}
+    assert client.post(f"/api/mes/jobs/{job_id}/start", json=start).status_code == 200
+
+    incomplete = {
+        **start,
+        "completed_qty": 5,
+        "scrap_qty": 0,
+        "serial_numbers": [f"SN-{number}" for number in range(10001, 10006)],
+        "checklist": ["esd"],
+        "note": "",
+    }
+    assert client.post(
+        f"/api/mes/jobs/{job_id}/complete", json=incomplete
+    ).status_code == 409
+
+    completed = client.post(
+        f"/api/mes/jobs/{job_id}/complete",
+        json={**incomplete, "checklist": ["esd", "revision", "j4", "visual"]},
+    ).json()
+    assert completed["status"] == "completed"
+    assert completed["completed_qty"] == 5
+
+    next_job = client.get("/api/mes/jobs/JC-2027-0131").json()
+    assert next_job["status"] == "ready"
+
+    reset = client.post(
+        "/api/mes/reset", params={"operator_id": "DEMO-EMP-002"}
+    ).json()
+    assert reset["next_job"]["id"] == "JC-2027-0130"
+    assert reset["next_job"]["status"] == "ready"
 
 
 def test_process_can_advance() -> None:
@@ -71,7 +365,69 @@ def test_all_document_files_are_declared() -> None:
         "DOC-QP-100",
         "DOC-CERT-MB",
         "DOC-ATP-4711",
+        "DOC-HR-CV-001",
+        "DOC-HR-PAY-001",
     }
+
+
+def test_pdf_documents_are_served_inline(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
+    document = store.get()["documents"][0]
+    document_path = tmp_path / document["filename"]
+    document_path.write_bytes(b"%PDF-1.4\n%%EOF\n")
+    monkeypatch.setattr(main_module, "settings", Settings(document_dir=tmp_path))
+
+    response = client.get(f"/api/documents/{document['id']}")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["content-disposition"].startswith("inline;")
+
+
+def test_seed_declares_consistent_commercial_and_workforce_master_data() -> None:
+    scenario = json.loads(settings.seed_file.read_text(encoding="utf-8"))
+
+    assert {row["code"] for row in scenario["commercial_master_data"]["incoterms"]} == {
+        "EXW",
+        "FCA",
+        "DAP",
+    }
+    assert {row["name"] for row in scenario["commercial_master_data"]["payment_terms"]} == {
+        "30 Tage netto",
+        "14 Tage 2 Prozent Skonto",
+    }
+
+    workstations = {row["id"]: row for row in scenario["capacity"]}
+    operations = {row["name"] for row in scenario["capacity"]}
+    employees = scenario["workforce"]["employees"]
+    assert len(workstations) == 5
+    assert len(employees) == 6
+    assert all(row["workstation_type"] and row["hour_rate"] > 0 for row in workstations.values())
+    assert all(
+        (not employee["workstation"])
+        or (
+            employee["workstation"] in workstations
+            and employee["operation"] in operations
+        )
+        for employee in employees
+    )
+
+    projects = {row["id"]: row for row in scenario["projects"]}
+    assert projects["KOM-2027-4711"]["customer"] == "NordMarine Systems GmbH"
+    assert {row["project_type"] for row in projects.values()} == {
+        "Kundenkommission",
+        "Interne Fertigung",
+    }
+
+    warehouses = {row["id"]: row for row in scenario["warehouses"]}
+    assert len(warehouses) == 18
+    assert warehouses["Kleinteilelager - OMD"]["parent"] == "Materiallager - OMD"
+    assert warehouses["Palettenlager - OMD"]["parent"] == "Materiallager - OMD"
+    assert all(
+        row["parent"] == "All Warehouses - OMD" or row["parent"] in warehouses
+        for row in warehouses.values()
+    )
 
 
 def test_read_tools_report_production_and_late_purchase_orders() -> None:
@@ -109,6 +465,10 @@ def test_mcp_server_exposes_approved_read_and_test_data_tools() -> None:
         "list_late_purchase_orders",
         "get_order_status",
         "search_documents",
+        "get_personal_daily_brief",
+        "list_personal_ai_tools",
+        "get_personal_action_context",
+        "get_future_operating_model",
         "list_manufacturing_products",
         "get_bom_details",
         "get_inventory",
@@ -123,7 +483,7 @@ def test_mcp_server_exposes_approved_read_and_test_data_tools() -> None:
     assert result["count"] == 1
 
 
-def test_dms_and_wiki_mcp_servers_expose_read_only_tools() -> None:
+def test_dms_and_wiki_mcp_servers_expose_document_tools() -> None:
     async def inspect_server(server: Any) -> list[str]:
         async with Client(server) as mcp_client:
             tools = await mcp_client.list_tools()
@@ -134,10 +494,14 @@ def test_dms_and_wiki_mcp_servers_expose_read_only_tools() -> None:
         "get_dms_document",
         "list_recent_dms_documents",
         "list_dms_metadata",
+        "search_dms_documents_semantic",
+        "refresh_dms_vector_index",
+        "get_dms_vector_index_status",
     ]
     assert asyncio.run(inspect_server(knowledge_mcp)) == [
         "list_documentation_sections",
         "search_process_documentation",
+        "get_documentation_context",
         "get_documentation_page",
     ]
 
@@ -277,14 +641,24 @@ def test_erp_read_service_covers_boms_inventory_and_stock_traceability() -> None
 def test_knowledge_service_searches_and_restricts_paths(tmp_path: Path) -> None:
     (tmp_path / "processes").mkdir()
     (tmp_path / "processes" / "production.md").write_text(
-        "# Produktion\n\nMaterialverbrauch wird über Stock Entry gebucht.",
+        "# Produktion\n\n## Materialbuchung\n\n"
+        "Materialverbrauch wird über Stock Entry gebucht.",
         encoding="utf-8",
     )
-    service = KnowledgeService(tmp_path)
-    result = service.search("Materialverbrauch")
+    service = KnowledgeService(tmp_path, "http://localhost:8001")
+    result = service.search("Wie funktioniert die Materialverbrauch-Buchung?")
     assert result["results"][0]["path"] == "processes/production.md"
+    assert result["results"][0]["section"] == "Materialbuchung"
+    assert (
+        result["results"][0]["url"]
+        == "http://localhost:8001/processes/production/#materialbuchung"
+    )
+    assert result["answer_instruction"].startswith("Fasse nur")
+    context = service.get_context("Wo wird der Materialverbrauch gebucht?")
+    assert context["context"][0]["url"].endswith("#materialbuchung")
     page = service.get_page("processes/production.md")
     assert "Stock Entry" in page["content"]
+    assert page["url"] == "http://localhost:8001/processes/production/"
 
 
 def test_paperless_client_returns_bounded_metadata(monkeypatch: Any) -> None:
@@ -307,6 +681,7 @@ def test_paperless_client_returns_bounded_metadata(monkeypatch: Any) -> None:
     )
     result = service.search_documents("SCU-100", 5)
     assert result["documents"][0]["snippet"] == "Text SCU-100"
+    assert result["documents"][0]["url"] == "http://localhost:8010/documents/7/details"
     assert "content" not in result["documents"][0]
 
 
@@ -354,8 +729,21 @@ def test_master_data_catalog_covers_people_time_and_manufacturing(tmp_path: Path
     service, _ = master_data_service(tmp_path)
     result = service.list_types()
     names = {entity["entity_type"] for entity in result["entities"]}
-    assert result["count"] >= 20
-    assert {"employees", "timesheets", "workstations", "suppliers", "items"} <= names
+    assert result["count"] >= 22
+    assert {
+        "employees",
+        "timesheets",
+        "workstations",
+        "suppliers",
+        "items",
+        "projects",
+        "project_types",
+        "warehouses",
+        "warehouse_types",
+    } <= names
+    entities = {entity["entity_type"]: entity for entity in result["entities"]}
+    assert "project_type" in entities["projects"]["allowed_fields"]
+    assert "warehouse_type" in entities["warehouses"]["allowed_fields"]
 
 
 def test_create_test_data_requires_preview_then_confirmation(tmp_path: Path) -> None:

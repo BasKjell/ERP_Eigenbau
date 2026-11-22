@@ -1,0 +1,32 @@
+.line-bars {
+  gap: 7px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.cash-column {
+  flex: 0 0 34px;
+}
+
+.cash-column .cash-value {
+  min-height: 14px;
+  font-size: 9px;
+}
+
+.cash-column .cash-bar {
+  width: 70%;
+  min-width: 20px;
+}
+
+.cash-column.forecast .cash-bar {
+  background: linear-gradient(180deg, #89aee5, var(--blue));
+}
+
+.cash-column.current .cash-bar {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--amber);
+}
+
+.cash-column small {
+  font-size: 8px;
+  white-space: nowrap;
+}

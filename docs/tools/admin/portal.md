@@ -27,7 +27,7 @@ Erreichbarkeit. Das ist noch keine fachliche Berechtigungsprüfung.
 ## Konfiguration und Sicherheit
 
 - `AI_MODE`, `OLLAMA_BASE_URL` und `OLLAMA_MODEL` steuern die Assistenz.
-- `ERPNEXT_*` und `PAPERLESS_*` aktivieren Live-Adapter.
+- `ERPNEXT_*`, `PAPERLESS_*` und `REDMINE_*` aktivieren Live-Adapter.
 - Tokens gehören in einen Secret-Store, nie in Git oder Screenshots.
 - Schreibende API-Routen brauchen vor Produktivbetrieb OIDC, Rollenprüfung,
   CSRF-/Origin-Konzept, Rate Limits und Audit-Events.
@@ -42,7 +42,10 @@ End-to-End-Smoke-Test ausführen. Bei beschädigtem Demo-Zustand zuerst
 
 ## Abnahme
 
-- Healthcheck grün und Portal lädt ohne Konsolenfehler.
+- Healthcheck grün, Unternehmensportal und 9-Punkte-Launcher laden ohne
+  Konsolenfehler.
+- FLOWWORK zeigt bei konfiguriertem Redmine den Live-Modus und legt ein
+  Testticket über den Adapter an.
 - Reset, Fortschritt, Fehlerfall und Nacharbeit funktionieren.
 - Dokumente sind abrufbar und Statusantworten enthalten Quellen.
 - Live-Adapter scheitern geschlossen und protokollieren keine Secrets.
