@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from pydantic import BaseModel, Field
 
+from .agent_drafts import DraftService
 from .agents_bff import AgentsHub
 from .assistant import answer_question
 from .auth import AuthError, OidcAuth
@@ -61,6 +62,7 @@ oidc_auth = OidcAuth(settings)
 rm_adapter = RMAdapter(store, work_service)
 agents_hub = AgentsHub()
 dms_service = DmsService(settings)
+agent_drafts = DraftService(store)
 action_counter = Counter("demo_actions_total", "Management demo actions", ["action"])
 
 app = FastAPI(
@@ -71,7 +73,7 @@ app = FastAPI(
     redoc_url=None,
 )
 app.mount("/assets", StaticFiles(directory=APP_DIR / "static"), name="assets")
-app.include_router(build_router(rm_adapter, agents_hub, dms_service))
+app.include_router(build_router(rm_adapter, agents_hub, dms_service, agent_drafts))
 
 
 @app.get("/docs", include_in_schema=False)

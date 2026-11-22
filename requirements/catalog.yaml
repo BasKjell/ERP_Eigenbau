@@ -265,6 +265,33 @@ requirements:
     verification:
       - services/agent_orchestrator/tests/test_adoption.py::test_budget_per_class_and_tech_lead_bonus
 
+  - id: REQ-AGT-018
+    title: FLOWAI liest das Repository ohne Geheimnisse
+    type: System
+    priority: Muss
+    status: review
+    source: Auftrag Bas 2026-11-22 (qwen soll Fragen zum Repository beantworten)
+    text: FLOWAI erhält über einen MCP-Server schreibgeschützten Zugriff auf freigegebene Bereiche des Repositorys mit Pfad- und Zeilenangaben. .env-Dateien, Schlüssel, Git-Interna und nicht freigegebene Bereiche sind gesperrt; Token-Muster werden geschwärzt.
+    acceptance_criteria:
+      - Lesen von .env, Pfadflucht, Symlinks auf Geheimnisse und nicht freigegebene Bereiche wird abgelehnt.
+      - Treffer und Dateiinhalte nennen Pfad und Zeile; Token-Muster erscheinen geschwärzt.
+    verification:
+      - services/platform_api/tests/test_dev_mcp.py::test_secrets_and_unreleased_areas_are_blocked
+      - services/platform_api/tests/test_dev_mcp.py::test_reads_with_line_numbers_and_redacts_secrets
+
+  - id: REQ-AGT-019
+    title: Änderungen aus FLOWAI nur als bestätigter Vorschlag
+    type: System
+    priority: Muss
+    status: review
+    source: Auftrag Bas 2026-11-22 (Changes aus Open WebUI anstoßen); KI-U-00 Stufe A1
+    text: FLOWAI kann einen Fachauftrag nur vorschlagen. Der Vorschlag erscheint in FLOWPORTAL unter „Zu prüfen“ und wird erst eingereicht, wenn eine angemeldete Person ihn prüft und abschickt; sie kann ihn verwerfen.
+    acceptance_criteria:
+      - Interne Endpunkte verlangen das Dienst-Token; ein angelegter Vorschlag ist offen, verlinkt und lässt sich genau einmal verwerfen.
+    verification:
+      - services/platform_api/tests/test_dev_mcp.py::test_internal_endpoints_require_the_service_token
+      - services/platform_api/tests/test_dev_mcp.py::test_flowai_can_only_propose_and_the_person_submits
+
   # --- Landingpage / Agentenzentrale -------------------------------------------------------------
   - id: REQ-PRT-001
     title: Landingpage zeigt, was die Agenten gerade tun

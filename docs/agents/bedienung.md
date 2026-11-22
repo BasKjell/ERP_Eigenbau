@@ -152,3 +152,26 @@ hinterlegt (Werkzeug „Unternehmenswissen“). Beispiele:
 - „Was bedeutet G4 und was passiert nach der Annahme?“
 - „Welche Sicherheitsregeln gelten für die Agenten?“
 - „Was tue ich bei ‚Korrekturlimit erreicht‘?“
+
+## 11. FLOWAI mit Zugriff auf das Repository
+
+Im Chat (Open WebUI, `http://localhost:3001`) unter **＋ → Werkzeuge** „Entwicklung & Repository“
+einschalten (zusätzlich gern „Unternehmenswissen“). Am besten mit `qwen3-coder:30b`.
+
+**Fragen stellen** – FLOWAI liest Code, Doku, Agentenregister und Anforderungen (nur lesend, ohne
+`.env` und Geheimnisse) und nennt Pfad und Zeilen:
+
+- „Welche Dateitypen erlaubt der FLOWDOC-Upload und wo ist das definiert?“
+- „Warum hängt Auftrag A-002?“ (Werkzeug `agent_status`)
+- „Wie prüft der RM-Adapter die Agenten-Tokens?“
+
+**Änderung anstoßen** – FLOWAI ändert nie selbst etwas. Es legt mit `propose_fachauftrag` einen
+**Vorschlag** an und nennt den Link:
+
+1. Im Chat beschreiben, was sich ändern soll („Ich möchte .stl-Dateien hochladen können …“).
+   FLOWAI klärt Erfolgsbeispiel und Änderungsbereich.
+2. Der Vorschlag erscheint in FLOWPORTAL unter **Zu prüfen** („Vorschlag aus FLOWAI“).
+3. **Prüfen und einreichen** öffnet das ausgefüllte Fachauftragsformular; du ergänzt es und reichst
+   es mit deiner FLOWID-Anmeldung ein – oder **verwirfst** ihn.
+4. Danach läuft der Auftrag wie jeder andere durch die Agenten und deine Gates.
+

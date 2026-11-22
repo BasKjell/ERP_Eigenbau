@@ -227,7 +227,7 @@ class OidcAuth:
         # /api/rm/v1/ und /api/agents/sync/ authentifizieren Agenten bzw. den Orchestrator selbst
         # per kurzlebigem Dienst-Token (agent_policy, agents_bff).
         return path in {"/health", "/ready", "/metrics", "/favicon.ico", "/api/reporting/live"} or path.startswith(
-            ("/auth/", "/assets/", "/api/rm/v1/", "/api/agents/sync/")
+            ("/auth/", "/assets/", "/api/rm/v1/", "/api/agents/sync/", "/api/agents/internal/")
         )
 
     def _sign(self, value: dict[str, Any]) -> str:

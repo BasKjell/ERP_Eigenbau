@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -9,6 +10,7 @@ from fastapi import APIRouter, Body, File, Form, Header, HTTPException, Request,
 from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
+from .agent_drafts import DraftError, DraftService, verify_internal
 from .agent_policy import PolicyError
 from .agents_bff import AgentsHub, AgentsRejected, AgentsUnavailable
 from .config import settings
@@ -33,6 +35,20 @@ class AgentRunCreate(BaseModel):
     change_class: Literal["standard", "neue_funktion", "kritisch"] = "neue_funktion"
     scope: str = Field(min_length=2, max_length=40)
     project: str = Field(default="FLOW-PLATFORM", pattern=r"^[A-Z][A-Z0-9-]{2,30}$")
+    draft_id: str = Field(default="", max_length=20, pattern=r"^(VOR-[0-9A-F]{6})?$")
+
+
+class AgentDraftCreate(BaseModel):
+    title: str = Field(min_length=5, max_length=160)
+    goal: str = Field(min_length=10, max_length=2000)
+    user_group: str = Field(default="Fachbereich", min_length=2, max_length=160)
+    behavior: str = Field(min_length=10, max_length=3000)
+    exclusions: str = Field(default="", max_length=1500)
+    success_example: str = Field(default="", max_length=1500)
+    change_class: Literal["standard", "neue_funktion", "kritisch"] = "neue_funktion"
+    scope: str = Field(default="", max_length=40)
+    project: str = Field(default="FLOW-DMS", pattern=r"^[A-Z][A-Z0-9-]{2,30}$")
+    note: str = Field(default="", max_length=1000)
 
 
 class AgentDecision(BaseModel):
@@ -61,7 +77,7 @@ def person(request: Request) -> dict[str, Any] | None:
     return DEMO_PERSON if settings.auth_mode != "oidc" else None
 
 
-def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService) -> APIRouter:
+def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, drafts: DraftService) -> APIRouter:
     router = APIRouter()
 
     # -- Seiten ------------------------------------------------------------------------
@@ -166,7 +182,69 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService) -> A
     def agents_submit(payload: AgentRunCreate, request: Request) -> dict[str, Any]:
         values = payload.model_dump()
         key = values.pop("idempotency_key")
-        return forward("submit", {"idempotency_key": key, "auftrag": values}, request, with_person=True)
+        draft_id = values.pop("draft_id")
+        result = forward("submit", {"idempotency_key": key, "auftrag": values}, request, with_person=True)
+        if draft_id:
+            with contextlib.suppress(KeyError, DraftError):
+                drafts.close(draft_id, "eingereicht", (person(request) or {}).get("name", ""), str(result.get("id", "")))
+        return result
+
+    # -- Vorschläge aus FLOWAI (Open WebUI) --------------------------------------------------
+    def internal(authorization: str) -> None:
+        try:
+            verify_internal(authorization)
+        except PermissionError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from None
+
+    @router.post("/api/agents/internal/drafts", include_in_schema=False, status_code=201)
+    def internal_draft(payload: AgentDraftCreate, authorization: Annotated[str, Header()] = "") -> dict[str, Any]:
+        internal(authorization)
+        values = payload.model_dump()
+        note = values.pop("note")
+        try:
+            draft = drafts.create(values, "FLOWAI (Open WebUI)", note)
+        except DraftError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from None
+        return {**draft, "confirm_url": f"{settings.platform_public_url}/agents?draft={draft['id']}"}
+
+    @router.get("/api/agents/internal/status", include_in_schema=False)
+    def internal_status(authorization: Annotated[str, Header()] = "") -> dict[str, Any]:
+        internal(authorization)
+        overview = agents.overview()
+        try:
+            scopes = agents.registry().get("scopes", {})
+        except AgentsUnavailable:
+            scopes = {}
+        return {
+            "orchestrator_verbunden": overview.get("available", False),
+            "auftraege": [{k: r.get(k) for k in ("auftrag_id", "title", "status", "step_label", "progress",
+                                                  "waiting_for", "branch", "reason")} for r in overview.get("runs", [])],
+            "offene_entscheidungen": [{"titel": d.get("title"), "auftrag": (d.get("auftrag") or {}).get("id"),
+                                       "rolle": d.get("decider"), "vorschau": (d.get("context") or {}).get("preview_url")}
+                                      for d in overview.get("decisions", [])],
+            "offene_vorschlaege": [{"id": d["id"], "title": d["title"]} for d in drafts.open()],
+            "aenderungsbereiche": scopes,
+        }
+
+    @router.get("/api/agents/drafts", tags=["agents"])
+    def list_drafts() -> dict[str, Any]:
+        return {"drafts": drafts.open()}
+
+    @router.get("/api/agents/drafts/{draft_id}", tags=["agents"])
+    def get_draft(draft_id: str) -> dict[str, Any]:
+        try:
+            return drafts.get(draft_id)
+        except KeyError:
+            raise HTTPException(status_code=404, detail="Vorschlag nicht gefunden") from None
+
+    @router.post("/api/agents/drafts/{draft_id}/discard", tags=["agents"])
+    def discard_draft(draft_id: str, request: Request) -> dict[str, Any]:
+        try:
+            return drafts.close(draft_id, "verworfen", (person(request) or {}).get("name", ""))
+        except KeyError:
+            raise HTTPException(status_code=404, detail="Vorschlag nicht gefunden") from None
+        except DraftError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from None
 
     @router.post("/api/agents/decisions/{decision_id}", tags=["agents"])
     def agents_decide(decision_id: str, payload: AgentDecision, request: Request) -> dict[str, Any]:

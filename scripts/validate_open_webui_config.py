@@ -15,6 +15,7 @@ EXPECTED = {
     "erp": "http://platform-mcp:8090/mcp",
     "dms": "http://dms-mcp:8091/mcp",
     "wiki": "http://knowledge-mcp:8092/mcp",
+    "dev": "http://dev-mcp:8093/mcp",
 }
 
 

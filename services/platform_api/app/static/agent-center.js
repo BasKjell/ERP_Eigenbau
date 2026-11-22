@@ -392,6 +392,7 @@
           <label>Änderungsklasse<select name="change_class"><option value="standard">Standardänderung</option><option value="neue_funktion" selected>Neue Funktion</option><option value="kritisch">Hoher Schutzbedarf / neuer Dienst</option></select></label>
           <label>Datenklasse<select name="data_class"><option value="intern" selected>intern</option><option value="oeffentlich">öffentlich</option><option value="vertraulich">vertraulich</option></select></label>
           <label class="wide">Freigegebener Änderungsbereich<select name="scope" required data-scopes><option value="">wird geladen …</option></select></label>
+          <input type="hidden" name="draft_id" value="">
         </div>
         <div class="ac-form-actions"><span class="msg" data-run-msg>Pflichtfelder laut KI-Entwicklungskonzept Teil 08 „Fachauftrag“.</span><span><button class="ac-btn" value="cancel" formnovalidate type="submit">Abbrechen</button> <button class="ac-btn primary" type="button" data-run-submit>Auftrag einreichen</button></span></div>
       </form></dialog>
@@ -402,9 +403,12 @@
       this.$("[data-run-submit]").addEventListener("click", () => this.submitRun());
     }
 
-    async openRunDialog() {
+    async openRunDialog(draft = null) {
       const dialog = this.$("[data-run-dialog]");
       const select = this.$("[data-scopes]");
+      const form = this.$("[data-run-form]");
+      form.reset();
+      form.draft_id.value = draft?.id || "";
       this.$("[data-run-msg]").className = "msg";
       try {
         const response = await fetch("/api/agents/registry", { headers: { Accept: "application/json" } });
@@ -415,6 +419,13 @@
         select.innerHTML = '<option value="">nicht verfügbar</option>';
         this.$("[data-run-msg]").textContent = error.message;
         this.$("[data-run-msg]").className = "msg error";
+      }
+      if (draft) {
+        for (const name of ["title", "goal", "user_group", "behavior", "success_example", "exclusions", "project", "change_class", "data_class"]) {
+          if (draft[name] && form.elements[name]) form.elements[name].value = draft[name];
+        }
+        if (draft.scope && [...select.options].some((o) => o.value === draft.scope)) select.value = draft.scope;
+        this.$("[data-run-msg]").textContent = `Vorschlag ${draft.id} aus FLOWAI${draft.note ? `: ${draft.note}` : ""}. Bitte prüfen, ergänzen und einreichen.`;
       }
       dialog.showModal();
     }
@@ -515,7 +526,14 @@
 
   document.querySelectorAll("[data-agent-center]").forEach((element) => {
     element.agentCenter = new AgentCenter(element);
-    const run = new URLSearchParams(window.location.search).get("run");
+    const params = new URLSearchParams(window.location.search);
+    const run = params.get("run");
     if (run && element.dataset.mode === "full") setTimeout(() => element.agentCenter.openRun(run), 600);
+    const draft = params.get("draft");
+    if (draft && /^VOR-[0-9A-F]{6}$/.test(draft) && element.dataset.mode === "full") {
+      fetch(`/api/agents/drafts/${draft}`).then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (d && d.status === "offen") element.agentCenter.openRunDialog(d);
+      });
+    }
   });
 })();

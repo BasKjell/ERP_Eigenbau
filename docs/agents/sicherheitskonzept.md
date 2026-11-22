@@ -91,6 +91,15 @@ Sitzung (Portal) bzw. der Warteschlange der Plattform-API.
 - Die Vorschau (G4) läuft im Demo-Modus mit Testdaten, nur auf Loopback.
 - Zustand des Orchestrators privat in `~/.flow-agents` (0700).
 
+## 6a. FLOWAI (Open WebUI) und das Repository
+
+Der MCP-Server „Entwicklung & Repository“ (`dev-mcp`) liest nur ausgewählte Bereiche des Repositorys
+(read-only eingehängt, ohne `.env`; gesperrt sind Geheimnis-Dateien, Schlüssel und Git-Interna;
+Token-Muster werden geschwärzt). Er hat **kein Schreibrecht**: Änderungswünsche legt er nur als
+Vorschlag an (Stufe A1), den eine angemeldete Person in FLOWPORTAL prüft und mit ihrer Identität
+einreicht. Die internen Endpunkte der Plattform-API verlangen ein eigenes Dienst-Token
+(`FLOW_DEV_MCP_TOKEN`).
+
 ## 7. Externe Modelle (Claude, ChatGPT/Codex)
 
 Standard sind ausschließlich lokale Modelle über FLOWGATE. Die Abo-Worker für Claude Code und Codex

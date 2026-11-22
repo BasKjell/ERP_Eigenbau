@@ -237,6 +237,38 @@ services:
       retries: 10
     networks: [platform]
 
+  dev-mcp:
+    # FLOWAI-Werkzeuge „Entwicklung & Repository“: Repository nur lesend (ausgewählte Bereiche,
+    # keine .env), Agentenstatus und Fachauftrags-Vorschläge. Keine Schreibrechte am Code.
+    build:
+      context: ./services/platform_api
+      target: base
+    profiles: [full, webui]
+    restart: unless-stopped
+    command: ["python", "-m", "app.dev_mcp_server"]
+    environment:
+      REPOSITORY_DIR: /repo
+      PLATFORM_INTERNAL_URL: http://platform-api:8080
+      FLOW_DEV_MCP_TOKEN: ${FLOW_DEV_MCP_TOKEN:-local-dev-mcp-token-change-before-network-use}
+    ports:
+      - "127.0.0.1:${DEV_MCP_PORT:-8093}:8093"
+    volumes:
+      - ./agents:/repo/agents:ro
+      - ./services:/repo/services:ro
+      - ./docs:/repo/docs:ro
+      - ./requirements:/repo/requirements:ro
+      - ./scripts:/repo/scripts:ro
+      - ./AGENTS.md:/repo/AGENTS.md:ro
+      - ./README.md:/repo/README.md:ro
+      - ./compose.yaml:/repo/compose.yaml:ro
+      - ./Makefile:/repo/Makefile:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8093), 2).close()"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [platform]
+
   docs:
     image: squidfunk/mkdocs-material:9.8.0
     restart: unless-stopped
@@ -913,7 +945,8 @@ services:
         [
           {"url":"http://platform-mcp:8090/mcp","path":"openapi.json","type":"mcp","auth_type":"none","forward_cookies":false,"headers":null,"key":"","config":{"enable":true,"function_name_filter_list":"","access_grants":[]},"info":{"id":"erp","name":"Persönlicher Arbeitsplatz & ERP","description":"Rollenabhängiges Tagesbriefing sowie freigegebene ERP-, Fertigungs-, Bestands- und Testdatenwerkzeuge. Belegreferenzen nennen; Schreibwerkzeuge nur nach Vorschau und ausdrücklicher Bestätigung verwenden."}},
           {"url":"http://dms-mcp:8091/mcp","path":"openapi.json","type":"mcp","auth_type":"none","forward_cookies":false,"headers":null,"key":"","config":{"enable":true,"function_name_filter_list":"","access_grants":[]},"info":{"id":"dms","name":"DMS-Dokumente & Vektorsuche","description":"Freigegebene Paperless-Metadaten, OCR-Treffer und semantische pgvector-Suche. Antworten mit den gelieferten Dokument-URLs verlinken."}},
-          {"url":"http://knowledge-mcp:8092/mcp","path":"openapi.json","type":"mcp","auth_type":"none","forward_cookies":false,"headers":null,"key":"","config":{"enable":true,"function_name_filter_list":"","access_grants":[]},"info":{"id":"wiki","name":"Unternehmenswissen","description":"Prozess-, Benutzer-, Admin- und Schnittstellendokumentation. Antworten ausschließlich aus Treffern zusammenfassen und jede verwendete Wiki-Seite verlinken."}}
+          {"url":"http://knowledge-mcp:8092/mcp","path":"openapi.json","type":"mcp","auth_type":"none","forward_cookies":false,"headers":null,"key":"","config":{"enable":true,"function_name_filter_list":"","access_grants":[]},"info":{"id":"wiki","name":"Unternehmenswissen","description":"Prozess-, Benutzer-, Admin- und Schnittstellendokumentation. Antworten ausschließlich aus Treffern zusammenfassen und jede verwendete Wiki-Seite verlinken."}},
+          {"url":"http://dev-mcp:8093/mcp","path":"openapi.json","type":"mcp","auth_type":"none","forward_cookies":false,"headers":null,"key":"","config":{"enable":true,"function_name_filter_list":"","access_grants":[]},"info":{"id":"dev","name":"Entwicklung & Repository","description":"Code, Doku, Agentenregister und Anforderungen von ERP_Eigenbau nur lesen (Pfad und Zeilen zitieren), Status der Agentenläufe abfragen. Änderungen nie selbst durchführen, sondern mit propose_fachauftrag als Vorschlag anlegen und dem Nutzer den Bestätigungslink nennen."}}
         ]
     volumes:
       - open-webui-data:/app/backend/data
