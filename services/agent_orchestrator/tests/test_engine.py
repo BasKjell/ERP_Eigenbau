@@ -274,6 +274,29 @@ def test_provider_failure_or_invalid_handoff_blocks_safely(make_engine, text) ->
     assert engine.store.latest_artifact(run["id"], "geschaeftsbewertung") is not None
 
 
+def test_unchanged_files_are_not_an_implementation(make_engine) -> None:  # noqa: ANN001
+    import json
+
+    def reply(content: str) -> str:
+        return json.dumps({"status": "fertig", "summary": "Doku aktualisiert", "artifacts": [
+            {"type": "dateiaenderung", "key": "docs/dms.md", "title": "Doku", "content": content}]})
+
+    coder = BrokenProvider(reply("# DMS\n\nBedienhilfe.\n"))  # identisch mit dem Ausgangsstand
+    engine = make_engine(providers={"gateway": coder},
+                         profile_providers={"builder": "simulated", "coder": "gateway", "pruefer": "simulated",
+                                            "assistenz": "simulated", "leitung": "simulated"})
+    run = submit(engine)
+    drive(engine)
+    decision = open_decision(engine, run["id"])
+    assert decision["gate"] == "blockade" and "identisch mit dem Ausgangsstand" in decision["question"]
+    assert coder.calls == 2, "eine Wiederholung mit Hinweis, dann Blockade"
+    assert engine.store.latest_artifact(run["id"], "implementierung") is None, "leerer Stand geht nie in Prüfung"
+    coder.text = reply("# DMS\n\nBedienhilfe mit Sortierung.\n")
+    engine.decide(decision["id"], TECH_LEAD, "annehmen", "erneut versuchen")
+    engine.cycle()
+    assert "+Bedienhilfe mit Sortierung." in engine.store.latest_artifact(run["id"], "implementierung")["content"]["diff"]
+
+
 def test_overview_shows_agents_interactions_and_inbox(make_engine) -> None:  # noqa: ANN001
     engine = make_engine()
     run = submit(engine, change_class="neue_funktion")

@@ -28,7 +28,9 @@ def _git(repo: Path, *args: str, timeout: int = 120) -> str:
     result = subprocess.run(["git", "-c", "core.hooksPath=/dev/null", *args], cwd=repo, capture_output=True,
                             text=True, timeout=timeout, check=False)
     if result.returncode:
-        raise SandboxError(f"git {args[0]} fehlgeschlagen: {result.stderr.strip()[:200]}")
+        command = next((arg for arg in args if not arg.startswith("-") and "=" not in arg), args[0])
+        detail = (result.stderr.strip() or result.stdout.strip())[:200]
+        raise SandboxError(f"git {command} fehlgeschlagen: {detail}")
     return result.stdout.strip()
 
 
@@ -70,6 +72,10 @@ class Adoption:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(data)
             _git(worktree, "add", "--", *contents)
+            staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=worktree, capture_output=True,
+                                    timeout=60, check=False)
+            if staged.returncode == 0:
+                raise SandboxError("abgenommener Stand entspricht dem Ausgangsstand – nichts zu übernehmen")
             message = (f"feat({run['auftrag']['project'].lower()}): {run['title']}\n\n"
                        f"Fachauftrag {run['auftrag_id']} ({run['change_class']}), Lauf {run['id']}.\n"
                        f"Fachabnahme G4 durch {approved_by} für {digest}.\n"

@@ -250,8 +250,10 @@ class Engine:
             self.store.record_usage(run["id"], step.id, agent.role, reply.provider, reply.model,
                                     reply.input_tokens, reply.output_tokens, reply.seconds)
             try:
-                handoff = validate(extract_json(reply.text), role=agent.role, kind=step.kind,
-                                   limit=_limit(agent))
+                candidate = validate(extract_json(reply.text), role=agent.role, kind=step.kind,
+                                     limit=_limit(agent))
+                _require_real_change(agent.role, candidate, context.get("files"))
+                handoff = candidate
                 break
             except ContractError as exc:
                 error = f"Ergebnisvertrag verletzt: {exc}"
@@ -535,8 +537,12 @@ class Engine:
             changes = {item["key"]: item["content"] for item in handoff.artifacts}
             base = self.sandbox.base_commit()
             originals = self.sandbox.originals(base, paths)
+            diff = _diff(originals, changes)
+            if not diff.strip():
+                # Zweite Sperre hinter dem Vertrag: ein leerer Stand darf nie in Prüfung und Abnahme gehen.
+                raise SandboxError("Implementierung ändert nichts gegenüber dem Ausgangsstand")
             refs = self.sandbox.apply(run["id"], base, paths, changes)
-            refs["diff"] = _diff(originals, changes)[:100_000]
+            refs["diff"] = diff[:100_000]
         return refs
 
     def _artifact_content(
@@ -1155,6 +1161,17 @@ UI_SUFFIXES = (".html", ".js", ".css", ".tsx", ".jsx", ".vue")
 def _has_ui(paths: list[str]) -> bool:
     """Klickpfade lohnen nur, wenn der Auftrag Oberflächendateien ändert."""
     return any(str(path).endswith(UI_SUFFIXES) for path in paths)
+
+
+def _require_real_change(role: str, handoff: Handoff, originals: dict[str, str | None] | None) -> None:
+    """Entwicklung muss den Ausgangsstand wirklich ändern; unveränderte Dateien sind kein Ergebnis."""
+    if role != "entwicklung" or handoff.status != "fertig" or originals is None:
+        return
+    changed = [item["key"] for item in handoff.artifacts if item.get("content") != originals.get(item["key"])]
+    if not changed:
+        raise ContractError("alle gelieferten Dateien sind identisch mit dem Ausgangsstand – liefere die "
+                            "geänderten Inhalte (vollständige Datei mit deinen Änderungen) oder status "
+                            "entscheidung_offen mit der Begründung, warum keine Änderung nötig ist")
 
 
 def _limit(agent: Agent) -> int | None:
