@@ -33,7 +33,7 @@ Portal „Orchestrator meldet sich nicht“ und nimmt keine Aufträge an.
 `services/agent_orchestrator/config/orchestrator.yaml`:
 
 - `providers`: Modellprofil → `gateway` (lokale Modelle), `simulated` (regelbasiert, für
-  Vorführung ohne Modelle) oder `codex`/`claude` (gesperrt).
+  Vorführung ohne Modelle) oder `codex`/`claude` (Abo-Worker; Standardweg ist die Eskalation, siehe unten).
 - `scopes`: freigegebene Änderungsbereiche je Fachauftrag.
 - `sandbox`: Prüfimage, Prüfbefehl, erlaubte Pfadpräfixe.
 - `demo_mode: true` erlaubt Demo-Geheimnisse und `platform-admin`-Entscheidungen im Demo-Modus.
@@ -130,5 +130,6 @@ Trading_Ai-Pilot, `docker compose -f <pfad>/orchestrator-pilot-egress.yaml up -d
 
 Grenzen der lokalen Modelle: Der Entwickler schreibt geänderte Dateien vollständig neu (Eingabe bis
 70 000 Zeichen, Ausgabe bis 16 000 Token); die lokalen Prüfer sind nachgiebig. Fachliche
-Richtigkeit sichert deshalb die Fachabnahme in der Vorschau. Für schwierige Aufgaben ist die
-Eskalation zu Claude/Codex vorgesehen (siehe „Abo-Worker“), aber noch nicht freigeschaltet.
+Richtigkeit sichert deshalb die Fachabnahme in der Vorschau. Schwierige Aufgaben eskaliert der
+Orchestrator seit 2026-11-22 zu Codex (Entwicklung) bzw. Claude (Codeprüfung), siehe „Abo-Worker“;
+vertrauliche Aufträge und Aufträge mit Umsetzung „nur lokal“ bleiben immer auf dem Rechner.

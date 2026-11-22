@@ -14,7 +14,7 @@ Unternehmens steht aus [FIRMENANGABE U-12].
 | A.8.31–A.8.33 | OPS.1.1.3, OPS.1.1.6 | Sandbox ohne Netzwerk/Zugangsdaten, Export ohne `.env`, nur synthetische Daten, Produktion außerhalb des Agentennetzes (G5) | REQ-AGT-009/-014 | getestet |
 | A.5.3, A.5.15–A.5.18, A.8.4 | ORP.1, ORP.4 | Rollenregister mit Ablaufdatum, Werkzeugmatrix serverseitig, keine Selbstfreigabe, getrennte Identitäten je Rolle (Token, FLOWGATE-Schlüssel) | REQ-AGT-001/-010/-011 | getestet; Rezertifizierung offen |
 | A.8.8, A.8.13, A.8.15, A.8.16 | OPS.1.1.3, CON.3, OPS.1.1.5 | Audit ohne Inhalte (FLOWWORK `rm_audit`, Orchestrator-Ereignisse), Wiederanlauf mit idempotenten Schritten | REQ-AGT-012/-013, REQ-REQ-001 | teilweise; SBOM-Agent (11) und Restore-Probe offen |
-| A.5.19–A.5.22 | – | Nur lokale Modelle, keine Cloud-Fallbacks; Abo-Worker gesperrt | REQ-AGT-014, `deployment/agentgateway/config.yaml` | implementiert; Modelllizenzen und Herkunft offen |
+| A.5.19–A.5.22 | – | Lokale Modelle als Standard, keine Cloud-Fallbacks im Gateway; Eskalation zu Codex/Claude-Abo-Workern nur für interne Daten, mit Egress-Proxy, getrenntem Login je Anbieter und Familienprüfung | REQ-AGT-014, REQ-AGT-021, `deployment/agentgateway/config.yaml`, `config/orchestrator.yaml` | implementiert; Modelllizenzen und Herkunft offen; Worker teilen Login und Netze mit Trading_Ai |
 | A.8.3, A.5.10 | APP.3.1, CON.6 | DMS: Abfrage im Namen der Person, kein technischer Rückfall im OIDC-Modus | REQ-DOC-002 | getestet |
 
 ## Abnahmeplan (KI-EK Teil 10) – Abdeckung
@@ -65,8 +65,11 @@ Ist, Beleg-ID und Urteil.
    Keycloak-Dienstkonten je Rolle (Token Exchange, KI-EK Teil 09).
 3. Paperless-Remote-User-Header ist im internen Netz fälschbar; Ziel: OIDC-Token-Weitergabe oder
    strikte Netzsegmentierung (nur Plattform-API → Paperless).
-4. Entscheidungsrollen sind vorläufig auf vorhandene Keycloak-Rollen abgebildet.
+4. Entscheidungsrollen haben eigene Realm-Rollen `flow-*` (seit 2026-11-22); offen sind MFA-Pflicht
+   für diese Gruppen und benannte Vertretungen.
 5. Kein Paketspiegel, keine SBOM-Erzeugung; Schwachstellen-Agent inaktiv.
+8. Abo-Worker (Codex/Claude) teilen Anmeldung, Netze und Egress-Proxys mit Trading_Ai; Ziel: eigene
+   Login-Volumes und Netze für FLOW.
 6. Modell-Evaluation (Referenzfälle je Rolle) fehlt; die Live-Läufe zeigen, dass lokale Prüfer
    unpräzise Kriterien durchlassen können – deshalb bleibt G1 bei neuen Funktionen menschlich.
 7. Integration in `main` per GitHub-PR durch Agenten ist nicht aktiv; Änderungen entstehen nur in der

@@ -24,13 +24,24 @@ Schritt eines Laufs dauert deshalb länger.
 
 Anmeldung über FLOWID (Keycloak) im Portal. Was du entscheiden darfst, hängt an deinen Rollen:
 
-| Du bist … | FLOWID-Rolle | Du entscheidest |
-|---|---|---|
-| Product Owner | `requirements-user` oder `work-admin` | Fachaufträge einreichen, G1 (Anforderungen fachlich freigeben), Rückfragen der Agenten |
-| Tech Lead | `work-admin` oder `it-user` | G2/G3 bei kritischen Änderungen, Blockaden, Korrekturlimit, Laufbudget |
-| Key User | `requirements-user` oder `work-user` | G4 Fachabnahme in der Vorschau |
-| Release | `it-user` | G5 Produktionsfreigabe |
-| Geschäftsführung | `management-user` | Grundsatzfragen des Geschäftsführungs-Agenten |
+| Du bist … | FLOWID-Rolle (AD-Gruppe) | Du entscheidest | Demo-Konto |
+|---|---|---|---|
+| Product Owner | `flow-po` (`AD-GG-FLOW-AGENTS-PO`) | Fachaufträge einreichen, G1 (Anforderungen fachlich freigeben), Rückfragen der Agenten | `po.demo` |
+| Tech Lead | `flow-techlead` (`AD-GG-FLOW-AGENTS-TECHLEAD`) | G2/G3 bei kritischen Änderungen, Blockaden, Korrekturlimit, Laufbudget, Läufe pausieren/abbrechen | `techlead.demo` |
+| Key User | `flow-keyuser` (`AD-GG-FLOW-AGENTS-KEYUSER`) | G4 Fachabnahme in der Vorschau | `keyuser.demo` |
+| Release | `flow-release` (`AD-GG-FLOW-AGENTS-RELEASE`) | G5 Produktionsfreigabe | `release.demo` |
+| Informationssicherheit | `flow-isb` (`AD-GG-FLOW-AGENTS-ISB`) | Sicherheitsrückfragen der Agenten, Audit einsehen; keine Gate-Freigabe | `isb.demo` |
+| Geschäftsführung | `flow-gf` (`AD-GG-FLOW-AGENTS-GF`) | Grundsatzfragen des Geschäftsführungs-Agenten | `gf.demo` |
+
+`admin.demo` hat alle Freigaberollen zusätzlich zum Plattform-Vollzugriff – für Einzelvorführungen.
+Die Plattform-Administration (`platform-admin`) enthält die Freigaberollen **nicht**: Betrieb und
+fachliche Freigabe sind getrennt. Alle Demo-Konten nutzen das Demo-Passwort aus
+`scripts/generate_iam_demo.py`.
+
+**Freigabeprozess vorführen:** In getrennten Browserfenstern (oder privaten Fenstern) als
+`po.demo` einen Fachauftrag einreichen und G1 freigeben, als `techlead.demo` G2/G3 und Blockaden
+entscheiden, als `keyuser.demo` die Vorschau abnehmen (G4) und als `release.demo` G5 freigeben.
+Jede andere Person erhält bei fremden Entscheidungen „Keine Befugnis“.
 
 ## 3. Die Agentenzentrale lesen
 

@@ -79,10 +79,37 @@ REALM_ROLES = [
     ("work-user", "FLOWWORK-Projekte, Tickets und Wiki"),
     ("requirements-user", "Anforderungen, Baselines und Traceability"),
     ("work-admin", "FLOWWORK-Administration und Projektvorlagen"),
+    ("flow-po", "FLOWAGENTS Product Owner: Aufträge, G1 Anforderungsbaseline, Rückfragen"),
+    ("flow-techlead", "FLOWAGENTS Tech Lead: G2/G3, Blockaden, Korrekturlimit, Laufsteuerung"),
+    ("flow-keyuser", "FLOWAGENTS Key User: G4 Fachabnahme in der Vorschau"),
+    ("flow-release", "FLOWAGENTS Release-Verantwortung: G5 Produktionsfreigabe"),
+    ("flow-isb", "FLOWAGENTS Informationssicherheit: Sicherheitsrückfragen, Audit, keine Gate-Freigabe"),
+    ("flow-gf", "FLOWAGENTS Geschäftsführung: Rückfragen des Geschäftsführungs-Agenten"),
+]
+
+# Freigaberollen der Agentenentwicklung (KI-EK Teil 05: Gruppen für PO, Tech Lead, Release, ISB und
+# Key User getrennt von Datengruppen). Sie sind bewusst NICHT Teil von platform-admin: Betrieb und
+# fachliche Freigabe bleiben getrennt (Funktionstrennung, ORP.1/ORP.4).
+DECISION_ROLES = ["flow-po", "flow-techlead", "flow-keyuser", "flow-release", "flow-isb", "flow-gf"]
+BASE_ROLE_USER = ["dms-user", "work-user", "requirements-user"]
+
+# Je Freigaberolle eine Demo-Person (für die Vorführung des Freigabeprozesses) und eine Person mit
+# allen Rechten. Sie stehen außerhalb des 50-Personen-Katalogs (kein Desksharing-Arbeitsplatz).
+ROLE_DEMO_USERS = [
+    ("admin.demo", "Alex", "Vollzugriff", "IT",
+     ["platform-admin", *DECISION_ROLES, "it-user", "ai-user", "grafana-viewer", "management-user"]),
+    ("po.demo", "Petra", "Ohm", "Projekte & Engineering", [*BASE_ROLE_USER, "flow-po", "project-user"]),
+    ("techlead.demo", "Tarek", "Lindner", "IT", [*BASE_ROLE_USER, "flow-techlead", "it-user", "ai-user"]),
+    ("keyuser.demo", "Kira", "Unger", "Qualität", [*BASE_ROLE_USER, "flow-keyuser", "quality-user"]),
+    ("release.demo", "Rafael", "Rehm", "IT", [*BASE_ROLE_USER, "flow-release", "it-user"]),
+    ("isb.demo", "Ines", "Sommer", "Informationssicherheit", [*BASE_ROLE_USER, "flow-isb", "grafana-viewer"]),
+    ("gf.demo", "Georg", "Falk", "Geschäftsführung", [*BASE_ROLE_USER, "flow-gf", "management-user"]),
 ]
 
 
 def ad_group_name(role: str) -> str:
+    if role.startswith("flow-"):
+        return f"AD-GG-FLOW-AGENTS-{role.removeprefix('flow-').upper()}"
     return f"AD-GG-FLOW-{role.upper()}"
 
 
@@ -109,6 +136,7 @@ def group_assignments_text(users: list[dict[str, Any]]) -> str:
         for user in users
         for role in user["roles"]
     )
+    rows.extend(f"{username};{role}" for username, *_, roles in ROLE_DEMO_USERS for role in roles)
     return "\n".join(rows) + "\n"
 
 
@@ -345,7 +373,7 @@ def client(
 
 
 def build_realm(users: list[dict[str, Any]]) -> dict[str, Any]:
-    all_roles = [name for name, _ in REALM_ROLES if name != "platform-admin"]
+    all_roles = [name for name, _ in REALM_ROLES if name != "platform-admin" and name not in DECISION_ROLES]
     roles = [
         {"name": name, "description": description}
         for name, description in REALM_ROLES
@@ -414,6 +442,21 @@ def build_realm(users: list[dict[str, Any]]) -> dict[str, Any]:
             # group inheritance in the realm administration console.
             definition["clientRoles"] = {"realm-management": ["realm-admin"]}
         keycloak_users.append(definition)
+    for username, first_name, last_name, department, role_names in ROLE_DEMO_USERS:
+        definition = {
+            "username": username,
+            "enabled": True,
+            "emailVerified": True,
+            "firstName": first_name,
+            "lastName": last_name,
+            "email": f"{username}@example.invalid",
+            "attributes": {"department": [department], "demo_purpose": ["Freigabeprozess FLOWAGENTS"]},
+            "groups": [f"/{ad_group_name(role)}" for role in role_names],
+            "credentials": [{"type": "password", "value": DEMO_USER_PASSWORD, "temporary": False}],
+        }
+        if "platform-admin" in role_names:
+            definition["clientRoles"] = {"realm-management": ["realm-admin"]}
+        keycloak_users.append(definition)
 
     return {
         "realm": REALM,
@@ -475,7 +518,7 @@ def build_scenario_domains(
             "name": "FLOWCORP Active Directory",
             "domain": "flowcorp.example.invalid",
             "mode": "simulated",
-            "users": len(users) + 1,
+            "users": len(users) + 1 + len(ROLE_DEMO_USERS),
             "groups": build_ad_group_catalog(),
             "sync": "AD/LDAP → Keycloak User Federation",
             "authorization_chain": "AD-Sicherheitsgruppe → Keycloak-Gruppe → Realm-Rolle → Anwendung",
@@ -692,7 +735,8 @@ def main() -> int:
     SCENARIO_FILE.write_text(scenario_text, encoding="utf-8")
     GROUP_ASSIGNMENTS_FILE.write_text(assignments_text, encoding="utf-8")
     AD_PARTIAL_IMPORT_FILE.write_text(partial_import_text, encoding="utf-8")
-    print("Generated 50 demo identities, AD group model, 100 mapped desks and Keycloak realm")
+    print(f"Generated 50 demo identities plus {len(ROLE_DEMO_USERS)} approval-role accounts, AD group model, "
+          "100 mapped desks and Keycloak realm")
     return 0
 
 

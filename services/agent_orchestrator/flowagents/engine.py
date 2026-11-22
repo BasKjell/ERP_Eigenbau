@@ -29,6 +29,8 @@ from .store import OPEN_RUN_STATES, Store, digest_of
 from .uicheck import UiCheckError, UiRunner, scenarios_from
 
 ORCHESTRATOR = ("orchestrator", "FLOW-ORCHESTRATOR")
+# Laufsteuerung (Pause, Fortsetzen, Abbrechen): Plattformbetrieb und Tech Lead (KI-EK Teil 02).
+CONTROL_ROLES = frozenset({"platform-admin", "it-user", "work-admin", "flow-techlead"})
 GATE_BACK_TO = {"G1": "anforderungen", "G2": "architektur", "G3": "entwicklung", "G4": "entwicklung"}
 DATA_CLASSES = ("oeffentlich", "intern", "vertraulich")
 MAX_INVALID_ATTEMPTS = 2
@@ -893,8 +895,8 @@ class Engine:
     # =================================================================================
     def control(self, action: str, user: dict[str, Any], *, role: str = "", run_id: str = "") -> None:
         roles = {str(r) for r in user.get("roles", [])}
-        if not roles & {"platform-admin", "it-user", "work-admin"}:
-            raise EngineError("Steuerung nur für Plattformbetrieb")
+        if not roles & CONTROL_ROLES:
+            raise EngineError("Steuerung nur für Plattformbetrieb oder Tech Lead")
         actor = _person(user)["name"]
         with self.lock:
             if action in {"pause", "resume"} and not role:

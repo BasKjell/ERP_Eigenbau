@@ -114,6 +114,39 @@ def test_16_person_without_role_cannot_decide(make_engine) -> None:  # noqa: ANN
     assert engine.store.decision(decision["id"])["status"] == "offen"
 
 
+def test_approval_roles_are_separated_and_match_the_keycloak_realm(make_engine) -> None:  # noqa: ANN001
+    import json
+    from pathlib import Path
+
+    engine = make_engine()
+    run = submit(engine)
+    drive(engine)
+    decision = open_decision(engine, run["id"])
+    admin_without_role = {"username": "platform-admin", "name": "Plattform", "roles": ["platform-admin"]}
+    assert decision["decider"] == "key-user"
+    for person in (PO, TECH_LEAD, RELEASE, MANAGEMENT, admin_without_role):
+        with pytest.raises(EngineError, match="Befugnis"):
+            engine.decide(decision["id"], person, "annehmen")
+    with pytest.raises(EngineError, match="Steuerung"):
+        engine.control("pause", PO)
+
+    realm = json.loads((Path(__file__).resolve().parents[3] / "deployment/keycloak/realm.json").read_text())
+    realm_roles = {role["name"] for role in realm["roles"]["realm"]}
+    group_roles = {f"/{group['name']}": set(group.get("realmRoles", [])) for group in realm["groups"]}
+    users = {user["username"]: set().union(*(group_roles[g] for g in user.get("groups", []))) for user in realm["users"]}
+    demo = {"product-owner": "po.demo", "tech-lead": "techlead.demo", "key-user": "keyuser.demo",
+            "release": "release.demo", "isb": "isb.demo", "geschaeftsfuehrung": "gf.demo"}
+    for name, spec in engine.registry.human_roles.items():
+        assert set(spec["keycloak_roles"]) <= realm_roles, f"{name}: Rolle fehlt im Realm"
+        assert users[demo[name]] & set(spec["keycloak_roles"]), f"{demo[name]} hat die Rolle {name} nicht"
+        others = [u for role, u in demo.items() if role != name]
+        assert not any(users[u] & set(spec["keycloak_roles"]) for u in others), f"{name}: Rolle doppelt vergeben"
+        assert users["admin.demo"] & set(spec["keycloak_roles"]), "admin.demo hat alle Freigaberollen"
+    platform_admin = next(r for r in realm["roles"]["realm"] if r["name"] == "platform-admin")
+    assert not any(r.startswith("flow-") for r in platform_admin["composites"]["realm"]), \
+        "Plattformbetrieb erhält keine Freigaberechte über die Sammelrolle"
+
+
 def test_submit_requires_product_owner_role_and_valid_scope(make_engine) -> None:  # noqa: ANN001
     engine = make_engine()
     with pytest.raises(EngineError, match="Befugnis"):

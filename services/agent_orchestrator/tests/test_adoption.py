@@ -57,7 +57,7 @@ def test_accepted_fachabnahme_becomes_a_local_branch_without_touching_the_checko
     assert git(git_repo, "rev-parse", "HEAD") == head_before, "Checkout bleibt unverändert"
     assert git(git_repo, "status", "--porcelain") == ""
     assert "Änderung A-001" in git(git_repo, "show", f"{result['branch']}:docs/dms.md")
-    assert "Fachabnahme G4 durch Tobias Neumann" in git(git_repo, "log", "-1", "--format=%B", result["branch"])
+    assert "Fachabnahme G4 durch Kira Unger" in git(git_repo, "log", "-1", "--format=%B", result["branch"])
     assert engine.overview()["runs"][0]["branch"] == result["branch"]
 
 

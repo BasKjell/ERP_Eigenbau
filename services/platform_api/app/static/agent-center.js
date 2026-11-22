@@ -361,7 +361,7 @@ class AgentCenter {
       const data = this.data;
       const panel = this.$("[data-detail]");
       if (!data || !id) return;
-      const isAdmin = (data.viewer?.roles || []).some((r) => ["platform-admin", "it-user", "work-admin"].includes(r));
+      const isAdmin = (data.viewer?.roles || []).some((r) => ["platform-admin", "it-user", "work-admin", "flow-techlead"].includes(r));
       if (id.startsWith("mensch:")) {
         const name = id.slice(7);
         const role = data.human_roles?.[name] || {};
@@ -581,7 +581,7 @@ class AgentCenter {
     renderFull(data) {
       const extra = this.$("[data-full-extra]");
       if (!extra) return;
-      const isAdmin = (data.viewer?.roles || []).some((r) => ["platform-admin", "it-user", "work-admin"].includes(r));
+      const isAdmin = (data.viewer?.roles || []).some((r) => ["platform-admin", "it-user", "work-admin", "flow-techlead"].includes(r));
       extra.innerHTML = `
         <section class="ac-panel" style="margin-top:14px"><h3>Agentenregister <span>${esc(data.registry?.id || "")} · ${esc(data.registry?.policy_version || "")}</span></h3>
           <div class="agent-grid">${(data.agents || []).map((a) => `<article class="agent-card ${esc(a.state)}" data-card="${esc(a.role)}"><header><span class="code">${a.role === "geschaeftsfuehrung" ? "GF" : String(a.number).padStart(2, "0")}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip ${a.state === "arbeitet" ? "lime" : a.state === "wartet" ? "amber" : ""}">${esc(STATE_LABEL[a.state] || a.state)}</span></header><p>${esc(a.mission || a.scope || "")}</p><div class="chips"><span class="ac-chip">Stufe ${esc(a.autonomy)}</span><span class="ac-chip">${esc(a.model_profile || "")} ${a.family ? `/ ${esc(a.family)}` : ""}</span><span class="ac-chip">${esc(a.status)}</span></div></article>`).join("")}</div>

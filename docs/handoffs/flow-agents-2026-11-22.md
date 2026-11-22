@@ -95,9 +95,9 @@ und die Vorschau (Demo-Modus mit technischem Paperless-Konto, nur Loopback).
 ## Offene Punkte / nächste Schritte
 
 1. Codex-Review dieses Branches (Klasse K), danach Freigabe durch Bas; erst dann Push und PR.
-2. Eigene Realm-Rollen für PO/Tech Lead/Release/ISB anlegen und Register darauf umstellen.
+2. *(erledigt 2026-11-22)* Eigene Realm-Rollen `flow-*` mit Demo-Konten je Rolle; Register umgestellt.
 3. Modell-Evaluation je Rolle mit Referenzfällen (Test 34); lokale Prüfer sind nachweislich nachgiebig.
 4. RM-Wiederanlauf: Bei Versionskonflikt nach Unterbrechung Objektstatus abfragen statt blockieren.
-5. GitHub-PR-Weg für Entwicklungsergebnisse und Freigabe der Abo-Worker (Trading-Pilot-Infrastruktur
-   ist vorhanden: Image, Egress-Proxys, Login-Volumes).
+5. GitHub-PR-Weg für Entwicklungsergebnisse. *(Abo-Worker sind seit 2026-11-22 freigeschaltet und
+   nutzen die Trading-Pilot-Infrastruktur: Image, Egress-Proxys, Login-Volumes.)*
 6. Offene Abnahmefälle und Sicherheitslücken: `docs/agents/sicherheit.md`.

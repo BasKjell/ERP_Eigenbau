@@ -358,6 +358,108 @@
           "AD-Simulation"
         ]
       }
+    },
+    {
+      "name": "AD-GG-FLOW-AGENTS-PO",
+      "realmRoles": [
+        "flow-po"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-AGENTS-PO,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-AGENTS-TECHLEAD",
+      "realmRoles": [
+        "flow-techlead"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-AGENTS-TECHLEAD,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-AGENTS-KEYUSER",
+      "realmRoles": [
+        "flow-keyuser"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-AGENTS-KEYUSER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-AGENTS-RELEASE",
+      "realmRoles": [
+        "flow-release"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-AGENTS-RELEASE,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-AGENTS-ISB",
+      "realmRoles": [
+        "flow-isb"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-AGENTS-ISB,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-AGENTS-GF",
+      "realmRoles": [
+        "flow-gf"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-AGENTS-GF,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
     }
   ],
   "users": [
@@ -2073,6 +2175,228 @@
         "/AD-GG-FLOW-WORK-USER",
         "/AD-GG-FLOW-IT-USER",
         "/AD-GG-FLOW-AI-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "admin.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Alex",
+      "lastName": "Vollzugriff",
+      "email": "admin.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "IT"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-PLATFORM-ADMIN",
+        "/AD-GG-FLOW-AGENTS-PO",
+        "/AD-GG-FLOW-AGENTS-TECHLEAD",
+        "/AD-GG-FLOW-AGENTS-KEYUSER",
+        "/AD-GG-FLOW-AGENTS-RELEASE",
+        "/AD-GG-FLOW-AGENTS-ISB",
+        "/AD-GG-FLOW-AGENTS-GF",
+        "/AD-GG-FLOW-IT-USER",
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-GRAFANA-VIEWER",
+        "/AD-GG-FLOW-MANAGEMENT-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ],
+      "clientRoles": {
+        "realm-management": [
+          "realm-admin"
+        ]
+      }
+    },
+    {
+      "username": "po.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Petra",
+      "lastName": "Ohm",
+      "email": "po.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "Projekte & Engineering"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-AGENTS-PO",
+        "/AD-GG-FLOW-PROJECT-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "techlead.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Tarek",
+      "lastName": "Lindner",
+      "email": "techlead.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "IT"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-AGENTS-TECHLEAD",
+        "/AD-GG-FLOW-IT-USER",
+        "/AD-GG-FLOW-AI-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "keyuser.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Kira",
+      "lastName": "Unger",
+      "email": "keyuser.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "Qualität"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-AGENTS-KEYUSER",
+        "/AD-GG-FLOW-QUALITY-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "release.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Rafael",
+      "lastName": "Rehm",
+      "email": "release.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "IT"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-AGENTS-RELEASE",
+        "/AD-GG-FLOW-IT-USER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "isb.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Ines",
+      "lastName": "Sommer",
+      "email": "isb.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "Informationssicherheit"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-AGENTS-ISB",
+        "/AD-GG-FLOW-GRAFANA-VIEWER"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "gf.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Georg",
+      "lastName": "Falk",
+      "email": "gf.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "Geschäftsführung"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-AGENTS-GF",
+        "/AD-GG-FLOW-MANAGEMENT-USER"
       ],
       "credentials": [
         {

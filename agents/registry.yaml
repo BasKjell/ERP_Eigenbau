@@ -38,25 +38,30 @@ model_profiles:
     family: gemma
     description: Geschäftsführungs-Sicht auf Nutzen und Abläufe
 
-# Menschliche Entscheidungsrollen und ihre vorläufige Keycloak-Zuordnung.
-# [FIRMENANGABE U-07] Eigene Realm-Rollen (flow-po, flow-techlead, flow-release, flow-isb)
-# sind vor dem Pilot anzulegen; bis dahin gelten die vorhandenen Rollen.
+# Menschliche Entscheidungsrollen und ihre Keycloak-Realm-Rollen (KI-EK Teil 05/09: Gruppen für PO,
+# Tech Lead, Release, ISB und Key User getrennt von Datengruppen). Die Rollen kommen aus den
+# simulierten AD-Gruppen AD-GG-FLOW-AGENTS-* (scripts/generate_iam_demo.py) und sind bewusst nicht
+# Teil von platform-admin. Demo-Personen je Rolle: po.demo, techlead.demo, keyuser.demo,
+# release.demo, isb.demo, gf.demo; admin.demo hat alle Rollen.
 human_roles:
   product-owner:
     label: Product Owner
-    keycloak_roles: [requirements-user, work-admin]
+    keycloak_roles: [flow-po]
   tech-lead:
     label: Tech Lead
-    keycloak_roles: [work-admin, it-user]
+    keycloak_roles: [flow-techlead]
   key-user:
     label: Key User (Fachabnahme)
-    keycloak_roles: [requirements-user, work-user]
+    keycloak_roles: [flow-keyuser]
   release:
     label: Release-Verantwortung
-    keycloak_roles: [it-user]
+    keycloak_roles: [flow-release]
+  isb:
+    label: Informationssicherheit (ISB)
+    keycloak_roles: [flow-isb]
   geschaeftsfuehrung:
     label: Geschäftsführung
-    keycloak_roles: [management-user]
+    keycloak_roles: [flow-gf]
 
 # Werkzeuge (logische Namen aus Teil 08/09). Allgemeine Freigabe-, Merge-, Lösch-,
 # Administrations- und Deploymentwerkzeuge gehören zu keiner Agentenrolle.

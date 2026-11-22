@@ -351,6 +351,19 @@ requirements:
     verification:
       - services/agent_orchestrator/tests/test_engine.py::test_reference_files_are_readable_but_not_writable
 
+  - id: REQ-AGT-024
+    title: Eigene Freigaberollen für den Agenten-Entwicklungsprozess
+    type: System
+    priority: Muss
+    status: review
+    source: KI-EK Teil 05 (Gruppen für PO, Tech Lead, Release, ISB und Key User getrennt von Datengruppen); Auftrag Bas 2026-11-22
+    text: Product Owner, Tech Lead, Key User, Release, ISB und Geschäftsführung haben eigene Keycloak-Realm-Rollen aus eigenen AD-Gruppen. Plattformbetrieb erhält diese Rollen nicht über die Sammelrolle. Für die Vorführung gibt es je Rolle ein Demo-Konto und ein Konto mit allen Rechten.
+    acceptance_criteria:
+      - Jede Entscheidungsrolle im Register verweist auf eine vorhandene Realm-Rolle, die genau ein Rollen-Demokonto und das Vollzugriffskonto besitzen.
+      - Andere Personen und reiner Plattformbetrieb (ohne Demo-Modus) erhalten bei fremden Gates „Keine Befugnis“.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_approval_roles_are_separated_and_match_the_keycloak_realm
+
   # --- Landingpage / Agentenzentrale -------------------------------------------------------------
   - id: REQ-PRT-001
     title: Landingpage zeigt, was die Agenten gerade tun

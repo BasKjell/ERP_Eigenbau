@@ -140,6 +140,6 @@ eigenem Volume, frisches Home im tmpfs, read-only, `--cap-drop ALL`, kein Reposi
 ## 9. Bekannte Lücken (vor Echtdaten zu schließen)
 
 Kein TLS lokal; Demo-Geheimnisse; Abo-Worker teilen Anmeldung und Netze mit Trading_Ai; symmetrische Tokens statt Keycloak-Dienstkonten mit Token
-Exchange; fälschbarer Remote-User-Header im internen Netz; vorläufige Rollenzuordnung; keine
+Exchange; fälschbarer Remote-User-Header im internen Netz; keine
 Modell-Evaluation je Rolle; kein Paketspiegel und keine SBOM; Vorschau nutzt das technische
 Paperless-Konto. Details und Abnahmestatus: [Sicherheit und Nachweise](sicherheit.md).

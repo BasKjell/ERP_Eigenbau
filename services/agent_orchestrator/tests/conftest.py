@@ -16,11 +16,11 @@ from flowagents.store import Store
 REPO_ROOT = Path(__file__).resolve().parents[3]
 AGENTS_DIR = REPO_ROOT / "agents"
 
-PO = {"username": "demo45", "name": "Helena Friedrich", "roles": ["requirements-user", "work-user"]}
-TECH_LEAD = {"username": "demo44", "name": "Alexander Vogel", "roles": ["work-admin"]}
-KEY_USER = {"username": "demo12", "name": "Tobias Neumann", "roles": ["work-user"]}
-RELEASE = {"username": "demo30", "name": "Leon König", "roles": ["it-user"]}
-MANAGEMENT = {"username": "demo40", "name": "Philipp Weiß", "roles": ["management-user"]}
+PO = {"username": "po.demo", "name": "Petra Ohm", "roles": ["flow-po", "requirements-user", "work-user"]}
+TECH_LEAD = {"username": "techlead.demo", "name": "Tarek Lindner", "roles": ["flow-techlead", "it-user"]}
+KEY_USER = {"username": "keyuser.demo", "name": "Kira Unger", "roles": ["flow-keyuser", "work-user"]}
+RELEASE = {"username": "release.demo", "name": "Rafael Rehm", "roles": ["flow-release", "it-user"]}
+MANAGEMENT = {"username": "gf.demo", "name": "Georg Falk", "roles": ["flow-gf", "management-user"]}
 NOBODY = {"username": "demo01", "name": "Anna Schneider", "roles": ["dms-user"]}
 
 

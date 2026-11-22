@@ -32,8 +32,9 @@ den Identity Provider und schützt die Anwendungen noch nicht.
 | Realm | `open-manufacturing` |
 | reguläre Demobenutzer | 50 (`demo01` bis `demo50`) |
 | Plattform-Admin | 1 (`platform-admin`) |
-| Realm-Rollen | 21 |
-| simulierte AD-Sicherheitsgruppen | 21 (`AD-GG-FLOW-*`) |
+| Freigabe-Demokonten FLOWAGENTS | 7 (`po.demo`, `techlead.demo`, `keyuser.demo`, `release.demo`, `isb.demo`, `gf.demo`, `admin.demo`) |
+| Realm-Rollen | 27 (davon 6 Freigaberollen `flow-*`) |
+| simulierte AD-Sicherheitsgruppen | 27 (`AD-GG-FLOW-*`, Freigaberollen `AD-GG-FLOW-AGENTS-*`) |
 | OIDC-Clients | 6 |
 | Sitzung Plattform | standardmäßig 480 Minuten |
 
@@ -42,7 +43,13 @@ enthält alle Fachrollen. Für die lokale Demo ist außerdem die Clientrolle
 `realm-management/realm-admin` zugeordnet, damit das Konto auch den Demo-Realm
 verwalten kann. `demo01` besitzt dieselbe Clientrolle ausschließlich für den
 geführten Management-Rundgang und bezieht den fachlichen Vollzugriff weiterhin
-aus `AD-GG-FLOW-PLATFORM-ADMIN`. Alle 51 Konten erhalten die Keycloak-
+aus `AD-GG-FLOW-PLATFORM-ADMIN`.
+
+Die Freigaberollen der Agentenentwicklung (`flow-po`, `flow-techlead`, `flow-keyuser`,
+`flow-release`, `flow-isb`, `flow-gf`) sind bewusst **nicht** Teil von `platform-admin`
+(Funktionstrennung Betrieb/Freigabe). Je Rolle gibt es ein Demo-Konto; `admin.demo` hat alle
+Freigaberollen, Plattform-Vollzugriff und `realm-admin`. Zuordnung zu den Gates:
+[Bedienung FLOWAGENTS](../../agents/bedienung.md). Alle 58 Konten erhalten die Keycloak-
 Kontorechte `manage-account`, `manage-account-links` und `view-profile`, damit
 das FLOWID-Konto nach der Anmeldung vollständig lädt. Im Livebetrieb werden
 Demo- und IAM-Administration entfernt beziehungsweise auf getrennte,

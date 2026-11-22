@@ -260,8 +260,8 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
     @router.get("/api/agents/audit", tags=["agents"])
     def agents_audit(request: Request) -> dict[str, Any]:
         roles = set((person(request) or {}).get("roles", []))
-        if not roles & {"platform-admin", "it-user", "work-admin"}:
-            raise HTTPException(status_code=403, detail="Audit nur für Plattformbetrieb")
+        if not roles & {"platform-admin", "it-user", "work-admin", "flow-techlead", "flow-isb"}:
+            raise HTTPException(status_code=403, detail="Audit nur für Plattformbetrieb, Tech Lead und ISB")
         return {"entries": rm_adapter.audit(150)}
 
     # -- FLOWDOC (eigene DMS-Oberfläche) ---------------------------------------------------

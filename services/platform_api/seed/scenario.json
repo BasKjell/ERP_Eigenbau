@@ -2145,7 +2145,7 @@
       "name": "FLOWCORP Active Directory",
       "domain": "flowcorp.example.invalid",
       "mode": "simulated",
-      "users": 51,
+      "users": 58,
       "groups": [
         {
           "name": "AD-GG-FLOW-PLATFORM-ADMIN",
@@ -2293,6 +2293,48 @@
           "description": "FLOWWORK-Administration und Projektvorlagen",
           "source": "Active Directory (simuliert)",
           "ad_dn": "CN=AD-GG-FLOW-WORK-ADMIN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-AGENTS-PO",
+          "role": "flow-po",
+          "description": "FLOWAGENTS Product Owner: Aufträge, G1 Anforderungsbaseline, Rückfragen",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-AGENTS-PO,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-AGENTS-TECHLEAD",
+          "role": "flow-techlead",
+          "description": "FLOWAGENTS Tech Lead: G2/G3, Blockaden, Korrekturlimit, Laufsteuerung",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-AGENTS-TECHLEAD,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-AGENTS-KEYUSER",
+          "role": "flow-keyuser",
+          "description": "FLOWAGENTS Key User: G4 Fachabnahme in der Vorschau",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-AGENTS-KEYUSER,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-AGENTS-RELEASE",
+          "role": "flow-release",
+          "description": "FLOWAGENTS Release-Verantwortung: G5 Produktionsfreigabe",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-AGENTS-RELEASE,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-AGENTS-ISB",
+          "role": "flow-isb",
+          "description": "FLOWAGENTS Informationssicherheit: Sicherheitsrückfragen, Audit, keine Gate-Freigabe",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-AGENTS-ISB,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-AGENTS-GF",
+          "role": "flow-gf",
+          "description": "FLOWAGENTS Geschäftsführung: Rückfragen des Geschäftsführungs-Agenten",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-AGENTS-GF,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
         }
       ],
       "sync": "AD/LDAP → Keycloak User Federation",
