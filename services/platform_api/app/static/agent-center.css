@@ -172,3 +172,15 @@
 .ac-task-ref { display:grid; gap:2px; margin:7px 0 2px; padding:8px; border-radius:8px; background:rgba(255,255,255,.06); font-size:11px; }
 .ac-task-ref b { color:#fff; }
 .ac-task-ref small { color:rgba(255,255,255,.6); font-size:9.5px; }
+.ac-links { display:flex; flex-wrap:wrap; gap:6px; }
+.ac-dialog .focus { margin:14px 0; padding:12px; border:2px solid #c8f04a; border-radius:12px; background:#fbfdf2; }
+.ac-dialog .focus h4 { margin-top:0; }
+.ac-dialog .focus-block { margin-bottom:12px; }
+.ac-dialog .focus-block h5 { margin:6px 0; font-size:12px; }
+.ac-dialog .focus-block h5 small { color:#66767a; font-weight:500; }
+.ac-dialog .muted { color:#66767a; font-size:11px; }
+.ac-dialog .linediff { max-height:360px; overflow:auto; padding:8px; border-radius:8px; background:#fff; border:1px solid rgba(16,33,38,.12); font:11px/1.45 ui-monospace,Menlo,monospace; }
+.ac-dialog .dl { white-space:pre-wrap; padding:0 4px; }
+.ac-dialog .dl.add { background:#e3f6d3; color:#1f4d12; }
+.ac-dialog .dl.del { background:#fde2df; color:#8f2c25; text-decoration:line-through; }
+.ac-dialog .dl.same { color:#66767a; }

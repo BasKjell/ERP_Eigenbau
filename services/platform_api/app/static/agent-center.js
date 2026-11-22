@@ -32,7 +32,72 @@
     const url = d?.context?.preview_url || "";
     return /^http:\/\/localhost:\d+(\/[a-z]*)?$/.test(url) ? url : "";
   };
-  window.FlowAgents = { previewUrl, esc };
+  const changeUrl = (d) => `/agents?run=${encodeURIComponent(d.run_id)}&focus=${encodeURIComponent((d.focus || []).join(","))}`;
+  window.FlowAgents = { previewUrl, changeUrl, esc };
+
+  const KIND_LABEL_DE = {
+    auftrag: "Fachauftrag", geschaeftsbewertung: "Bewertung Geschäftsführung", anforderungen: "Anforderungen",
+    anforderungsbefund: "Prüfbefund Anforderungen", baseline: "Arbeitsbaseline", architektur: "Architektur",
+    sicherheitsbefund: "Sicherheitsbefund", plan: "Arbeitspakete", akzeptanztests: "Akzeptanztests",
+    implementierung: "Code-Änderung", integration: "Integrationsprüfung", codebefund: "Codeprüfung",
+    dokumentation: "Dokumentation", nachweise: "Nachweise", prozessbewertung: "Prozessbewertung Geschäftsführung",
+    uebernahme: "Übernahme als Branch",
+  };
+
+  function artifactText(artifact) {
+    const c = artifact.content || {};
+    const lines = [];
+    for (const item of c.items || []) {
+      lines.push(`${item.key || ""} · ${item.title || ""}${item.priority ? ` [${item.priority}]` : ""}`);
+      for (const field of ["text", "decision", "benefit", "staff_effort", "process_fit", "recommendation", "criterion", "negative_case", "state", "evidence"]) {
+        if (item[field]) lines.push(`  ${field}: ${item[field]}`);
+      }
+      for (const ac of item.acceptance_criteria || []) lines.push(`  ${ac}`);
+      for (const listField of ["components", "data_flows", "risks", "covers"]) for (const v of item[listField] || []) lines.push(`  ${listField}: ${v}`);
+      for (const t of item.threats || []) lines.push(`  Bedrohung: ${t.threat} → ${t.control}`);
+      for (const st of item.steps || []) lines.push(`  Schritt: ${st.action} → ${st.expected}`);
+      if (item.content) item.content.split("\n").forEach((l) => lines.push(`  ${l}`));
+    }
+    for (const f of c.findings || []) lines.push(`Befund [${f.severity}] ${f.location}: ${f.impact}`);
+    if (!lines.length) JSON.stringify(c, null, 1).split("\n").forEach((l) => lines.push(l));
+    return lines;
+  }
+
+  function lineDiff(before, after) {
+    const a = before.slice(0, 400), b = after.slice(0, 400);
+    const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i -= 1) for (let j = b.length - 1; j >= 0; j -= 1) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+    const out = [];
+    let i = 0, j = 0;
+    while (i < a.length || j < b.length) {
+      if (i < a.length && j < b.length && a[i] === b[j]) { out.push(["same", a[i]]); i += 1; j += 1; }
+      else if (j < b.length && (i >= a.length || dp[i][j + 1] >= dp[i + 1][j])) { out.push(["add", b[j]]); j += 1; }
+      else { out.push(["del", a[i]]); i += 1; }
+    }
+    return out.map(([kind, line]) => `<div class="dl ${kind}">${kind === "add" ? "+" : kind === "del" ? "−" : "\u00a0"} ${esc(line)}</div>`).join("");
+  }
+
+  function renderFocus(detail, focus) {
+    if (!focus.length) return "";
+    const byKind = new Map();
+    for (const artifact of detail.artifacts) {
+      if (!byKind.has(artifact.kind)) byKind.set(artifact.kind, []);
+      byKind.get(artifact.kind).push(artifact);
+    }
+    const blocks = focus.map((kind) => {
+      const versions = (byKind.get(kind) || []).sort((x, y) => x.version - y.version);
+      if (!versions.length) return `<div class="focus-block"><h5>${esc(KIND_LABEL_DE[kind] || kind)}</h5><p class="muted">Noch kein Ergebnis.</p></div>`;
+      const latest = versions.at(-1);
+      const previous = versions.length > 1 ? versions.at(-2) : null;
+      const change = previous && kind !== "implementierung"
+        ? `<details open class="change"><summary>Änderung v${esc(previous.version)} → v${esc(latest.version)}</summary><div class="linediff">${lineDiff(artifactText(previous), artifactText(latest))}</div></details>`
+        : "";
+      return `<div class="focus-block"><h5>${esc(KIND_LABEL_DE[kind] || kind)} <small>v${esc(latest.version)} · ${esc(latest.digest.slice(0, 19))}</small></h5>${change}<details ${change ? "" : "open"} class="artifact"><summary>Aktueller Stand</summary>${renderArtifact(latest)}</details></div>`;
+    }).join("");
+    return `<section class="focus" data-focus><h4>Zur Entscheidung ansehen</h4>${blocks}</section>`;
+  }
 
   function nodeLabel(id, data) {
     if (id.startsWith("mensch:")) return data.human_roles?.[id.slice(7)]?.label || id.slice(7);
@@ -308,7 +373,7 @@
           <header><b>${esc(d.title)}</b><span class="ac-chip ${d.can ? "lime" : ""}">${esc(data.human_roles?.[d.decider]?.label || d.decider)}</span></header>
           ${d.auftrag ? `<div class="ac-task-ref"><span class="ac-chip lime">${esc(d.auftrag.id)}</span> <b>${esc(d.auftrag.title)}</b><small>beauftragt von ${esc(d.auftrag.requested_by || "–")} · ${esc(d.auftrag.scope_label || "")}</small>${d.gate === "G4" && d.auftrag.success_example ? `<small>Prüfe: ${esc(d.auftrag.success_example)}</small>` : ""}</div>` : ""}
           <p>${esc(d.question)}</p>
-          ${previewUrl(d) ? `<p><a class="ac-btn small primary" href="${esc(previewUrl(d))}" target="_blank" rel="noopener">Ergebnis in der Vorschau ansehen ↗</a> <a class="ac-btn small" href="/agents?run=${encodeURIComponent(d.run_id)}">Auftrag öffnen</a></p>` : ""}
+          <p class="ac-links">${previewUrl(d) ? `<a class="ac-btn small primary" href="${esc(previewUrl(d))}" target="_blank" rel="noopener">Ergebnis in der Vorschau ↗</a> ` : ""}<a class="ac-btn small ${previewUrl(d) ? "" : "primary"}" href="${esc(changeUrl(d))}" data-change="${esc(d.run_id)}" data-focus-kinds="${esc((d.focus || []).join(","))}">Änderung ansehen</a>${d.gate === "G1" ? ' <a class="ac-btn small" href="/work?view=baselines" target="_blank" rel="noopener">Baseline in FLOWWORK ↗</a>' : ""}</p>
           ${d.context?.preview_error ? `<small>Vorschau nicht verfügbar: ${esc(d.context.preview_error)}</small>` : ""}
           <small>${esc(d.run_id)}${d.digest ? ` · gebunden an ${esc(d.digest.slice(0, 23))}…` : ""}</small>
           ${d.can ? `<textarea placeholder="Begründung (bei Ablehnung Pflicht)" maxlength="2000"></textarea>
@@ -316,6 +381,12 @@
             : '<small>Nicht deine Entscheidungsrolle. Die Befugnis prüft der Orchestrator serverseitig.</small>'}
         </article>`).join("");
       box.querySelectorAll("[data-outcome]").forEach((button) => button.addEventListener("click", () => this.decide(button)));
+      if (this.full) {
+        box.querySelectorAll("[data-change]").forEach((link) => link.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.openRun(link.dataset.change, link.dataset.focusKinds.split(",").filter(Boolean));
+        }));
+      }
     }
 
     async decide(button) {
@@ -475,7 +546,7 @@
       target.innerHTML = `<table class="ac-table"><thead><tr><th>Zeit</th><th>Rolle</th><th>Lauf</th><th>Operation</th><th>Objekt</th><th>Entscheidung</th></tr></thead><tbody>${(result.entries || []).map((e) => `<tr class="${e.decision === "abgelehnt" ? "denied" : ""}"><td>${esc(time(e.at))}</td><td>${esc(e.role)}</td><td>${esc(e.run)}</td><td>${esc(e.operation)}</td><td>${esc(e.object)}</td><td>${esc(e.decision)}${e.reason ? ` (${esc(e.reason)})` : ""}</td></tr>`).join("")}</tbody></table>`;
     }
 
-    async openRun(runId) {
+    async openRun(runId, focus = []) {
       const dialog = this.$("[data-run-detail-dialog]");
       const target = this.$("[data-run-detail]");
       target.innerHTML = "<p>Lauf wird geladen …</p>";
@@ -484,7 +555,8 @@
         const response = await fetch(`/api/agents/runs/${encodeURIComponent(runId)}`);
         const detail = await response.json();
         if (!response.ok) throw new Error(detail.detail || "Lauf nicht verfügbar");
-        target.innerHTML = renderRunDetail(detail, this.data);
+        target.innerHTML = renderRunDetail(detail, this.data, focus);
+        target.querySelector("[data-focus]")?.scrollIntoView({ block: "start" });
         target.querySelector("[data-close]")?.addEventListener("click", () => dialog.close());
         target.querySelector("[data-cancel-run]")?.addEventListener("click", async () => { if (window.confirm("Lauf wirklich abbrechen?")) { await this.control("cancel", "", runId); dialog.close(); } });
       } catch (error) {
@@ -512,13 +584,14 @@
     }
   }
 
-  function renderRunDetail(detail, data) {
+  function renderRunDetail(detail, data, focus = []) {
     const run = detail.run;
     const latest = new Map();
     for (const artifact of detail.artifacts) latest.set(artifact.kind, artifact);
     const label = (role) => (data?.agents || []).find((a) => a.role === role)?.name || role || "Orchestrator";
     return `<header class="run-head"><div><span class="ac-chip lime">${esc(run.auftrag_id)}</span> <span class="ac-status ${esc(run.status)}">${esc(run.status)}</span><h3>${esc(run.title)}</h3><p class="lead">${esc(run.id)} · ${esc(run.change_class)} · beauftragt von ${esc(run.requested_by?.name)} · ${esc(run.model_calls)} Modellaufrufe${run.reason ? ` · ${esc(run.reason)}` : ""}</p></div><div><button class="ac-btn" data-close type="button">Schließen</button> ${["aktiv", "wartet", "blockiert", "pausiert"].includes(run.status) ? '<button class="ac-btn danger" data-cancel-run type="button">Lauf abbrechen</button>' : ""}</div></header>
       ${detail.manifest_gaps?.length ? `<p class="gaps">Nachweislücken: ${detail.manifest_gaps.map((g) => esc(g)).join(" · ")}</p>` : ""}
+      ${renderFocus(detail, focus)}
       <h4>Verlauf</h4><ol class="timeline">${detail.steps.map((s) => `<li class="${esc(s.status)}"><b>${esc(label(s.role))}</b> <small>${esc(s.step_id)} · Versuch ${esc(s.attempt)} · ${esc(s.status)} · ${esc(s.provider)} ${esc(s.model)}</small><p>${esc(s.summary || s.error)}</p>${(s.findings || []).length ? `<small>${s.findings.length} Befund(e)</small>` : ""}</li>`).join("")}</ol>
       <h4>Entscheidungen</h4>${detail.decisions.length ? `<ul>${detail.decisions.map((d) => `<li><b>${esc(d.title)}</b> · ${esc(d.status)}${d.decided_by?.name ? ` durch ${esc(d.decided_by.name)}` : ""}${d.comment ? ` – „${esc(d.comment)}“` : ""}</li>`).join("")}</ul>` : "<p>Keine.</p>"}
       <h4>Ergebnisse (jeweils aktuelle Version)</h4>${[...latest.values()].map((a) => `<details class="artifact"><summary><b>${esc(a.kind)}</b> v${esc(a.version)} · ${esc(label(a.role))} · <code>${esc(a.digest.slice(0, 19))}</code></summary>${renderArtifact(a)}</details>`).join("")}`;
@@ -528,7 +601,8 @@
     element.agentCenter = new AgentCenter(element);
     const params = new URLSearchParams(window.location.search);
     const run = params.get("run");
-    if (run && element.dataset.mode === "full") setTimeout(() => element.agentCenter.openRun(run), 600);
+    const focus = (params.get("focus") || "").split(",").filter((k) => /^[a-z]+$/.test(k));
+    if (run && element.dataset.mode === "full") setTimeout(() => element.agentCenter.openRun(run, focus), 600);
     const draft = params.get("draft");
     if (draft && /^VOR-[0-9A-F]{6}$/.test(draft) && element.dataset.mode === "full") {
       fetch(`/api/agents/drafts/${draft}`).then((r) => (r.ok ? r.json() : null)).then((d) => {

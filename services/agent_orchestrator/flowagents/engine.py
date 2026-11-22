@@ -114,6 +114,13 @@ class Engine:
         if scope is None:
             raise EngineError("Änderungsbereich (scope) fehlt oder ist nicht freigegeben")
         checked = list(scope.get("paths", []))
+        if self.sandbox is not None and checked:
+            try:
+                size = sum(len(text or "") for text in self.sandbox.originals(self.sandbox.base_commit(), checked).values())
+            except SandboxError as exc:
+                raise EngineError(f"Änderungsbereich nicht lesbar: {exc}") from None
+            if size > 70_000:
+                raise EngineError("Änderungsbereich ist zu groß für die lokalen Modelle; bitte einen kleineren Bereich wählen")
         project = str(values.get("project") or "FLOW-PLATFORM")
         if not re.fullmatch(r"[A-Z][A-Z0-9-]{2,30}", project):
             raise EngineError("Projektkürzel ungültig")
@@ -937,6 +944,7 @@ class Engine:
         """Entscheidung mit Bezug zum Fachauftrag, damit die Person sofort sieht, worum es geht."""
         summary = {key: decision[key] for key in ("id", "run_id", "step_id", "gate", "decider", "title", "question",
                                                    "digest", "created_at", "context")}
+        summary["focus"] = self._focus(decision)
         run = runs.get(decision["run_id"])
         if run is None:
             try:
@@ -951,6 +959,31 @@ class Engine:
                 "success_example": auftrag.get("success_example", ""), "scope_label": auftrag.get("scope_label", ""),
             }
         return summary
+
+    GATE_FOCUS = {
+        "G1": ["anforderungen", "baseline", "anforderungsbefund"],
+        "G2": ["architektur", "sicherheitsbefund"],
+        "G3": ["implementierung", "integration", "codebefund"],
+        "G4": ["implementierung", "dokumentation", "prozessbewertung", "nachweise"],
+        "G5": ["nachweise", "uebernahme", "implementierung"],
+    }
+
+    def _focus(self, decision: dict[str, Any]) -> list[str]:
+        """Welche Ergebnisse eine Person für diese Entscheidung ansehen muss."""
+        if decision["gate"] in self.GATE_FOCUS:
+            return self.GATE_FOCUS[decision["gate"]]
+        step = next((s for s in self.registry.steps if s.id == decision["step_id"]), None)
+        kinds: list[str] = []
+        if step is not None:
+            if step.produces:
+                kinds.append(step.produces)
+            if step.subject and step.subject != "auftrag":
+                kinds.append(step.subject)
+            back_to = decision["context"].get("back_to") or step.on_rework.get("back_to") or step.on_failure.get("back_to")
+            target = next((s for s in self.registry.steps if s.id == back_to), None)
+            if target is not None and target.produces:
+                kinds.append(target.produces)
+        return list(dict.fromkeys(kinds or ["auftrag"]))
 
     def run_detail(self, run_id: str) -> dict[str, Any]:
         run = self.store.run(run_id)

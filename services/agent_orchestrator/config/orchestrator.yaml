@@ -77,6 +77,96 @@ scopes:
       - services/platform_api/tests/test_dms.py
       - docs/user-guides/flowdoc.md
 
+  flowq-ui:
+    label: FLOWQ Qualität – Oberfläche
+    paths:
+      - services/platform_api/app/static/quality.js
+      - services/platform_api/app/static/quality.html
+      - services/platform_api/app/static/quality.css
+  flowq-backend:
+    label: FLOWQ Qualität – Backend
+    paths:
+      - services/platform_api/app/quality.py
+      - services/platform_api/tests/test_quality.py
+  mes-ui:
+    label: FLOWMES Fertigung – Oberfläche
+    paths:
+      - services/platform_api/app/static/mes.js
+      - services/platform_api/app/static/mes.html
+      - services/platform_api/app/static/mes.css
+  mes-backend:
+    label: FLOWMES Fertigung – Backend
+    paths:
+      - services/platform_api/app/mes.py
+      - services/platform_api/tests/test_store_mes_unit.py
+  hr-ui:
+    label: FLOWHR Personal – Oberfläche (Skript, Stil)
+    paths:
+      - services/platform_api/app/static/hr.js
+      - services/platform_api/app/static/hr.css
+  hr-seite:
+    label: FLOWHR Personal – Seitenaufbau (HTML)
+    paths:
+      - services/platform_api/app/static/hr.html
+  hr-backend:
+    label: FLOWHR Personal – Backend
+    paths:
+      - services/platform_api/app/hr.py
+      - services/platform_api/tests/test_hr.py
+  finance-ui:
+    label: FLOWFIN Finanzen – Oberfläche
+    paths:
+      - services/platform_api/app/static/finance.js
+      - services/platform_api/app/static/finance.html
+      - services/platform_api/app/static/finance-cash.css
+  finance-backend:
+    label: FLOWFIN Finanzen – Backend
+    paths:
+      - services/platform_api/app/finance.py
+      - services/platform_api/tests/test_finance.py
+  desksharing-ui:
+    label: FLOWSPACE Desksharing – Oberfläche
+    paths:
+      - services/platform_api/app/static/desksharing.js
+      - services/platform_api/app/static/desksharing.html
+      - services/platform_api/app/static/desksharing.css
+  desksharing-backend:
+    label: FLOWSPACE Desksharing – Backend
+    paths:
+      - services/platform_api/app/desksharing.py
+      - services/platform_api/tests/test_desksharing.py
+  work-ui:
+    label: FLOWWORK Requirements – Oberfläche (Skript, Stil)
+    paths:
+      - services/platform_api/app/static/work.js
+      - services/platform_api/app/static/work.css
+  work-backend:
+    label: FLOWWORK Requirements – Backend
+    paths:
+      - services/platform_api/app/work.py
+      - services/platform_api/tests/test_work.py
+  portal-ui:
+    label: FLOWPORTAL Startseite – Oberfläche
+    paths:
+      - services/platform_api/app/static/portal.html
+      - services/platform_api/app/static/portal.js
+      - services/platform_api/app/static/portal.css
+  erp-anbindung:
+    label: FLOWERP Anbindung (ERPNext-Lesen und -Werkzeuge)
+    paths:
+      - services/platform_api/app/erp_read.py
+      - services/platform_api/app/erpnext_client.py
+      - services/platform_api/app/business_tools.py
+      - services/platform_api/tests/test_integrations_unit.py
+  doku-anwender:
+    label: Anwenderhilfe FLOWQ, MES, HR, FIN, FLOWSPACE, FLOWWORK
+    paths:
+      - docs/user-guides/quality.md
+      - docs/user-guides/mes.md
+      - docs/user-guides/hr.md
+      - docs/user-guides/finance.md
+      - docs/user-guides/desksharing.md
+      - docs/user-guides/flowwork.md
 # Laufbudget je Änderungsklasse (überschreibt agents/workflow.yaml). Der Tech Lead kann bei
 # „Laufbudget erschöpft“ bewusst je 20 weitere Modellaufrufe freigeben.
 budgets:

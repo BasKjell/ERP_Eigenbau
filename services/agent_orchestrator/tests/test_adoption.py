@@ -49,6 +49,7 @@ def test_accepted_fachabnahme_becomes_a_local_branch_without_touching_the_checko
     task = engine.overview()["decisions"][0]
     assert task["auftrag"]["id"] == "A-001" and task["auftrag"]["title"].startswith("Verfahrensanweisungen")
     assert task["context"]["preview_url"] == "http://localhost:8098/dms"
+    assert task["focus"] == ["implementierung", "dokumentation", "prozessbewertung", "nachweise"]
     engine.decide(decision["id"], KEY_USER, "annehmen", "passt")
     assert preview.stopped >= 1
     result = engine.store.latest_artifact(run["id"], "uebernahme")["content"]
@@ -97,3 +98,16 @@ def test_budget_per_class_and_tech_lead_bonus(make_engine) -> None:  # noqa: ANN
 
 def test_branch_slug_is_ascii() -> None:
     assert slug("Bedienhilfe für die Titel-Sortierung in FLOWDOC") == "bedienhilfe-fur-die-titel-sortierung-in"
+
+
+def test_focus_names_what_to_review_for_each_decision(make_engine) -> None:  # noqa: ANN001
+    engine = make_engine()
+    run = engine.submit(auftrag(change_class="neue_funktion"), PO, "focus-key-0001")
+    drive(engine)
+    g1 = engine.overview()["decisions"][0]
+    assert g1["gate"] == "G1" and g1["focus"] == ["anforderungen", "baseline", "anforderungsbefund"]
+    engine.store.update_run(run["id"], status="blockiert")
+    blocked = engine._decision_summary({**engine.store.decisions(run_id=run["id"])[0], "gate": "korrekturlimit",
+                                         "step_id": "anforderungspruefung", "context": {}}, {})
+    assert blocked["focus"] == ["anforderungsbefund", "anforderungen"]
+
