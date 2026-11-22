@@ -62,6 +62,49 @@ scopes:
     paths:
       - docs/user-guides/company-portal.md
       - docs/agents/index.md
+  dms-backend:
+    label: FLOWDOC Backend (Paperless-Anbindung)
+    paths:
+      - services/platform_api/app/dms.py
+      - services/platform_api/tests/test_dms.py
+  dms-komplett:
+    label: FLOWDOC komplett (Oberfläche, Backend, Tests, Hilfe)
+    paths:
+      - services/platform_api/app/dms.py
+      - services/platform_api/app/static/dms.js
+      - services/platform_api/app/static/dms.css
+      - services/platform_api/app/static/dms.html
+      - services/platform_api/tests/test_dms.py
+      - docs/user-guides/flowdoc.md
+
+# Laufbudget je Änderungsklasse (überschreibt agents/workflow.yaml). Der Tech Lead kann bei
+# „Laufbudget erschöpft“ bewusst je 20 weitere Modellaufrufe freigeben.
+budgets:
+  standard: {max_model_calls: 60, max_output_tokens: 200000}
+  neue_funktion: {max_model_calls: 80, max_output_tokens: 300000}
+  kritisch: {max_model_calls: 100, max_output_tokens: 400000}
+
+# Nach der Fachabnahme (G4) wird genau der abgenommene Stand als lokaler Branch agent/<Auftrag>-…
+# übernommen. push: true veröffentlicht den Branch zusätzlich; Merge bleibt beim Menschen.
+adoption:
+  enabled: true
+  push: false
+  remote: origin
+
+# Vorschau des Kandidaten für die Fachabnahme (G4): zweite Plattform-API im Demo-Modus auf
+# 127.0.0.1:8098, Code read-only aus der Sandbox, Paperless mit dem technischen Demo-Konto.
+preview:
+  enabled: true
+  image: erp-eigenbau-platform-api:latest
+  port: 8098
+  network: erp-eigenbau_platform
+  env:
+    PAPERLESS_BASE_URL: http://paperless-webserver:8000
+    PAPERLESS_PUBLIC_URL: http://localhost:8010
+    PAPERLESS_USERNAME: admin
+    PAPERLESS_PASSWORD: admin-demo-change-me
+    DEMO_DATA_FILE: /data/scenario.json
+    AGENT_REGISTRY_DIR: /app/agents
 
 # Abo-CLIs (aus Trading_Ai übernommen). Gesperrt, bis Isolation unabhängig geprüft und durch
 # Bas freigegeben ist (AGENTS.md §5). Image nur per Digest.

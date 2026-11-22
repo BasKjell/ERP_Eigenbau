@@ -15,8 +15,10 @@ import re
 import threading
 import time
 from collections import Counter
+from pathlib import Path
 from typing import Any
 
+from .adoption import Adoption, Preview
 from .contract import ARTIFACTS, REVIEW_ONLY, ContractError, Handoff, extract_json, validate
 from .providers import AgentReply, AgentRequest, Provider, ProviderError
 from .registry import Agent, Registry, Step
@@ -46,6 +48,9 @@ class Engine:
         *,
         scopes: dict[str, dict[str, Any]] | None = None,
         demo_mode: bool = False,
+        adoption: Adoption | None = None,
+        preview: Preview | None = None,
+        budgets: dict[str, dict[str, int]] | None = None,
     ) -> None:
         missing = {profile for profile in {a.model_profile for a in registry.agents.values()}
                    if profile_providers.get(profile) not in providers}
@@ -55,6 +60,7 @@ class Engine:
         self.profile_providers, self.rm, self.sandbox = profile_providers, rm, sandbox
         self.demo_mode = demo_mode
         self.scopes = scopes or {}
+        self.adoption, self.preview, self.budgets = adoption, preview, budgets or {}
         if self.sandbox is not None:
             for scope in self.scopes.values():
                 for path in scope.get("paths", []):
@@ -176,7 +182,7 @@ class Engine:
             self.store.update_run(run["id"], status="pausiert", reason=f"{agent.name} ist pausiert")
             self.store.event(run["id"], "pausiert", "orchestrator", agent.role, f"{agent.name} ist pausiert; Lauf hält an")
             return
-        budget = self.registry.budget
+        budget = self._budget(run)
         if run["model_calls"] >= budget["max_model_calls"] or run["output_tokens"] >= budget["max_output_tokens"]:
             self._block(run, "Laufbudget erschöpft", "blockade", step_id=step.id)
             return
@@ -236,6 +242,12 @@ class Engine:
                               "findings": len(handoff.findings)})
             self._route(current, step, agent, handoff)
 
+    def _budget(self, run: dict[str, Any]) -> dict[str, int]:
+        """Laufbudget: Ablauf, ggf. je Klasse überschrieben, plus vom Tech Lead gewährte Nachschläge."""
+        base = {**self.registry.budget, **self.budgets.get(run["change_class"], {})}
+        bonus = run["corrections"].get("budget_bonus", {})
+        return {key: int(base[key]) + int(bonus.get(key, 0)) for key in ("max_model_calls", "max_output_tokens")}
+
     def _count(self, run: dict[str, Any], reply: AgentReply) -> dict[str, Any]:
         calls, tokens = run["model_calls"] + 1, run["output_tokens"] + reply.output_tokens
         self.store.update_run(run["id"], model_calls=calls, output_tokens=tokens)
@@ -243,7 +255,7 @@ class Engine:
 
     @staticmethod
     def _max_tokens(agent: Agent) -> int:
-        return 12000 if agent.role == "entwicklung" else 4096
+        return 16000 if agent.role == "entwicklung" else 4096
 
     def _route(self, run: dict[str, Any], step: Step, agent: Agent, handoff: Handoff) -> None:
         if handoff.status == "fertig":
@@ -331,14 +343,15 @@ class Engine:
                 base = self.sandbox.base_commit()
                 context["base_commit"] = base
                 context["files"] = self.sandbox.originals(base, paths)
-                if sum(len(text or "") for text in context["files"].values()) > 60_000:
+                # ~20k Token Eingabe plus 16k Token Ausgabe passen in das 40k-Kontextfenster der lokalen Modelle.
+                if sum(len(text or "") for text in context["files"].values()) > 70_000:
                     raise SandboxError("freigegebene Dateien sind zu groß für den Modellkontext")
         return context
 
     def _render(self, run: dict[str, Any], step: Step, agent: Agent, context: dict[str, Any]) -> str:
         data = json.dumps(context, ensure_ascii=False, indent=1)
-        if len(data) > 90_000:
-            data = data[:90_000] + "\n… (gekürzt)"
+        if len(data) > 110_000:
+            data = data[:110_000] + "\n… (gekürzt)"
         lines = [
             f"Lauf: {run['id']} · Auftrag: {run['auftrag_id']} · Schritt: {step.id} ({step.label})",
             f"Rolle: {agent.id} {agent.name} · Stufe {agent.autonomy} · Klasse: {run['change_class']}",
@@ -524,10 +537,19 @@ class Engine:
             if any(item.get("new_trust_boundary") for item in (architecture or {}).get("content", {}).get("items", [])):
                 human = True
         if human:
+            context = self._gate_context(run, step)
+            if step.id == "G4" and self.preview is not None:
+                implementation = self.store.latest_artifact(run["id"], "implementierung") or {}
+                try:
+                    context["preview_url"] = self.preview.start(Path(str(implementation["refs"]["workspace"])))
+                    self.store.event(run["id"], "vorschau", "integration", "mensch:key-user",
+                                     f"Kandidat zur Abnahme unter {context['preview_url']} gestartet")
+                except (SandboxError, KeyError, OSError) as exc:
+                    context["preview_error"] = str(exc)[:300]
             self.store.update_run(run["id"], status="wartet", reason=f"{step.id} wartet auf {step.decider}")
             self.store.open_decision(run["id"], step.id, step.id, step.decider or "tech-lead",
                                      f"{step.id} · {step.label}", self._gate_question(run, step),
-                                     self._gate_context(run, step), digest, actor=step.id)
+                                     context, digest, actor=step.id)
             return
         self.store.event(run["id"], "gate", step.id, step.id, f"{step.id} im genehmigten Standardweg erfüllt",
                          {"digest": digest})
@@ -659,8 +681,27 @@ class Engine:
             self.store.event(run["id"], "entscheidung", f"mensch:{decision['decider']}", step.role or step.id,
                              f"{person['name']} ({decision['decider']}): {decision['title']} – {outcome}",
                              {"decision": decision_id, "gate": gate})
+            if gate == "G4":
+                if self.preview is not None:
+                    self.preview.stop()
+                if outcome == "annehmen":
+                    self._adopt(run, person, decision["digest"])
             self._apply_decision(run, step, decision, outcome, comment, person)
             return self.store.decision(decision_id)
+
+    def _adopt(self, run: dict[str, Any], person: dict[str, Any], digest: str) -> None:
+        if self.adoption is None:
+            return
+        implementation = self.store.latest_artifact(run["id"], "implementierung") or {}
+        try:
+            result = self.adoption.adopt(run, implementation.get("refs", {}), approved_by=person["name"], digest=digest)
+        except (SandboxError, OSError) as exc:
+            self.store.event(run["id"], "fehler", "orchestrator", "repository", f"Übernahme fehlgeschlagen: {exc}")
+            return
+        self.store.add_artifact(run["id"], "uebernahme", "orchestrator", "G4", result, {})
+        self.store.event(run["id"], "uebernahme", "orchestrator", "repository",
+                         f"Abgenommener Stand als Branch {result['branch']} übernommen ({result['commit'][:10]})",
+                         {"branch": result["branch"], "commit": result["commit"], "pushed": result["pushed"]})
 
     def _apply_decision(
         self, run: dict[str, Any], step: Step, decision: dict[str, Any], outcome: str, comment: str,
@@ -703,6 +744,14 @@ class Engine:
             self._set_corrections(run, counts=counts, pending={back_to: decision["context"].get("findings", [])})
             self.store.update_run(run["id"], status="aktiv", step_index=self.registry.step_index(back_to), reason="")
         else:  # frage, blockade: denselben Schritt mit der Antwort erneut ausführen
+            if gate == "blockade" and run["reason"].startswith("Laufbudget"):
+                current = self.store.run(run["id"])["corrections"]
+                bonus = current.get("budget_bonus", {})
+                current["budget_bonus"] = {"max_model_calls": int(bonus.get("max_model_calls", 0)) + 20,
+                                           "max_output_tokens": int(bonus.get("max_output_tokens", 0)) + 60000}
+                self.store.update_run(run["id"], corrections=current)
+                self.store.event(run["id"], "steuerung", f"mensch:{decision['decider']}", "orchestrator",
+                                 f"Laufbudget um 20 Modellaufrufe erhöht durch {person['name']}")
             if gate == "blockade" and run["registry_digest"] != self.registry.digest:
                 # Ein Mensch stellt den Lauf bewusst auf den aktuellen Regelstand um.
                 self.store.update_run(run["id"], registry_digest=self.registry.digest)
@@ -742,6 +791,9 @@ class Engine:
                 if run["status"] not in OPEN_RUN_STATES:
                     raise EngineError("Lauf ist bereits beendet")
                 self.store.update_run(run_id, status="abgebrochen", reason=f"durch {actor} abgebrochen")
+                if self.preview is not None and any(
+                        d["gate"] == "G4" for d in self.store.decisions(status="offen", run_id=run_id)):
+                    self.preview.stop()
                 for decision in self.store.decisions(status="offen", run_id=run_id):
                     self.store.close_decision(decision["id"], "verfallen", "", _person(user), "Lauf abgebrochen")
                 self.store.event(run_id, "abbruch", "mensch:betrieb", "orchestrator", f"Lauf durch {actor} abgebrochen")
@@ -875,6 +927,8 @@ class Engine:
             "requested_by": run["requested_by"].get("name"), "updated_at": run["updated_at"],
             "created_at": run["created_at"], "model_calls": run["model_calls"],
             "waiting_for": waiting["decider"] if waiting else None,
+            "preview_url": (waiting or {}).get("context", {}).get("preview_url"),
+            "branch": ((self.store.latest_artifact(run["id"], "uebernahme") or {}).get("content") or {}).get("branch"),
         }
 
     @staticmethod

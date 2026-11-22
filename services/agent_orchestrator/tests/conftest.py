@@ -63,7 +63,7 @@ def git_repo(tmp_path: Path) -> Path:
 def make_engine(tmp_path: Path, registry: registry_module.Registry, git_repo: Path):
     def factory(*, check_passes: bool = True, providers: dict[str, Any] | None = None,
                 profile_providers: dict[str, str] | None = None, sandbox: bool = True,
-                demo_mode: bool = False) -> Engine:
+                demo_mode: bool = False, **extra: Any) -> Engine:
         store = Store(tmp_path / "state" / "flow.sqlite")
         command = ["python3", "-c", "import sys; sys.exit(0)" if check_passes else "import sys; print('1 failed'); sys.exit(1)"]
         box = Sandbox(git_repo, tmp_path / "state", base_ref="HEAD", allowed_prefixes=("docs/",),
@@ -71,7 +71,7 @@ def make_engine(tmp_path: Path, registry: registry_module.Registry, git_repo: Pa
         all_providers = {"simulated": SimulatedProvider(), **(providers or {})}
         mapping = profile_providers or {name: "simulated" for name in ("builder", "coder", "pruefer", "assistenz", "leitung")}
         return Engine(registry, store, all_providers, mapping, OfflineRM(), box,
-                      scopes={"doku": {"label": "Doku", "paths": ["docs/dms.md"]}}, demo_mode=demo_mode)
+                      scopes={"doku": {"label": "Doku", "paths": ["docs/dms.md"]}}, demo_mode=demo_mode, **extra)
 
     return factory
 

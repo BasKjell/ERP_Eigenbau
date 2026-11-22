@@ -11,6 +11,7 @@ from typing import Any
 import yaml
 
 from . import registry as registry_module
+from .adoption import Adoption, Preview
 from .container import ContainerProvider, validate_settings
 from .engine import Engine
 from .providers import GatewayProvider, Provider, SimulatedProvider
@@ -134,8 +135,20 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
         sandbox = Sandbox(repository, state, base_ref=str(sandbox_settings.get("base_ref", "HEAD")),
                           allowed_prefixes=tuple(sandbox_settings.get("allowed_prefixes") or ()), checker=checker)
 
+    adoption = preview = None
+    adopt = settings.get("adoption") or {}
+    if sandbox is not None and adopt.get("enabled", False):
+        adoption = Adoption(sandbox.repo, state, allowed_prefixes=sandbox.allowed_prefixes,
+                            push=bool(adopt.get("push", False)), remote=str(adopt.get("remote", "origin")))
+    preview_settings = settings.get("preview") or {}
+    if sandbox is not None and preview_settings.get("enabled", False):
+        preview = Preview(image=str(preview_settings["image"]), port=int(preview_settings.get("port", 8098)),
+                          network=str(preview_settings["network"]),
+                          env={str(k): str(v) for k, v in (preview_settings.get("env") or {}).items()})
+    budgets = {name: {k: int(v) for k, v in spec.items()} for name, spec in (settings.get("budgets") or {}).items()}
     engine = Engine(registry, store, providers, profile_providers, rm, sandbox,
-                    scopes=dict(settings.get("scopes") or {}), demo_mode=bool(settings.get("demo_mode")))
+                    scopes=dict(settings.get("scopes") or {}), demo_mode=bool(settings.get("demo_mode")),
+                    adoption=adoption, preview=preview, budgets=budgets)
     listen = str(settings.get("listen", "127.0.0.1:8095"))
     host, _, port = listen.rpartition(":")
     api_secret = _secret(settings, "api_secret_env", f"local-agents-api-secret-{DEMO_SECRET_HINT}")

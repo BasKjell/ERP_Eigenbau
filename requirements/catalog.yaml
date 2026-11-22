@@ -226,6 +226,45 @@ requirements:
       - services/agent_orchestrator/tests/test_boundaries.py::test_cli_worker_settings_fail_closed
       - services/agent_orchestrator/tests/test_boundaries.py::test_cli_worker_container_is_isolated
 
+  - id: REQ-AGT-015
+    title: Abgenommener Stand wird als Branch übernommen
+    type: System
+    priority: Muss
+    status: review
+    source: Auftrag Bas 2026-11-22 (Entwicklungsumgebung mit lokaler KI); KI-EK Teil 02 G3/G4
+    text: Nach angenommener Fachabnahme übernimmt ein deterministischer Dienst genau den abgenommenen Digest als lokalen Branch agent/<Auftrag>-… mit einem Commit. Der Checkout der Person bleibt unverändert; Merge und Push entscheidet ein Mensch.
+    acceptance_criteria:
+      - Nach G4 „annehmen“ existiert der Branch mit der Änderung, HEAD und Arbeitsbaum des Checkouts sind unverändert.
+      - Ein manipulierter oder anderer Kandidat wird nicht übernommen; eine Ablehnung erzeugt keinen Branch.
+    verification:
+      - services/agent_orchestrator/tests/test_adoption.py::test_accepted_fachabnahme_becomes_a_local_branch_without_touching_the_checkout
+      - services/agent_orchestrator/tests/test_adoption.py::test_rejected_fachabnahme_creates_no_branch
+      - services/agent_orchestrator/tests/test_adoption.py::test_adoption_refuses_a_tampered_or_foreign_candidate
+
+  - id: REQ-AGT-016
+    title: Vorschau des Kandidaten für die Fachabnahme
+    type: Software
+    priority: Muss
+    status: review
+    source: Auftrag Bas 2026-11-22; KI-EK Teil 02 G4 „in Staging prüfen“
+    text: Vor G4 startet der Kandidat als zweite Plattform-API auf Loopback; die Entscheidungs-Inbox verlinkt die Vorschau. Nach der Entscheidung wird sie beendet.
+    acceptance_criteria:
+      - Die G4-Entscheidung enthält die Vorschau-Adresse; nach der Entscheidung ist die Vorschau gestoppt.
+    verification:
+      - services/agent_orchestrator/tests/test_adoption.py::test_accepted_fachabnahme_becomes_a_local_branch_without_touching_the_checkout
+
+  - id: REQ-AGT-017
+    title: Laufbudget je Klasse mit bewusstem Nachschlag
+    type: System
+    priority: Soll
+    status: review
+    source: Live-Lauf A-001 (Budget nach zwei G4-Ablehnungen erschöpft)
+    text: Das Laufbudget ist je Änderungsklasse einstellbar. Bei erschöpftem Budget kann der Tech Lead bewusst 20 weitere Modellaufrufe freigeben; das wird protokolliert.
+    acceptance_criteria:
+      - Nach Freigabe durch den Tech Lead erhöht sich das Budget um 20 Aufrufe und der Lauf setzt fort.
+    verification:
+      - services/agent_orchestrator/tests/test_adoption.py::test_budget_per_class_and_tech_lead_bonus
+
   # --- Landingpage / Agentenzentrale -------------------------------------------------------------
   - id: REQ-PRT-001
     title: Landingpage zeigt, was die Agenten gerade tun

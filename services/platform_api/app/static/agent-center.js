@@ -298,6 +298,8 @@
         <article class="ac-decision" data-decision="${esc(d.id)}">
           <header><b>${esc(d.title)}</b><span class="ac-chip ${d.can ? "lime" : ""}">${esc(data.human_roles?.[d.decider]?.label || d.decider)}</span></header>
           <p>${esc(d.question)}</p>
+          ${d.context?.preview_url && /^http:\/\/localhost:\d+$/.test(d.context.preview_url) ? `<p><a class="ac-btn small" href="${esc(d.context.preview_url)}/dms" target="_blank" rel="noopener">Kandidat in der Vorschau prüfen ↗</a></p>` : ""}
+          ${d.context?.preview_error ? `<small>Vorschau nicht verfügbar: ${esc(d.context.preview_error)}</small>` : ""}
           <small>${esc(d.run_id)}${d.digest ? ` · gebunden an ${esc(d.digest.slice(0, 23))}…` : ""}</small>
           ${d.can ? `<textarea placeholder="Begründung (bei Ablehnung Pflicht)" maxlength="2000"></textarea>
           <div class="row"><button class="ac-btn small primary" type="button" data-outcome="annehmen">Annehmen</button><button class="ac-btn small danger" type="button" data-outcome="ablehnen">Ablehnen</button><a class="ac-btn small" href="/agents?run=${encodeURIComponent(d.run_id)}">Details</a></div><div class="error" data-error></div>`
@@ -335,7 +337,7 @@
       this.$("[data-runs]").innerHTML = runs.length ? runs.map((run) => `
         <button class="ac-run" type="button" data-run="${esc(run.id)}">
           <span><span class="key">${esc(run.auftrag_id)}</span><br><small>${esc(run.change_class.replace("_", " "))}</small></span>
-          <span><b>${esc(run.title)}</b><small>${esc(run.step_label)}${run.waiting_for ? ` · wartet auf ${esc(data.human_roles?.[run.waiting_for]?.label || run.waiting_for)}` : ""}${run.reason && run.status === "blockiert" ? ` · ${esc(run.reason)}` : ""}</small></span>
+          <span><b>${esc(run.title)}</b><small>${esc(run.step_label)}${run.waiting_for ? ` · wartet auf ${esc(data.human_roles?.[run.waiting_for]?.label || run.waiting_for)}` : ""}${run.reason && run.status === "blockiert" ? ` · ${esc(run.reason)}` : ""}${run.branch ? ` · Branch ${esc(run.branch)}` : ""}</small></span>
           <span class="ac-progress-cell"><div class="ac-progress"><i style="width:${Number(run.progress) || 0}%"></i></div><small>${Number(run.progress) || 0} % · ${esc(run.model_calls)} Modellaufrufe</small></span>
           <span class="ac-status ${esc(run.status)}">${esc(run.status)}</span>
         </button>`).join("") : "";
