@@ -53,6 +53,7 @@ ARTIFACTS: dict[str, tuple[str, dict[str, type], dict[str, type], int]] = {
     ),
 }
 REVIEW_ONLY = frozenset({"anforderungspruefung", "sicherheit", "codepruefung"})
+RECOMMENDATION_STATUS = {"weiter": "fertig", "mit Auflagen": "fertig", "anhalten": "nacharbeit"}
 
 
 class ContractError(ValueError):
@@ -143,8 +144,14 @@ def validate(raw: dict[str, Any], *, role: str, kind: str, limit: int | None = N
     if unknown:
         raise ContractError(f"unbekannte Felder in der Übergabe: {sorted(unknown)}")
     status = raw.get("status")
+    if role == "geschaeftsfuehrung" and status in RECOMMENDATION_STATUS:
+        # Die Rollenanweisung definiert diese Zuordnung selbst (weiter/mit Auflagen = fertig,
+        # anhalten = nacharbeit); lokale Modelle setzen die Empfehlung oft in das Statusfeld.
+        status = RECOMMENDATION_STATUS[status]
     if status not in STATUSES:
-        raise ContractError(f"status muss einer von {', '.join(STATUSES)} sein")
+        hint = (" – deine Empfehlung (weiter, mit Auflagen, anhalten) gehört in artifacts[].recommendation"
+                if role == "geschaeftsfuehrung" else "")
+        raise ContractError(f"status muss einer von {', '.join(STATUSES)} sein{hint}")
     summary = _text(raw.get("summary"), "summary", 2000)
     artifacts_raw = raw.get("artifacts", [])
     findings_raw = raw.get("findings", [])

@@ -138,3 +138,22 @@ def test_limits_from_registry_are_enforced() -> None:
     artifacts = [requirement(key=f"R{i}") for i in range(3)]
     with pytest.raises(ContractError, match="höchstens 2"):
         validate({"status": "fertig", "summary": "x", "artifacts": artifacts}, role="anforderungen", kind="create", limit=2)
+
+
+def bewertung(recommendation: str = "mit Auflagen") -> dict:
+    return {"type": "bewertung", "key": "GF-1", "title": "t", "benefit": "b", "staff_effort": "s",
+            "process_fit": "p", "risks": [], "recommendation": recommendation}
+
+
+def test_ceo_recommendation_in_status_is_mapped_as_defined_in_the_prompt() -> None:
+    ok = validate({"status": "mit Auflagen", "summary": "x", "artifacts": [bewertung()]},
+                  role="geschaeftsfuehrung", kind="review")
+    assert ok.status == "fertig"
+    stop = {"status": "anhalten", "summary": "x", "artifacts": [bewertung("anhalten")],
+            "findings": [{"severity": "mittel", "location": "A-1", "impact": "Nutzen unklar"}]}
+    assert validate(stop, role="geschaeftsfuehrung", kind="review").status == "nacharbeit"
+    with pytest.raises(ContractError, match="recommendation"):
+        validate({"status": "gut", "summary": "x", "artifacts": [bewertung()]}, role="geschaeftsfuehrung", kind="review")
+    with pytest.raises(ContractError, match="status muss"):
+        validate({"status": "mit Auflagen", "summary": "x", "artifacts": []}, role="anforderungspruefung", kind="review")
+

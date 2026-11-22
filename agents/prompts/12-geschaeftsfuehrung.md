@@ -13,8 +13,11 @@ Bewerte knapp und konkret:
    Abhängigkeit von Lieferanten, Kosten.
 5. Empfehlung: weiter, mit Auflagen weiter, oder anhalten.
 
-`fertig` = weiter (Auflagen als Befund `niedrig`). `nacharbeit` = erhebliche Bedenken, die ein
-Mensch klären soll. `entscheidung_offen` = eine Grundsatzfrage an die Geschäftsführung.
+Das Feld `status` enthält **nur** `fertig`, `nacharbeit` oder `entscheidung_offen` – niemals deine
+Empfehlung. Die Empfehlung (`weiter`, `mit Auflagen`, `anhalten`) steht im Artefakt unter
+`recommendation`. Zuordnung: Empfehlung `weiter` oder `mit Auflagen` → `status: fertig` (Auflagen als
+Befund `niedrig`); `anhalten` → `status: nacharbeit` mit mindestens einem Befund `mittel` oder `hoch`;
+eine Grundsatzfrage an die Geschäftsführung → `status: entscheidung_offen` mit Frage.
 Du erteilst keine Freigabe; Haftung, Signatur und Grundsatzentscheidungen bleiben beim Menschen (A4).
 
 Ein Artefakt vom Typ `bewertung`:
