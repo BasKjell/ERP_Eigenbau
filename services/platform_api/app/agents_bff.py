@@ -131,7 +131,12 @@ class AgentsHub:
             self._expire()
             self._actions[action.id] = action
         if not action.done.wait(wait):
-            raise AgentsUnavailable("Orchestrator hat die Aktion noch nicht bestätigt; bitte Status prüfen")
+            with self._lock:
+                if action.leased_until == 0.0 and action.result is None:
+                    # Noch nicht abgeholt: zurückziehen, damit sie nicht später unbemerkt ausgeführt wird.
+                    self._actions.pop(action.id, None)
+                    raise AgentsUnavailable("Orchestrator hat die Aktion nicht abgeholt; sie wurde verworfen")
+            raise AgentsUnavailable("Orchestrator bearbeitet die Aktion noch; bitte Status in der Agentenzentrale prüfen")
         result = action.result or {"status": 500, "body": {}}
         if result["status"] >= 400:
             body = result.get("body") or {}

@@ -279,3 +279,11 @@ def test_agents_page_and_dms_page_are_served() -> None:
     assert dms.status_code == 200 and "FLOWDOC" in dms.text
     portal = client.get("/")
     assert 'id="agent-center"' in portal.text
+
+
+def test_unclaimed_actions_are_withdrawn_after_timeout(fresh_hub) -> None:  # noqa: ANN001
+    publish_state()
+    with pytest.raises(Exception, match="verworfen"):
+        fresh_hub.request("control", {"action": "pause"}, {"username": "demo49", "roles": ["it-user"]}, wait=0.05)
+    assert fresh_hub.pending() == []
+
