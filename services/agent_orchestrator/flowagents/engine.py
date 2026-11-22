@@ -214,6 +214,8 @@ class Engine:
                 error = str(exc)
                 break
             run = self._count(run, reply)
+            self.store.record_usage(run["id"], step.id, agent.role, reply.provider, reply.model,
+                                    reply.input_tokens, reply.output_tokens, reply.seconds)
             try:
                 handoff = validate(extract_json(reply.text), role=agent.role, kind=step.kind,
                                    limit=_limit(agent))
@@ -914,6 +916,7 @@ class Engine:
                 {"from": a, "to": b, "kind": kind, "count": count, "last_at": last_seen[(a, b, kind)]}
                 for (a, b, kind), count in edges.most_common(60)
             ],
+            "usage": {"totals": self.store.usage_totals(), "by_run": self.store.usage_by_run()},
             "metrics": {
                 "runs_open": sum(1 for r in runs if r["status"] in OPEN_RUN_STATES),
                 "runs_done": sum(1 for r in runs if r["status"] == "abgeschlossen"),

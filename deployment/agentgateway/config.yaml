@@ -112,7 +112,8 @@ llm:
   - name: flow-coder
     provider: ollama
     params:
-      model: qwen3-coder:30b
+      # Variante mit 32k Kontext, siehe deployment/ollama/flow-coder.Modelfile.
+      model: flow-qwen3-coder-32k
       baseUrl: ${AGENTGATEWAY_OLLAMA_BASE_URL}
   - name: flow-reviewer
     provider: ollama

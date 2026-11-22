@@ -287,3 +287,15 @@ def test_unclaimed_actions_are_withdrawn_after_timeout(fresh_hub) -> None:  # no
         fresh_hub.request("control", {"action": "pause"}, {"username": "demo49", "roles": ["it-user"]}, wait=0.05)
     assert fresh_hub.pending() == []
 
+
+
+def test_agent_token_usage_is_exported_as_prometheus_metrics() -> None:
+    from app.main import agents_hub
+
+    agents_hub.publish({"runs": [], "usage": {"totals": [
+        {"role": "entwicklung", "provider": "gateway", "model": "flow-coder", "calls": 3,
+         "input_tokens": 1200, "output_tokens": 340, "seconds": 41.5}]}}, None)
+    text = TestClient(app).get("/metrics").text
+    assert 'flow_agents_tokens_total{model="flow-coder",provider="gateway",role="entwicklung",type="input"} 1200.0' in text
+    assert 'flow_agents_model_calls_total{model="flow-coder",provider="gateway",role="entwicklung"} 3.0' in text
+    assert "flow_agents_orchestrator_connected 1.0" in text

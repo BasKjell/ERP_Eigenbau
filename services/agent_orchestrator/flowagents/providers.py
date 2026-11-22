@@ -48,6 +48,8 @@ class AgentReply:
     provider: str
     model: str
     output_tokens: int
+    input_tokens: int = 0
+    seconds: float = 0.0
 
 
 class Provider(Protocol):
@@ -112,6 +114,7 @@ class GatewayProvider:
         raise ProviderError(f"FLOWGATE vorübergehend nicht verfügbar: {last_error}")
 
     def _send(self, request: AgentRequest, key: str, body: dict[str, Any]) -> AgentReply:
+        started = time.monotonic()
         http_request = urllib.request.Request(
             f"{self.base_url}/v1/chat/completions",
             data=json.dumps(body).encode(),
@@ -143,10 +146,13 @@ class GatewayProvider:
         try:
             text = payload["choices"][0]["message"]["content"] or ""
             model = str(payload.get("model") or request.agent.gateway_alias)
-            tokens = int((payload.get("usage") or {}).get("completion_tokens") or len(text) // 4)
+            usage = payload.get("usage") or {}
+            tokens = int(usage.get("completion_tokens") or len(text) // 4)
+            prompt_tokens = int(usage.get("prompt_tokens") or 0)
         except (KeyError, IndexError, TypeError, ValueError):
             raise ProviderError("FLOWGATE lieferte keine Chat-Antwort") from None
-        return AgentReply(text=text, provider=self.name, model=model, output_tokens=tokens)
+        return AgentReply(text=text, provider=self.name, model=model, output_tokens=tokens,
+                          input_tokens=prompt_tokens, seconds=round(time.monotonic() - started, 2))
 
 
 class SimulatedProvider:

@@ -53,6 +53,33 @@ Portal „Orchestrator meldet sich nicht“ und nimmt keine Aufträge an.
 | Register/Prompts geändert | laufende Aufträge blockieren | Tech Lead stellt bewusst um oder bricht ab |
 | Budget erschöpft | Blockade ohne weiteren Modellaufruf | Tech Lead entscheidet |
 
+## Token-Verbrauch (Grafana)
+
+Grafana → Ordner „ERP Eigenbau“ → **Lokale KI – Token-Verbrauch** (Profil `ops`:
+`docker compose --profile ops up -d prometheus grafana`).
+
+- **Alle lokalen Modelle:** Prometheus liest `agentgateway:15020/metrics`
+  (`agentgateway_gen_ai_client_token_usage_sum`, getrennt nach Modell und Eingabe/Ausgabe). Das
+  umfasst Agenten und FLOWAI-Chats. Der Zähler beginnt bei jedem Neustart von FLOWGATE neu; die
+  Zeitraum-Kacheln rechnen das heraus.
+- **Je Agentenrolle:** Der Orchestrator speichert jeden Modellaufruf (Rolle, Modell, Token, Sekunden;
+  keine Inhalte) in `model_usage` und meldet die Summen mit der Übersicht. Die Plattform-API stellt sie
+  als `flow_agents_tokens_total`, `flow_agents_model_calls_total` und `flow_agents_model_seconds_total`
+  bereit.
+
+## Speicher auf dem 32-GB-Mac
+
+`flow-coder` zeigt auf `flow-qwen3-coder-32k` (Modelfile in `deployment/ollama/`): qwen3-coder:30b
+mit 32k statt 64k Kontext, rund 21 statt 25 GB, vollständig auf der GPU. Mit 64k plus Docker-VM (8 GB)
+lagerte macOS aus, der Coder fiel auf etwa 2 Token/s und jeder Entwicklungsschritt lief in das
+15-Minuten-Timeout. Einmalig anlegen:
+
+```bash
+ollama create flow-qwen3-coder-32k -f deployment/ollama/flow-coder.Modelfile
+```
+
+Prüfen mit `ollama ps`: Spalte PROCESSOR muss „100% GPU“ zeigen.
+
 ## Abo-Worker (Codex/Claude) – gesperrt
 
 Übernommen aus `Trading_Ai` (T-020/T-025/T-027): isolierte Container, read-only, `cap-drop ALL`,

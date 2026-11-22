@@ -165,3 +165,38 @@ class AgentsHub:
             "runs": [], "decisions": [], "events": [], "interactions": [], "pipeline": [], "human_roles": {},
             "metrics": {"runs_open": 0, "runs_done": 0, "decisions_open": 0, "agents_working": 0, "reworks": 0},
         }
+
+
+class AgentUsageCollector:
+    """Prometheus-Collector: Token und Modellaufrufe je Agentenrolle aus dem letzten Orchestrator-Stand.
+
+    Enthält nur Zählwerte (Rolle, Anbieter, Modell) – keine Prompts, Antworten oder Auftragsinhalte.
+    """
+
+    def __init__(self, hub: AgentsHub) -> None:
+        self.hub = hub
+
+    def collect(self):  # noqa: ANN201
+        from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily
+
+        with self.hub._lock:
+            overview = self.hub._overview
+        connected = GaugeMetricFamily("flow_agents_orchestrator_connected", "Orchestrator meldet sich (1/0)")
+        connected.add_metric([], 1.0 if overview is not None and self.hub.connected() else 0.0)
+        yield connected
+        labels = ["role", "provider", "model"]
+        tokens = CounterMetricFamily("flow_agents_tokens", "Verarbeitete Token je Agentenrolle",
+                                     labels=[*labels, "type"])
+        calls = CounterMetricFamily("flow_agents_model_calls", "Modellaufrufe je Agentenrolle", labels=labels)
+        seconds = CounterMetricFamily("flow_agents_model_seconds", "Modellzeit in Sekunden je Agentenrolle",
+                                      labels=labels)
+        for row in ((overview or {}).get("usage") or {}).get("totals") or []:
+            key = [str(row.get("role", "")), str(row.get("provider", "")), str(row.get("model", ""))]
+            tokens.add_metric([*key, "input"], float(row.get("input_tokens") or 0))
+            tokens.add_metric([*key, "output"], float(row.get("output_tokens") or 0))
+            calls.add_metric(key, float(row.get("calls") or 0))
+            seconds.add_metric(key, float(row.get("seconds") or 0))
+        yield tokens
+        yield calls
+        yield seconds
+

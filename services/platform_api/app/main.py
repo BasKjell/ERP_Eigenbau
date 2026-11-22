@@ -19,11 +19,11 @@ from fastapi.responses import (
     Response,
 )
 from fastapi.staticfiles import StaticFiles
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, Counter, generate_latest
 from pydantic import BaseModel, Field
 
 from .agent_drafts import DraftService
-from .agents_bff import AgentsHub
+from .agents_bff import AgentsHub, AgentUsageCollector
 from .assistant import answer_question
 from .auth import AuthError, OidcAuth
 from .config import settings
@@ -61,6 +61,7 @@ workplace_service = WorkplaceService(store)
 oidc_auth = OidcAuth(settings)
 rm_adapter = RMAdapter(store, work_service)
 agents_hub = AgentsHub()
+REGISTRY.register(AgentUsageCollector(agents_hub))
 dms_service = DmsService(settings)
 agent_drafts = DraftService(store)
 action_counter = Counter("demo_actions_total", "Management demo actions", ["action"])

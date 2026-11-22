@@ -325,3 +325,14 @@ def test_render_names_the_role_specific_contract_fields(make_engine) -> None:  #
     review = engine._render(run, review_step, engine.registry.agent("codepruefung"), {"auftrag": {}})
     assert "leere Liste" in review
 
+
+def test_model_usage_is_recorded_per_role_and_run(make_engine) -> None:  # noqa: ANN001
+    engine = make_engine()
+    run = submit(engine)
+    drive(engine)
+    usage = engine.overview()["usage"]
+    roles = {row["role"] for row in usage["totals"]}
+    assert {"geschaeftsfuehrung", "anforderungen", "entwicklung"} <= roles
+    assert sum(row["calls"] for row in usage["totals"]) == engine.store.run(run["id"])["model_calls"]
+    assert usage["by_run"][0]["auftrag_id"] == "A-001" and usage["by_run"][0]["output_tokens"] > 0
+

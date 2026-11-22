@@ -48,6 +48,11 @@ CREATE TABLE IF NOT EXISTS events (
     target TEXT NOT NULL DEFAULT '', message TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '{}'
 );
 CREATE TABLE IF NOT EXISTS controls (name TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS model_usage (
+    id INTEGER PRIMARY KEY, stamp REAL NOT NULL, run_id TEXT NOT NULL, step_id TEXT NOT NULL, role TEXT NOT NULL,
+    provider TEXT NOT NULL, model TEXT NOT NULL, input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL,
+    seconds REAL NOT NULL
+);
 CREATE INDEX IF NOT EXISTS events_run ON events(run_id, id);
 CREATE INDEX IF NOT EXISTS decisions_open ON decisions(status, created);
 """
@@ -358,3 +363,34 @@ class Store:
             value["at"] = iso(value["stamp"])
             result.append(value)
         return result
+
+    # -- Modellnutzung (Token-Tracker) ---------------------------------------------------
+    def record_usage(self, run_id: str, step_id: str, role: str, provider: str, model: str,
+                     input_tokens: int, output_tokens: int, seconds: float) -> None:
+        with self._lock, self.db:
+            self.db.execute(
+                "INSERT INTO model_usage(stamp, run_id, step_id, role, provider, model, input_tokens, output_tokens,"
+                " seconds) VALUES (?,?,?,?,?,?,?,?,?)",
+                (time.time(), run_id, step_id, role, provider, model, int(input_tokens), int(output_tokens),
+                 float(seconds)),
+            )
+
+    def usage_totals(self) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self.db.execute(
+                "SELECT role, provider, model, COUNT(*) AS calls, SUM(input_tokens) AS input_tokens,"
+                " SUM(output_tokens) AS output_tokens, SUM(seconds) AS seconds FROM model_usage"
+                " GROUP BY role, provider, model ORDER BY role"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def usage_by_run(self, limit: int = 20) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self.db.execute(
+                "SELECT u.run_id, r.auftrag_id, r.title, COUNT(*) AS calls, SUM(u.input_tokens) AS input_tokens,"
+                " SUM(u.output_tokens) AS output_tokens, SUM(u.seconds) AS seconds FROM model_usage u"
+                " LEFT JOIN runs r ON r.id = u.run_id GROUP BY u.run_id ORDER BY MAX(u.stamp) DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+

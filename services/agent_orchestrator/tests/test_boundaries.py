@@ -135,7 +135,7 @@ def test_03_gateway_uses_role_key_and_profile_alias_only(registry) -> None:  # n
                                    {"codepruefung": "key-pruefer", "entwicklung": "key-coder"})
         reviewer = registry.agent("codepruefung")
         reply = provider.generate(AgentRequest("RUN-1", "codepruefung", reviewer, "sys", "user", 100))
-        assert reply.output_tokens == 7
+        assert reply.output_tokens == 7 and reply.seconds >= 0
         sent = FakeGateway.seen[-1]
         assert sent["body"]["model"] == "flow-reviewer" and sent["run"] == "RUN-1"
         assert sent["body"]["reasoning_effort"] == "none" and sent["body"]["response_format"]["type"] == "json_object"

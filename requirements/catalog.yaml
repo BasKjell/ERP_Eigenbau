@@ -292,6 +292,21 @@ requirements:
       - services/platform_api/tests/test_dev_mcp.py::test_internal_endpoints_require_the_service_token
       - services/platform_api/tests/test_dev_mcp.py::test_flowai_can_only_propose_and_the_person_submits
 
+  - id: REQ-AGT-020
+    title: Token-Verbrauch der lokalen KI sichtbar
+    type: System
+    priority: Soll
+    status: review
+    source: Auftrag Bas 2026-11-22 (Tracker für lokal verarbeitete Token in Grafana)
+    text: Grafana zeigt, wie viele Token die lokalen Modelle verarbeiten – gesamt und je Modell (FLOWGATE, inklusive FLOWAI) sowie je Agentenrolle und Lauf (Orchestrator). Erfasst werden nur Zählwerte (Rolle, Modell, Token, Sekunden), keine Prompts oder Antworten.
+    acceptance_criteria:
+      - Jeder Modellaufruf eines Agenten wird mit Rolle, Modell, Eingabe- und Ausgabe-Token und Dauer gespeichert und in der Übersicht summiert.
+      - Die Plattform-API exportiert flow_agents_tokens_total und flow_agents_model_calls_total für Prometheus; das Dashboard „Lokale KI – Token-Verbrauch“ ist provisioniert.
+    verification:
+      - services/agent_orchestrator/tests/test_engine.py::test_model_usage_is_recorded_per_role_and_run
+      - services/agent_orchestrator/tests/test_boundaries.py::test_03_gateway_uses_role_key_and_profile_alias_only
+      - services/platform_api/tests/test_flow_agents.py::test_agent_token_usage_is_exported_as_prometheus_metrics
+
   # --- Landingpage / Agentenzentrale -------------------------------------------------------------
   - id: REQ-PRT-001
     title: Landingpage zeigt, was die Agenten gerade tun

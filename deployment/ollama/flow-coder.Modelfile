@@ -1,0 +1,8 @@
+# FLOWAGENTS-Coderprofil: qwen3-coder:30b mit begrenztem Kontext.
+# Mit dem Ollama-Standard (64k) belegt das Modell ~25 GB; auf einem 32-GB-Mac mit Docker-VM (8 GB)
+# führt das zu Auslagerung und ~2 Token/s. 32k reicht für einen Änderungsbereich (≤ 70k Zeichen
+# Bestand ≈ 20k Token inkl. Antwort) und hält das Modell vollständig auf der GPU.
+# Anlegen (keine neuen Downloads, nutzt die vorhandenen Gewichte):
+#   ollama create flow-qwen3-coder-32k -f deployment/ollama/flow-coder.Modelfile
+FROM qwen3-coder:30b
+PARAMETER num_ctx 32768
