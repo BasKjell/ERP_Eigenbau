@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="FLOWDOC – Dokumente finden, ablegen und freigeben" />
+    <title>FLOWDOC · Dokumente</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/portal.css?v=20261110" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+    <link rel="stylesheet" href="/assets/dms.css?v=20261122" />
+  </head>
+  <body class="dms-page">
+    <header class="portal-topbar">
+      <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+      <a class="portal-brand" href="/"><span class="portal-brand-mark"><i></i><i></i><i></i></span><span><b>FLOW</b>DOC</span></a>
+      <label class="global-search"><span>⌕</span><input id="dms-query" type="search" placeholder="Volltext: Titel, Inhalt, Kommission, Artikel, Seriennummer …" autocomplete="off" /></label>
+      <div class="portal-actions">
+        <a class="help-link" href="http://localhost:8001/user-guides/dms/" target="_blank" aria-label="Hilfe zu FLOWDOC">?</a>
+        <button class="dms-upload-button" id="open-upload" type="button">↑ Dokument ablegen</button>
+      </div>
+    </header>
+
+    <main class="dms-main">
+      <aside class="dms-filters" aria-label="Filter">
+        <div class="dms-access" id="dms-access"><span class="dot"></span><span>Verbinde mit FLOWDOC …</span></div>
+        <section>
+          <h2>Status</h2>
+          <div class="dms-status-filter" id="status-filter">
+            <button type="button" data-status="" class="active">Alle</button>
+            <button type="button" data-status="Status/Entwurf">Entwurf</button>
+            <button type="button" data-status="Status/In Prüfung">In Prüfung</button>
+            <button type="button" data-status="Status/Freigegeben">Freigegeben</button>
+          </div>
+        </section>
+        <section><h2>Dokumenttyp</h2><ul class="dms-facet" id="facet-types"></ul></section>
+        <section><h2>Projekte &amp; Bereiche</h2><ul class="dms-facet" id="facet-tags"></ul></section>
+        <section><h2>Korrespondenten</h2><ul class="dms-facet" id="facet-correspondents"></ul></section>
+      </aside>
+
+      <section class="dms-results" aria-labelledby="dms-title">
+        <div class="dms-results-head">
+          <div><span class="eyebrow">FLOWDOC · EIGENE OBERFLÄCHE ÜBER PAPERLESS-NGX</span><h1 id="dms-title">Dokumente</h1><p id="dms-summary">Dokumente werden geladen …</p></div>
+          <label class="dms-sort"><span>Sortierung</span>
+            <select id="dms-ordering">
+              <option value="-created">Neueste zuerst</option>
+              <option value="created">Älteste zuerst</option>
+              <option value="title">Titel A–Z</option>
+              <option value="-title">Titel Z–A</option>
+              <option value="document_type">Dokumenttyp</option>
+              <option value="correspondent">Korrespondent</option>
+              <option value="-added">Zuletzt abgelegt</option>
+            </select>
+          </label>
+        </div>
+        <div class="dms-active-filters" id="active-filters"></div>
+        <div class="dms-list" id="dms-list" aria-live="polite"></div>
+        <nav class="dms-pager" id="dms-pager" aria-label="Seiten"></nav>
+      </section>
+
+      <aside class="dms-detail" id="dms-detail" aria-label="Dokumentdetails" hidden></aside>
+    </main>
+
+    <dialog class="dms-dialog" id="upload-dialog">
+      <form method="dialog" id="upload-form">
+        <h3>Dokument ablegen</h3>
+        <p class="lead">Die Datei geht direkt an FLOWDOC. Texterkennung, Ablagepfad und Zugriffsrechte setzt das DMS nach seinen Regeln. Neue Dokumente starten als Entwurf.</p>
+        <label class="dms-drop" id="drop-zone"><input type="file" id="upload-file" name="document" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.txt,.docx,.xlsx,.odt" required /><b>Datei hierher ziehen</b><span>oder klicken · PDF, Bild, Office · höchstens 25 MB</span><em id="upload-filename"></em></label>
+        <div class="dms-form">
+          <label class="wide">Titel<input name="title" maxlength="160" placeholder="aus dem Dateinamen, wenn leer" /></label>
+          <label>Dokumenttyp<select name="document_type" id="upload-type"><option value="">automatisch</option></select></label>
+          <label>Projekt / Bereich<select name="tags" id="upload-tag"><option value="">automatisch</option></select></label>
+        </div>
+        <div class="dms-form-actions"><span class="msg" id="upload-msg"></span><span><button class="dms-btn" value="cancel" formnovalidate type="submit">Abbrechen</button> <button class="dms-btn primary" type="button" id="upload-submit">Ablegen</button></span></div>
+      </form>
+    </dialog>
+
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/dms.js?v=20261122" defer></script>
+  </body>
+</html>

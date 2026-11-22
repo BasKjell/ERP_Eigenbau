@@ -212,7 +212,7 @@ class OidcAuth:
             return {"quality-user", "warehouse-user", "procurement-user"}
         if path.startswith("/api/hr") or path == "/hr":
             return {"hr-user", "hr-admin"}
-        if path.startswith("/api/documents"):
+        if path.startswith(("/api/documents", "/api/dms")) or path == "/dms":
             return {"dms-user"}
         if (
             path.startswith("/api/demo")
@@ -224,8 +224,9 @@ class OidcAuth:
 
     @staticmethod
     def public_path(path: str) -> bool:
+        # /api/rm/v1/ authentifiziert Agenten selbst per kurzlebigem Rollen-Token (agent_policy).
         return path in {"/health", "/ready", "/metrics", "/favicon.ico", "/api/reporting/live"} or path.startswith(
-            ("/auth/", "/assets/")
+            ("/auth/", "/assets/", "/api/rm/v1/")
         )
 
     def _sign(self, value: dict[str, Any]) -> str:

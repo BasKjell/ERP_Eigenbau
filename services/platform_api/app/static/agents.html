@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="FLOWAGENTS – Agentenzentrale der FLOW-Plattform" />
+    <title>Agentenzentrale · FLOWPORTAL</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
+    <link rel="stylesheet" href="/assets/portal.css?v=20261110" />
+    <link rel="stylesheet" href="/assets/company-theme.css" />
+    <link rel="stylesheet" href="/assets/agent-center.css?v=20261122" />
+  </head>
+  <body class="agents-page">
+    <header class="portal-topbar">
+      <button data-app-launcher aria-label="Anwendungen öffnen"></button>
+      <a class="portal-brand" href="/"><span class="portal-brand-mark"><i></i><i></i><i></i></span><span><b>FLOW</b>AGENTS</span></a>
+      <div class="portal-actions"><a class="help-link" href="http://localhost:8001/agents/" target="_blank" aria-label="Dokumentation öffnen">?</a><a class="ac-btn" style="color:#102126;border-color:rgba(16,33,38,.2)" href="/">← FLOWPORTAL</a></div>
+    </header>
+    <main>
+      <section class="agents-intro">
+        <div>
+          <span class="eyebrow">KI-ENTWICKLUNG · ROLLENGETRENNT · BSI-ORIENTIERT</span>
+          <h1>Agentenzentrale</h1>
+          <p>Elf Entwicklungsrollen und ein Geschäftsführungs-Agent arbeiten nach dem versionierten Agentenregister. Der Orchestrator erzwingt Ablauf, Budgets und Gates; Anforderungen, Baselines und Tests liegen in FLOWWORK. Menschen entscheiden an G1–G5 – Fachabnahme und Produktion immer.</p>
+        </div>
+      </section>
+      <section class="agents-principles" aria-label="Leitplanken">
+        <article><b>Ersteller ≠ Prüfer</b>Prüfrollen gehören zu einer anderen Modellfamilie und haben kein Schreibrecht am geprüften Stand.</article>
+        <article><b>Digest-Bindung</b>Review, Integrationsprüfung und Abnahme gelten nur für exakt einen Änderungsstand.</article>
+        <article><b>Keine Selbstfreigabe</b>Agenten besitzen keine Freigabe-, Merge-, Lösch- oder Deploymentwerkzeuge.</article>
+        <article><b>Stopp-Schalter</b>Einzelne Agenten oder der ganze Ablauf lassen sich jederzeit anhalten; wartende Aufträge stoppen mit.</article>
+      </section>
+      <section style="margin-top:22px" id="agent-center" data-agent-center data-mode="full" aria-label="Agentenzentrale"></section>
+    </main>
+    <script src="/assets/app-launcher.js?v=20261116" defer></script>
+    <script src="/assets/agent-center.js?v=20261122" defer></script>
+  </body>
+</html>

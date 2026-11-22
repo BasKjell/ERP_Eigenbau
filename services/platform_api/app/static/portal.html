@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/assets/app-launcher.css?v=20261116" />
     <link rel="stylesheet" href="/assets/portal.css?v=20261110" />
     <link rel="stylesheet" href="/assets/company-theme.css" />
+    <link rel="stylesheet" href="/assets/agent-center.css?v=20261122" />
   </head>
   <body>
     <header class="portal-topbar">
@@ -40,6 +41,8 @@
 
       <section class="portal-layout">
         <div class="portal-primary">
+          <section id="agent-center" data-agent-center data-mode="compact" aria-label="Agentenzentrale"></section>
+
           <section class="future-workplace" data-tour="future-workplace" aria-labelledby="future-title">
             <div class="future-heading">
               <div><span class="eyebrow">ARBEITSPLATZ DER ZUKUNFT</span><h2 id="future-title">Mein KI-Arbeitsplatz</h2><p id="daily-summary">Persönliche Prioritäten werden aus den freigegebenen Fachsystemen zusammengestellt.</p></div>
@@ -79,7 +82,7 @@
               <a href="http://localhost:8081" target="_blank"><span>04</span><b>Beschaffen</b><small>Einkauf</small></a>
               <a href="/quality"><span>05</span><b>Prüfen</b><small>Wareneingang</small></a>
               <a href="/mes"><span>06</span><b>Fertigen</b><small>MES & Qualität</small></a>
-              <a href="http://localhost:8010" target="_blank"><span>07</span><b>Nachweisen</b><small>DMS & Lieferung</small></a>
+              <a href="/dms"><span>07</span><b>Nachweisen</b><small>FLOWDOC & Lieferung</small></a>
             </div>
           </section>
 
@@ -102,7 +105,9 @@
             <a href="/work?action=new-ticket"><span>＋</span> Ticket anlegen</a>
             <a href="/work?view=requirements&action=new"><span>R</span> Anforderung erfassen</a>
             <a href="/quality"><span>◇</span> Wareneingang prüfen</a>
-            <a href="http://localhost:8010" target="_blank"><span>↑</span> Dokument ablegen</a>
+            <a href="/dms?action=upload"><span>↑</span> Dokument ablegen</a>
+            <a href="/dms"><span>D</span> Dokumente finden (FLOWDOC)</a>
+            <a href="/agents"><span>AG</span> Agentenzentrale</a>
             <a href="/hr"><span>◷</span> Zeit oder Abwesenheit</a>
             <a href="/finance"><span>€</span> Forecast und Finanzen</a>
             <a href="http://localhost:3001" target="_blank" rel="noopener"><span>AI</span> FLOWAI fragen</a>
@@ -119,5 +124,6 @@
 
     <script src="/assets/app-launcher.js?v=20261116" defer></script>
     <script src="/assets/portal.js?v=20261110" defer></script>
+    <script src="/assets/agent-center.js?v=20261122" defer></script>
   </body>
 </html>

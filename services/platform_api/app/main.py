@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 from pydantic import BaseModel, Field
 
+from .agents_bff import AgentsGateway
 from .assistant import answer_question
 from .auth import AuthError, OidcAuth
 from .config import settings
@@ -30,7 +31,9 @@ from .desksharing import (
     DesksharingNotFoundError,
     DesksharingService,
 )
+from .dms import DmsService
 from .finance import FinanceError, FinanceNotFoundError, FinanceService
+from .flow_routes import build_router, reject_agent_token_for_work
 from .hr import HrError, HrNotFoundError, HrService
 from .integrations import integration_status, paperless_search
 from .mes import MesError, MesNotFoundError, MesService
@@ -38,9 +41,10 @@ from .operations import readiness_report
 from .people import PeopleError, PeopleNotFoundError, PeopleService
 from .quality import QualityError, QualityNotFoundError, QualityService
 from .reporting import LiveReportingService
+from .rm_adapter import RMAdapter
+from .store import ScenarioStore
 from .work import WorkError, WorkNotFoundError, WorkService
 from .workplace import WorkplaceNotFoundError, WorkplaceService
-from .store import ScenarioStore
 
 APP_DIR = Path(__file__).parent
 store = ScenarioStore(settings.data_file, settings.seed_file)
@@ -54,6 +58,9 @@ reporting_service = LiveReportingService(finance_service, mes_service, settings)
 quality_service = QualityService(store, settings)
 workplace_service = WorkplaceService(store)
 oidc_auth = OidcAuth(settings)
+rm_adapter = RMAdapter(store, work_service)
+agents_gateway = AgentsGateway()
+dms_service = DmsService(settings)
 action_counter = Counter("demo_actions_total", "Management demo actions", ["action"])
 
 app = FastAPI(
@@ -64,6 +71,7 @@ app = FastAPI(
     redoc_url=None,
 )
 app.mount("/assets", StaticFiles(directory=APP_DIR / "static"), name="assets")
+app.include_router(build_router(rm_adapter, agents_gateway, dms_service))
 
 
 @app.get("/docs", include_in_schema=False)
@@ -103,6 +111,8 @@ async def add_security_headers(request: Request, call_next: Callable[..., Any]) 
         "/desksharing",
         "/work",
         "/finance",
+        "/agents",
+        "/dms",
     }:
         response.headers.setdefault("Cache-Control", "no-store")
     return response
@@ -110,6 +120,9 @@ async def add_security_headers(request: Request, call_next: Callable[..., Any]) 
 
 @app.middleware("http")
 async def enforce_oidc(request: Request, call_next: Callable[..., Any]) -> Response:
+    rejected = reject_agent_token_for_work(request)
+    if rejected is not None:
+        return rejected
     if not oidc_auth.enabled or oidc_auth.public_path(request.url.path):
         return await call_next(request)
     user = oidc_auth.current_user(request)
