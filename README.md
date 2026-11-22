@@ -197,3 +197,15 @@ Dieses Repository ist ein Evaluierungs- und Management-PoC, kein ungeprueft
 produktionsreifes ERP. Vor produktivem Einsatz sind insbesondere Datenschutz,
 Backups, Hochverfuegbarkeit, Berechtigungen, GoBD, DATEV, XRechnung/ZUGFeRD und
 die reale Maschinenanbindung zu validieren.
+
+## Agentenplattform FLOWAGENTS und FLOWDOC
+
+- **Agentenzentrale** auf der FLOWPORTAL-Startseite und unter `/agents`: elf Entwicklungsrollen und
+  ein Geschäftsführungs-Agent arbeiten nach `agents/registry.yaml` und `agents/workflow.yaml`;
+  Menschen entscheiden in der Entscheidungs-Inbox (Gates G1–G5).
+- **Anforderungen** liegen in FLOWWORK; Plattformanforderungen in `requirements/catalog.yaml`
+  (`make requirements-check`, `make requirements-sync`).
+- **FLOWDOC** unter `/dms`: eigene DMS-Oberfläche über die Paperless-API im Namen der Person.
+- Start: `make agents-sandbox-image && make agents-up`; Regeln: [AGENTS.md](AGENTS.md);
+  Dokumentation: `docs/agents/`.
+

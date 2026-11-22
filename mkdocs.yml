@@ -81,6 +81,11 @@ nav:
       - Desksharing: user-guides/desksharing.md
       - Shopfloor: user-guides/shopfloor.md
       - Dokumente: user-guides/dms.md
+      - FLOWDOC eigene Oberfläche: user-guides/flowdoc.md
+  - Agenten:
+      - Agentenplattform FLOWAGENTS: agents/index.md
+      - Betrieb: agents/betrieb.md
+      - Sicherheit und Nachweise: agents/sicherheit.md
   - Werkzeuge:
       - Katalog und Matrix: tools/index.md
       - Benutzeranleitungen:
