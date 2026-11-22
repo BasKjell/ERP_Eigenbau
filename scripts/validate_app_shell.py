@@ -162,11 +162,18 @@ def main() -> None:
         "redmine",
         "keycloak",
         "open-webui",
-        "agentgateway",
         "prometheus",
         "grafana",
     ):
         assert not services[upstream].get("ports"), upstream
+
+    # Agentgateway: Die Oberfläche bleibt hinter agentgateway-shell. Erlaubt ist nur der
+    # API-Schlüssel-geschützte LLM-Listener (4000) auf Loopback für den FLOWAGENTS-Host-Dienst.
+    gateway_ports = services["agentgateway"].get("ports") or []
+    assert all(
+        isinstance(port, dict) and port.get("host_ip") == "127.0.0.1" and int(port.get("target", 0)) == 4000
+        for port in gateway_ports
+    ), gateway_ports
 
     shell_path = (
         ROOT

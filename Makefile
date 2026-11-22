@@ -1,4 +1,4 @@
-.PHONY: help demo full work sso sso-all seed-erp seed-dms seed-dms-project dms-vector-index demo-data-setup demo-data-delete demo-data-delete-preview dms-dashboard management-dashboard docs test test-dms-reporting test-management-reporting test-integration audit-links check lint validate stop reset logs ai ai-gateway webui mcp
+.PHONY: agents-up agents-down agents-restart agents-status agents-logs agents-test agents-check agents-sandbox-image help demo full work sso sso-all seed-erp seed-dms seed-dms-project dms-vector-index demo-data-setup demo-data-delete demo-data-delete-preview dms-dashboard management-dashboard docs test test-dms-reporting test-management-reporting test-integration audit-links check lint validate stop reset logs ai ai-gateway webui mcp
 
 help:
 	@echo "ERP Eigenbau - verfuegbare Befehle"
@@ -20,6 +20,10 @@ help:
 	@echo "  make webui     Startet FLOWAI ueber FLOWGATE fuer das Qwen-Modell auf dem Mac"
 	@echo "  make mcp       Startet ERP-, DMS- und Wiki-MCP-Server"
 	@echo "  make dms-vector-index  Indiziert Paperless-OCR lokal in pgvector"
+	@echo "  make agents-up        Startet den FLOWAGENTS-Orchestrator (Host-Dienst, 127.0.0.1:8095)"
+	@echo "  make agents-status    Zeigt Laeufe, Entscheidungen und Agentenzustand"
+	@echo "  make agents-test      Prueft Agentenregister, Orchestrator und Grenzen"
+	@echo "  make agents-sandbox-image  Baut das Offline-Pruefimage fuer die Integrationspruefung"
 	@echo "  make test      Fuehrt Python-Tests aus"
 	@echo "  make test-dms-reporting  Prueft Termin-View und DB-Berechtigungen"
 	@echo "  make test-management-reporting  Prueft Management-Views und DB-Berechtigungen"
@@ -135,3 +139,27 @@ logs:
 
 stop:
 	docker compose --profile full --profile work --profile ai --profile ai-gateway --profile webui --profile ops --profile iam down
+
+agents-sandbox-image:
+	docker build -t flow-agents-sandbox:1 -f services/agent_orchestrator/sandbox.Dockerfile services
+
+agents-up:
+	./scripts/flow_agents.sh start
+
+agents-down:
+	./scripts/flow_agents.sh stop
+
+agents-restart:
+	./scripts/flow_agents.sh restart
+
+agents-status:
+	./scripts/flow_agents.sh status
+
+agents-logs:
+	./scripts/flow_agents.sh logs
+
+agents-check:
+	cd services/agent_orchestrator && python3 -m flowagents check-registry --repo-root ../..
+
+agents-test:
+	cd services/agent_orchestrator && python3 -m ruff check flowagents worker tests && python3 -m pytest -q tests

@@ -95,11 +95,20 @@ services:
       OIDC_CLIENT_ID: platform-portal
       OIDC_EXTERNAL_ISSUER: ${OIDC_EXTERNAL_ISSUER:-http://localhost:8082/realms/open-manufacturing}
       OIDC_INTERNAL_ISSUER: http://keycloak:8080/realms/open-manufacturing
+      # FLOWAGENTS: Register (read-only), Orchestrator auf dem Host und RM-Adapter-Geheimnis.
+      AGENT_REGISTRY_DIR: /app/agents
+      AGENTS_API_URL: ${AGENTS_API_URL:-http://host.docker.internal:8095}
+      FLOW_AGENTS_API_SECRET: ${FLOW_AGENTS_API_SECRET:-local-agents-api-secret-change-before-network-use}
+      FLOW_AGENT_RM_SECRET: ${FLOW_AGENT_RM_SECRET:-local-agent-rm-secret-change-before-network-use}
+      PAPERLESS_REMOTE_USER_HEADER: X-Flow-Sso-User
     ports:
       - "${DEMO_API_PORT:-8088}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - demo-state:/data
       - ./output/pdf:/app/documents:ro
+      - ./agents:/app/agents:ro
     depends_on:
       demo-db:
         condition: service_healthy
@@ -309,6 +318,8 @@ services:
       PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:-admin-demo-change-me}
       PAPERLESS_URL: http://localhost:${PAPERLESS_PORT:-8010}
       PAPERLESS_ENABLE_HTTP_REMOTE_USER: "true"
+      # FLOWDOC-Oberfläche: Die Plattform-API fragt im internen Netz im Namen der FLOWID-Person.
+      PAPERLESS_ENABLE_HTTP_REMOTE_USER_API: "true"
       PAPERLESS_HTTP_REMOTE_USER_HEADER_NAME: HTTP_X_FLOW_SSO_USER
       PAPERLESS_LOGOUT_REDIRECT_URL: http://localhost:${DEMO_API_PORT:-8088}/auth/logout
       PAPERLESS_DISABLE_REGULAR_LOGIN: "true"
@@ -822,6 +833,18 @@ services:
     environment:
       AGENTGATEWAY_OLLAMA_BASE_URL: ${AGENTGATEWAY_OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
       AGENTGATEWAY_OPENWEBUI_KEY: ${AGENTGATEWAY_OPENWEBUI_KEY:-agw-demo-openwebui-change-before-network-use}
+      # FLOWAGENTS: je Agentenrolle ein eigener virtueller Schlüssel (nur ihr Modellprofil).
+      FLOW_AGENT_GATEWAY_KEY_ANFORDERUNGEN: ${FLOW_AGENT_GATEWAY_KEY_ANFORDERUNGEN:-agw-demo-anforderungen-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_ANFORDERUNGSPRUEFUNG: ${FLOW_AGENT_GATEWAY_KEY_ANFORDERUNGSPRUEFUNG:-agw-demo-anforderungspruefung-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_ARCHITEKTUR: ${FLOW_AGENT_GATEWAY_KEY_ARCHITEKTUR:-agw-demo-architektur-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_SICHERHEIT: ${FLOW_AGENT_GATEWAY_KEY_SICHERHEIT:-agw-demo-sicherheit-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_PLANUNG: ${FLOW_AGENT_GATEWAY_KEY_PLANUNG:-agw-demo-planung-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_ENTWICKLUNG: ${FLOW_AGENT_GATEWAY_KEY_ENTWICKLUNG:-agw-demo-entwicklung-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_AKZEPTANZTEST: ${FLOW_AGENT_GATEWAY_KEY_AKZEPTANZTEST:-agw-demo-akzeptanztest-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_CODEPRUEFUNG: ${FLOW_AGENT_GATEWAY_KEY_CODEPRUEFUNG:-agw-demo-codepruefung-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_DOKUMENTATION: ${FLOW_AGENT_GATEWAY_KEY_DOKUMENTATION:-agw-demo-dokumentation-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_NACHWEISE: ${FLOW_AGENT_GATEWAY_KEY_NACHWEISE:-agw-demo-nachweise-change-before-network-use}
+      FLOW_AGENT_GATEWAY_KEY_GESCHAEFTSFUEHRUNG: ${FLOW_AGENT_GATEWAY_KEY_GESCHAEFTSFUEHRUNG:-agw-demo-geschaeftsfuehrung-change-before-network-use}
       SESSION_KEY: ${AGENTGATEWAY_SESSION_KEY:-02183306b4f9f14e3b3ea4eef718f9ad3aebeda74b4f34275b3dfa7702475234}
       OIDC_COOKIE_SECRET: ${AGENTGATEWAY_OIDC_COOKIE_SECRET:-c69b97a25b12a2dbd96bb161dd582365e3ceb597b83dd0cc902b4dda3f88ec64}
       ISSUER_URL: ${OIDC_EXTERNAL_ISSUER:-http://localhost:8082/realms/open-manufacturing}
@@ -831,6 +854,9 @@ services:
       UI_CLIENT_ID: agentgateway-ui
       UI_CLIENT_SECRET: ${AGENTGATEWAY_OIDC_CLIENT_SECRET:-agentgateway-oidc-demo-change-me}
       REDIRECT_URI: ${AGENTGATEWAY_UI_PUBLIC_URL:-http://localhost:4001}/oauth/callback
+    ports:
+      # Nur Loopback: der FLOWAGENTS-Orchestrator läuft als Host-Dienst.
+      - "127.0.0.1:${AGENTGATEWAY_LLM_PORT:-4000}:4000"
     volumes:
       - ./deployment/agentgateway/config.yaml:/config/config.yaml:ro
       - agentgateway-data:/data

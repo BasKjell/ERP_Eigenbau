@@ -19,6 +19,73 @@ llm:
         allowedModels:
         - qwen3:8b
         - qwen3-coder:30b
+      # FLOWAGENTS (agents/registry.yaml): ein Schlüssel je Rolle, nur das Modellprofil der Rolle.
+      - key: ${FLOW_AGENT_GATEWAY_KEY_ANFORDERUNGEN}
+        metadata:
+          consumer: agent-anforderungen
+          purpose: flow-agents
+        allowedModels:
+        - flow-builder
+      - key: ${FLOW_AGENT_GATEWAY_KEY_ARCHITEKTUR}
+        metadata:
+          consumer: agent-architektur
+          purpose: flow-agents
+        allowedModels:
+        - flow-builder
+      - key: ${FLOW_AGENT_GATEWAY_KEY_ENTWICKLUNG}
+        metadata:
+          consumer: agent-entwicklung
+          purpose: flow-agents
+        allowedModels:
+        - flow-coder
+      - key: ${FLOW_AGENT_GATEWAY_KEY_ANFORDERUNGSPRUEFUNG}
+        metadata:
+          consumer: agent-anforderungspruefung
+          purpose: flow-agents
+        allowedModels:
+        - flow-reviewer
+      - key: ${FLOW_AGENT_GATEWAY_KEY_SICHERHEIT}
+        metadata:
+          consumer: agent-sicherheit
+          purpose: flow-agents
+        allowedModels:
+        - flow-reviewer
+      - key: ${FLOW_AGENT_GATEWAY_KEY_AKZEPTANZTEST}
+        metadata:
+          consumer: agent-akzeptanztest
+          purpose: flow-agents
+        allowedModels:
+        - flow-reviewer
+      - key: ${FLOW_AGENT_GATEWAY_KEY_CODEPRUEFUNG}
+        metadata:
+          consumer: agent-codepruefung
+          purpose: flow-agents
+        allowedModels:
+        - flow-reviewer
+      - key: ${FLOW_AGENT_GATEWAY_KEY_GESCHAEFTSFUEHRUNG}
+        metadata:
+          consumer: agent-geschaeftsfuehrung
+          purpose: flow-agents
+        allowedModels:
+        - flow-reviewer
+      - key: ${FLOW_AGENT_GATEWAY_KEY_PLANUNG}
+        metadata:
+          consumer: agent-planung
+          purpose: flow-agents
+        allowedModels:
+        - flow-assist
+      - key: ${FLOW_AGENT_GATEWAY_KEY_DOKUMENTATION}
+        metadata:
+          consumer: agent-dokumentation
+          purpose: flow-agents
+        allowedModels:
+        - flow-assist
+      - key: ${FLOW_AGENT_GATEWAY_KEY_NACHWEISE}
+        metadata:
+          consumer: agent-nachweise
+          purpose: flow-agents
+        allowedModels:
+        - flow-assist
   models:
   - name: qwen3:8b
     provider: ollama
@@ -29,6 +96,28 @@ llm:
     provider: ollama
     params:
       model: qwen3-coder:30b
+      baseUrl: ${AGENTGATEWAY_OLLAMA_BASE_URL}
+  # Modellprofile der Agentenrollen. Die Zuordnung ist an die Evaluation gebunden (Teil 09/10);
+  # ein Wechsel ist ein Change mit erneuter Bewertung der Referenzfälle (Test 34).
+  - name: flow-builder
+    provider: ollama
+    params:
+      model: qwen3:8b
+      baseUrl: ${AGENTGATEWAY_OLLAMA_BASE_URL}
+  - name: flow-assist
+    provider: ollama
+    params:
+      model: qwen3:8b
+      baseUrl: ${AGENTGATEWAY_OLLAMA_BASE_URL}
+  - name: flow-coder
+    provider: ollama
+    params:
+      model: qwen3-coder:30b
+      baseUrl: ${AGENTGATEWAY_OLLAMA_BASE_URL}
+  - name: flow-reviewer
+    provider: ollama
+    params:
+      model: gemma3:12b
       baseUrl: ${AGENTGATEWAY_OLLAMA_BASE_URL}
 
 ui:
