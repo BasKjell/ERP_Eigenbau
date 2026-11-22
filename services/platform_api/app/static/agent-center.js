@@ -125,7 +125,36 @@
     return `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`;
   }
 
-  class AgentCenter {
+  // Projektkürzel: FLOWWORK erwartet z. B. FLOW-DMS. Eingaben wie „flow doc“ werden zu FLOW-DOC.
+const PROJECTS = ["FLOW-DMS", "FLOW-PLATFORM", "FLOW-PORTAL", "FLOW-AGENTS", "FLOW-ERP", "FLOW-HR", "FLOW-FIN",
+  "FLOW-MES", "FLOW-QM", "FLOW-WORK", "FLOW-SPACE", "FLOW-DOCS"];
+const SCOPE_PROJECTS = { dms: "FLOW-DMS", portal: "FLOW-PORTAL", erp: "FLOW-ERP", hr: "FLOW-HR", finance: "FLOW-FIN",
+  mes: "FLOW-MES", flowq: "FLOW-QM", work: "FLOW-WORK", desksharing: "FLOW-SPACE", doku: "FLOW-DOCS",
+  plattform: "FLOW-PLATFORM", agenten: "FLOW-AGENTS" };
+const FIELD_LABELS = { title: "Titel", goal: "Zweck", user_group: "Nutzergruppe", behavior: "Gewünschtes Verhalten",
+  success_example: "Erfolgsbeispiel", exclusions: "Ausgeschlossen", project: "Projekt", scope: "Änderungsbereich",
+  change_class: "Änderungsklasse", data_class: "Datenklasse", execution: "Umsetzung" };
+
+function normalizeProject(value) {
+  const key = String(value || "").trim().toUpperCase().replace(/[ÄÖÜ]/g, (c) => ({ Ä: "AE", Ö: "OE", Ü: "UE" })[c])
+    .replace(/ß/g, "SS").replace(/[\s_./]+/g, "-").replace(/[^A-Z0-9-]/g, "").replace(/-+/g, "-").replace(/^[^A-Z]+|-+$/g, "");
+  return key.length >= 3 ? key.slice(0, 31) : (key ? `FLOW-${key}` : "FLOW-PLATFORM");
+}
+
+function projectForScope(scope) {
+  return SCOPE_PROJECTS[String(scope || "").split("-")[0]] || "FLOW-PLATFORM";
+}
+
+function fieldError(detail) {
+  const field = Array.isArray(detail.loc) ? detail.loc[detail.loc.length - 1] : "";
+  const label = FIELD_LABELS[field] || field || "Eingabe";
+  if (field === "project") return "Projekt: Kürzel wie FLOW-DMS verwenden (Großbuchstaben, Ziffern, Bindestrich)";
+  if (detail.type === "string_too_short") return `${label}: zu kurz (mindestens ${detail.ctx?.min_length} Zeichen)`;
+  if (detail.type === "string_too_long") return `${label}: zu lang (höchstens ${detail.ctx?.max_length} Zeichen)`;
+  return `${label}: ${detail.msg}`;
+}
+
+class AgentCenter {
     constructor(root) {
       this.root = root;
       this.full = root.dataset.mode === "full";
@@ -456,7 +485,8 @@
           <label class="wide">Titel<input name="title" required minlength="5" maxlength="160" placeholder="z. B. Verfahrensanweisungen nach Titel sortieren"></label>
           <label class="wide">Zweck – was soll leichter werden?<textarea name="goal" required minlength="10" maxlength="2000"></textarea></label>
           <label>Nutzergruppe<input name="user_group" required minlength="2" maxlength="160" placeholder="z. B. Einkauf"></label>
-          <label>Projekt<input name="project" required pattern="[A-Z][A-Z0-9-]{2,30}" value="FLOW-DMS"></label>
+          <label>Projekt<input name="project" required list="ac-projects" maxlength="31" value="FLOW-DMS" title="Projektkürzel, z. B. FLOW-DMS – Kleinbuchstaben und Leerzeichen werden automatisch umgewandelt"></label>
+          <datalist id="ac-projects">${PROJECTS.map((p) => `<option value="${p}">`).join("")}</datalist>
           <label class="wide">Gewünschtes Verhalten<textarea name="behavior" required minlength="10" maxlength="3000"></textarea></label>
           <label class="wide">Erfolgsbeispiel<input name="success_example" required minlength="5" maxlength="1500" placeholder="z. B. Bei Beta und Alpha erscheint Alpha zuerst"></label>
           <label class="wide">Ausgeschlossen (optional)<input name="exclusions" maxlength="1500" placeholder="z. B. keine Änderung an Rechten"></label>
@@ -476,6 +506,7 @@
     }
 
     async openRunDialog(draft = null) {
+      this.bindProjectField();
       const dialog = this.$("[data-run-dialog]");
       const select = this.$("[data-scopes]");
       const form = this.$("[data-run-form]");
@@ -502,9 +533,22 @@
       dialog.showModal();
     }
 
+    bindProjectField() {
+      const form = this.$("[data-run-form]");
+      if (form.dataset.projectBound) return;
+      form.dataset.projectBound = "1";
+      const field = form.elements.project;
+      field.addEventListener("input", () => { field.dataset.touched = "1"; });
+      field.addEventListener("blur", () => { field.value = normalizeProject(field.value); });
+      this.$("[data-scopes]").addEventListener("change", (event) => {
+        if (!field.dataset.touched) field.value = projectForScope(event.target.value);
+      });
+    }
+
     async submitRun() {
       const form = this.$("[data-run-form]");
       const message = this.$("[data-run-msg]");
+      form.elements.project.value = normalizeProject(form.elements.project.value);
       if (!form.reportValidity()) return;
       const values = Object.fromEntries(new FormData(form).entries());
       values.idempotency_key = `portal-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -513,7 +557,7 @@
       try {
         const response = await fetch("/api/agents/runs", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(values) });
         const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(Array.isArray(result.detail) ? result.detail.map((d) => d.msg).join("; ") : result.detail || `Abgelehnt (${response.status})`);
+        if (!response.ok) throw new Error(Array.isArray(result.detail) ? result.detail.map(fieldError).join("; ") : result.detail || `Abgelehnt (${response.status})`);
         message.textContent = `Auftrag ${result.auftrag_id} angelegt (${result.id}). Der Geschäftsführungs-Agent bewertet ihn zuerst.`;
         form.reset();
         setTimeout(() => { this.$("[data-run-dialog]").close(); this.poll(); }, 1400);

@@ -159,6 +159,16 @@ scopes:
       - services/platform_api/app/erpnext_client.py
       - services/platform_api/app/business_tools.py
       - services/platform_api/tests/test_integrations_unit.py
+  # Agenten- und FLOWDOC-Doku im Wiki (MkDocs-Navigation besteht bereits). Sicherheitskonzept und
+  # Nachweise bleiben bewusst außerhalb: die ändern Menschen.
+  agenten-doku:
+    label: Wiki – Agenten und FLOWDOC (Funktionsweise, Bedienung, Betrieb)
+    paths:
+      - docs/agents/index.md
+      - docs/agents/bedienung.md
+      - docs/agents/betrieb.md
+      - docs/agents/modellbewertung.md
+      - docs/user-guides/flowdoc.md
   # Zentrale HTTP-Routen der Plattform-API. Zu groß für lokale Modelle; nur mit Codex/Claude.
   plattform-routen:
     label: Plattform-API – zentrale Routen (main.py, flow_routes.py) – komplex, Codex/Claude
