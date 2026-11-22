@@ -17,6 +17,7 @@ from .providers import GatewayProvider, Provider, SimulatedProvider
 from .rm import FlowworkRM, OfflineRM
 from .sandbox import DockerCheck, LocalCheck, Sandbox
 from .store import Store
+from .sync import PlatformSync
 
 DEMO_SECRET_HINT = "change-before-network-use"
 PROVIDER_NAMES = ("gateway", "simulated", "codex", "claude")
@@ -35,6 +36,7 @@ class Runtime:
     host: str
     port: int
     poll_seconds: float
+    sync: PlatformSync | None = None
 
 
 def _secret(settings: dict[str, Any], key: str, default: str) -> str:
@@ -137,5 +139,8 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
     listen = str(settings.get("listen", "127.0.0.1:8095"))
     host, _, port = listen.rpartition(":")
     api_secret = _secret(settings, "api_secret_env", f"local-agents-api-secret-{DEMO_SECRET_HINT}")
+    sync = None
+    if settings.get("platform_url") and settings.get("platform_sync", True):
+        sync = PlatformSync(engine, str(settings["platform_url"]), api_secret)
     return Runtime(engine, store, settings, api_secret, host or "127.0.0.1", int(port),
-                   float(settings.get("poll_seconds", 3)))
+                   float(settings.get("poll_seconds", 3)), sync)

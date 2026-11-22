@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from .agent_policy import PolicyError
-from .agents_bff import AgentsGateway, AgentsRejected, AgentsUnavailable
+from .agents_bff import AgentsHub, AgentsRejected, AgentsUnavailable
 from .config import settings
 from .dms import DmsError, DmsService
 from .rm_adapter import RMAdapter, RMConflict, RMNotFound
@@ -61,7 +61,7 @@ def person(request: Request) -> dict[str, Any] | None:
     return DEMO_PERSON if settings.auth_mode != "oidc" else None
 
 
-def build_router(rm_adapter: RMAdapter, agents: AgentsGateway, dms: DmsService) -> APIRouter:
+def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService) -> APIRouter:
     router = APIRouter()
 
     # -- Seiten ------------------------------------------------------------------------
@@ -100,14 +100,44 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsGateway, dms: DmsService) 
         except (ValueError, WorkError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from None
 
+    # -- Abgleich mit dem Orchestrator (Pull-Modell, Dienst-Token statt Sitzung) ---------------
+    def sync_auth(authorization: str) -> None:
+        try:
+            agents.verify(authorization)
+        except AgentsRejected as exc:
+            raise HTTPException(status_code=exc.status, detail=str(exc)) from None
+
+    @router.get("/api/agents/sync/actions", include_in_schema=False)
+    def sync_actions(authorization: Annotated[str, Header()] = "") -> list[dict[str, Any]]:
+        sync_auth(authorization)
+        return agents.pending()
+
+    @router.post("/api/agents/sync/results", include_in_schema=False)
+    def sync_results(payload: Annotated[dict[str, Any], Body()],
+                     authorization: Annotated[str, Header()] = "") -> dict[str, Any]:
+        sync_auth(authorization)
+        results = payload.get("results")
+        if not isinstance(results, list) or len(results) > 50:
+            raise HTTPException(status_code=422, detail="results fehlt")
+        return {"accepted": agents.complete(results)}
+
+    @router.post("/api/agents/sync/state", include_in_schema=False)
+    def sync_state(payload: Annotated[dict[str, Any], Body()],
+                   authorization: Annotated[str, Header()] = "") -> dict[str, Any]:
+        sync_auth(authorization)
+        overview = payload.get("overview")
+        if not isinstance(overview, dict) or not isinstance(overview.get("agents"), list):
+            raise HTTPException(status_code=422, detail="overview fehlt")
+        agents.publish(overview, payload.get("registry") if isinstance(payload.get("registry"), dict) else None)
+        return {"ok": True}
+
     # -- Agentenzentrale ----------------------------------------------------------------
-    def forward(method: str, path: str, payload: dict[str, Any] | None, request: Request,
-                *, with_person: bool) -> dict[str, Any]:
+    def forward(kind: str, payload: dict[str, Any], request: Request, *, with_person: bool) -> dict[str, Any]:
         user = person(request) if with_person else None
         if with_person and user is None:
             raise HTTPException(status_code=401, detail="Anmeldung über FLOWID erforderlich")
         try:
-            return agents.request(method, path, payload, user)
+            return agents.request(kind, payload, user)
         except AgentsRejected as exc:
             raise HTTPException(status_code=exc.status, detail=str(exc)) from None
         except AgentsUnavailable as exc:
@@ -120,30 +150,33 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsGateway, dms: DmsService) 
         return overview
 
     @router.get("/api/agents/registry", tags=["agents"])
-    def agents_registry(request: Request) -> dict[str, Any]:
-        return forward("GET", "/v1/registry", None, request, with_person=False)
+    def agents_registry() -> dict[str, Any]:
+        try:
+            return agents.registry()
+        except AgentsUnavailable as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from None
 
     @router.get("/api/agents/runs/{run_id}", tags=["agents"])
     def agents_run(run_id: str, request: Request) -> dict[str, Any]:
         if not run_id.replace("-", "").isalnum():
             raise HTTPException(status_code=404, detail="Lauf nicht gefunden")
-        return forward("GET", f"/v1/runs/{run_id}", None, request, with_person=False)
+        return forward("detail", {"run_id": run_id}, request, with_person=False)
 
     @router.post("/api/agents/runs", tags=["agents"], status_code=201)
     def agents_submit(payload: AgentRunCreate, request: Request) -> dict[str, Any]:
         values = payload.model_dump()
         key = values.pop("idempotency_key")
-        return forward("POST", "/v1/runs", {"idempotency_key": key, "auftrag": values}, request, with_person=True)
+        return forward("submit", {"idempotency_key": key, "auftrag": values}, request, with_person=True)
 
     @router.post("/api/agents/decisions/{decision_id}", tags=["agents"])
     def agents_decide(decision_id: str, payload: AgentDecision, request: Request) -> dict[str, Any]:
         if not decision_id.replace("-", "").isalnum():
             raise HTTPException(status_code=404, detail="Entscheidung nicht gefunden")
-        return forward("POST", f"/v1/decisions/{decision_id}", payload.model_dump(), request, with_person=True)
+        return forward("decide", {"decision_id": decision_id, **payload.model_dump()}, request, with_person=True)
 
     @router.post("/api/agents/control", tags=["agents"])
     def agents_control(payload: AgentControl, request: Request) -> dict[str, Any]:
-        return forward("POST", "/v1/control", payload.model_dump(), request, with_person=True)
+        return forward("control", payload.model_dump(), request, with_person=True)
 
     @router.get("/api/agents/audit", tags=["agents"])
     def agents_audit(request: Request) -> dict[str, Any]:

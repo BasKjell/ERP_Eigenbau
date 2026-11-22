@@ -46,6 +46,8 @@ def create_app(runtime: Runtime, *, start_worker: bool = True) -> FastAPI:
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         if start_worker:
             threading.Thread(target=worker, name="flow-agents-engine", daemon=True).start()
+            if runtime.sync is not None:
+                threading.Thread(target=runtime.sync.run, args=(stop,), name="flow-agents-sync", daemon=True).start()
         yield
         stop.set()
 
@@ -92,7 +94,10 @@ def create_app(runtime: Runtime, *, start_worker: bool = True) -> FastAPI:
 
     @app.get("/health")
     def health() -> dict[str, Any]:
+        sync = runtime.sync
         return {"status": "ok", "service": "flow-agents", "control": runtime.store.control("global", "bereit"),
+                "platform_sync": {"enabled": sync is not None, "connected": bool(sync and sync.connected),
+                                  "error": sync.last_error if sync else ""},
                 "time": time.time()}
 
     @app.get("/v1/overview")

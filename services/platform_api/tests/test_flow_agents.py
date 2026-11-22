@@ -5,6 +5,7 @@ Testnummern verweisen auf den Abnahmeplan, KI-Entwicklungskonzept Teil 10.
 
 from __future__ import annotations
 
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,7 @@ import jwt
 import pytest
 from app import main as main_module
 from app.agent_policy import DEMO_RM_SECRET
-from app.agents_bff import AgentsGateway
+from app.agents_bff import SYNC_AUDIENCE
 from app.main import app, store
 from fastapi.testclient import TestClient
 
@@ -166,45 +167,106 @@ def test_registry_missing_locks_all_agent_operations(monkeypatch: pytest.MonkeyP
     assert rm("drafts", "anforderungen", draft_payload()).status_code == 503
 
 
-# -- Agentenzentrale (BFF) -------------------------------------------------------------------
-def test_overview_falls_back_to_registry_when_orchestrator_is_offline(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(main_module.agents_gateway, "base_url", "http://127.0.0.1:9")
-    response = client.get("/api/agents/overview")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["available"] is False and "nicht erreichbar" in data["reason"]
+# -- Agentenzentrale (BFF, Pull-Modell) ------------------------------------------------------
+def sync_token(*, audience: str = SYNC_AUDIENCE, ttl: int = 60, secret: str | None = None) -> str:
+    now = int(time.time())
+    return jwt.encode({"iss": "flow-agents", "aud": audience, "sub": "flow-orchestrator", "iat": now, "exp": now + ttl},
+                      secret or main_module.agents_hub.secret, algorithm="HS256")
+
+
+def publish_state() -> None:
+    overview = {"agents": [{"role": "anforderungen", "name": "Anforderungs-Agent", "state": "arbeitet"}],
+                "runs": [], "decisions": [], "events": [], "interactions": [], "metrics": {}}
+    response = client.post("/api/agents/sync/state", json={"overview": overview, "registry": {"scopes": {"dms-ui": {"label": "DMS"}}}},
+                           headers={"Authorization": f"Bearer {sync_token()}"})
+    assert response.status_code == 200, response.text
+
+
+@pytest.fixture()
+def fresh_hub(monkeypatch: pytest.MonkeyPatch):  # noqa: ANN201
+    hub = main_module.agents_hub
+    monkeypatch.setattr(hub, "secret", "t" * 40)
+    hub._actions.clear()
+    monkeypatch.setattr(hub, "_overview", None)
+    monkeypatch.setattr(hub, "_registry", None)
+    monkeypatch.setattr(hub, "_seen", 0.0)
+    return hub
+
+
+def test_overview_falls_back_to_registry_when_orchestrator_is_silent(fresh_hub) -> None:  # noqa: ANN001
+    data = client.get("/api/agents/overview").json()
+    assert data["available"] is False and "meldet sich nicht" in data["reason"]
     assert len(data["agents"]) == 12 and data["runs"] == []
     assert data["viewer"]["username"] == "demo-admin"
+    assert client.get("/api/agents/registry").status_code == 503
+    rejected = client.post("/api/agents/runs", json={"idempotency_key": "x" * 10})
+    assert rejected.status_code == 422
 
 
-def test_agent_actions_forward_the_signed_in_person(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls: list[tuple[str, str, Any, Any]] = []
+def test_sync_endpoints_require_the_orchestrator_token(fresh_hub) -> None:  # noqa: ANN001
+    assert client.get("/api/agents/sync/actions").status_code == 401
+    wrong = client.get("/api/agents/sync/actions", headers={"Authorization": f"Bearer {sync_token(audience='flowwork-rm')}"})
+    assert wrong.status_code == 401
+    forged = client.get("/api/agents/sync/actions", headers={"Authorization": f"Bearer {sync_token(secret='x' * 40)}"})
+    assert forged.status_code == 401
+    assert client.get("/api/agents/sync/actions", headers={"Authorization": f"Bearer {sync_token(ttl=3600)}"}).status_code == 401
+    publish_state()
+    overview = client.get("/api/agents/overview").json()
+    assert overview["available"] is True and overview["agents"][0]["state"] == "arbeitet"
+    assert client.get("/api/agents/registry").json()["scopes"]["dms-ui"]["label"] == "DMS"
 
-    def fake(method: str, path: str, payload: Any = None, user: Any = None) -> dict[str, Any]:
-        calls.append((method, path, payload, user))
-        return {"id": "RUN-20261122-ABC123"} if path == "/v1/runs" else {"ok": True}
 
-    monkeypatch.setattr(main_module.agents_gateway, "request", fake)
+def test_portal_actions_are_queued_with_the_person_and_answered_by_the_orchestrator(fresh_hub) -> None:  # noqa: ANN001
+    publish_state()
     body = {"idempotency_key": "portal-0001-abc", "title": "Sortierung nach Titel",
             "goal": "Einkauf findet Verfahrensanweisungen schneller", "user_group": "Einkauf",
             "behavior": "Die Liste sortiert sichtbare Dokumente nach Titel", "success_example": "Alpha vor Beta",
             "change_class": "standard", "scope": "dms-ui", "project": "FLOW-DMS"}
-    assert client.post("/api/agents/runs", json=body).status_code == 201
-    method, path, payload, user = calls[-1]
-    assert (method, path) == ("POST", "/v1/runs") and payload["idempotency_key"] == "portal-0001-abc"
-    assert "idempotency_key" not in payload["auftrag"] and user["username"] == "demo-admin"
-    assert client.post("/api/agents/decisions/ENT-1A2B3C4D", json={"outcome": "annehmen"}).status_code == 200
-    assert calls[-1][1] == "/v1/decisions/ENT-1A2B3C4D" and calls[-1][2]["outcome"] == "annehmen"
-    assert client.post("/api/agents/decisions/../../x", json={"outcome": "annehmen"}).status_code in {404, 405}
-    assert client.post("/api/agents/runs", json={**body, "change_class": "alles"}).status_code == 422
+    seen: list[dict[str, Any]] = []
+
+    def orchestrator() -> None:
+        for _ in range(100):
+            actions = client.get("/api/agents/sync/actions", headers={"Authorization": f"Bearer {sync_token()}"}).json()
+            if actions:
+                seen.extend(actions)
+                results = [{"id": a["id"], "status": 201, "body": {"id": "RUN-20261122-ABC123", "auftrag_id": "A-001"}}
+                           for a in actions]
+                client.post("/api/agents/sync/results", json={"results": results},
+                            headers={"Authorization": f"Bearer {sync_token()}"})
+                return
+            time.sleep(0.05)
+
+    worker = threading.Thread(target=orchestrator)
+    worker.start()
+    response = client.post("/api/agents/runs", json=body)
+    worker.join(5)
+    assert response.status_code == 201, response.text
+    assert response.json()["auftrag_id"] == "A-001"
+    action = seen[0]
+    assert action["kind"] == "submit" and action["payload"]["idempotency_key"] == "portal-0001-abc"
+    assert "idempotency_key" not in action["payload"]["auftrag"]
+    assert action["person"] == {"username": "demo-admin", "name": "Lokale Funktionsdemo", "roles": ["platform-admin"]}
 
 
-def test_bff_tokens_are_short_lived_and_carry_the_person() -> None:
-    gateway = AgentsGateway("http://127.0.0.1:9", "s" * 40)
-    claims = jwt.decode(gateway._token({"username": "demo45", "name": "H", "roles": ["requirements-user"]}),
-                        "s" * 40, algorithms=["HS256"], audience="flow-agents-api")
-    assert claims["iss"] == "flow-platform-api" and claims["exp"] - claims["iat"] == 60
-    assert claims["user"] == {"username": "demo45", "name": "H", "roles": ["requirements-user"]}
+def test_rejections_from_the_orchestrator_reach_the_portal(fresh_hub) -> None:  # noqa: ANN001
+    publish_state()
+
+    def orchestrator() -> None:
+        for _ in range(100):
+            actions = client.get("/api/agents/sync/actions", headers={"Authorization": f"Bearer {sync_token()}"}).json()
+            if actions:
+                client.post("/api/agents/sync/results", json={"results": [
+                    {"id": actions[0]["id"], "status": 403, "body": {"detail": "Keine Befugnis für die Rolle key-user"}}]},
+                    headers={"Authorization": f"Bearer {sync_token()}"})
+                return
+            time.sleep(0.05)
+
+    worker = threading.Thread(target=orchestrator)
+    worker.start()
+    response = client.post("/api/agents/decisions/ENT-1A2B3C4D", json={"outcome": "annehmen"})
+    worker.join(5)
+    assert response.status_code == 403 and "Befugnis" in response.json()["detail"]
+    assert client.post("/api/agents/decisions/ENT-1A2B3C4D", json={"outcome": "vielleicht"}).status_code == 422
 
 
 def test_agents_page_and_dms_page_are_served() -> None:

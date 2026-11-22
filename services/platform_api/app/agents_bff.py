@@ -1,19 +1,21 @@
-"""FLOWPORTAL-Anbindung an den FLOWAGENTS-Orchestrator (Backend for Frontend).
+"""FLOWPORTAL-Anbindung an den FLOWAGENTS-Orchestrator (Backend for Frontend, Pull-Modell).
 
-Der Browser spricht nie direkt mit dem Orchestrator. Die Plattform-API stellt je Aufruf ein
-kurzlebiges Token aus; bei Aufträgen, Entscheidungen und Steuerung enthält es die in FLOWID
-angemeldete Person. Ist der Orchestrator nicht erreichbar, zeigt das Portal das Register mit
-dem Hinweis „Orchestrator nicht erreichbar“ statt erfundener Aktivität.
+Der Orchestrator läuft außerhalb der Container und öffnet keinen von dort erreichbaren Port.
+Er meldet seinen Zustand an ``/api/agents/sync/state`` und holt von Menschen ausgelöste Aktionen
+(Fachauftrag, Entscheidung, Steuerung, Laufdetails) bei ``/api/agents/sync/actions`` ab. Die
+Person stammt aus der geprüften FLOWID-Sitzung; der Orchestrator prüft die Befugnis erneut.
+
+Meldet sich der Orchestrator nicht, zeigt das Portal das Register mit dem Hinweis
+„Orchestrator nicht verbunden“ statt erfundener Aktivität.
 """
 
 from __future__ import annotations
 
-import json
 import os
-import re
+import secrets
+import threading
 import time
-import urllib.error
-import urllib.request
+from dataclasses import dataclass, field
 from typing import Any
 
 import jwt
@@ -21,6 +23,10 @@ import jwt
 from .agent_policy import AgentPolicy, PolicyError, registry_directory
 
 DEMO_API_SECRET = "local-agents-api-secret-change-before-network-use"
+SYNC_AUDIENCE = "flow-platform-sync"
+STALE_AFTER = 15.0
+LEASE_SECONDS = 30.0
+MAX_ACTIONS = 200
 
 
 class AgentsUnavailable(RuntimeError):
@@ -33,48 +39,111 @@ class AgentsRejected(RuntimeError):
         self.status = status
 
 
-class AgentsGateway:
-    def __init__(self, base_url: str | None = None, secret: str | None = None, timeout: float = 8) -> None:
-        self.base_url = (base_url or os.getenv("AGENTS_API_URL", "http://127.0.0.1:8095")).rstrip("/")
+@dataclass
+class _Action:
+    id: str
+    kind: str
+    payload: dict[str, Any]
+    person: dict[str, Any] | None
+    created: float
+    leased_until: float = 0.0
+    result: dict[str, Any] | None = None
+    done: threading.Event = field(default_factory=threading.Event)
+
+
+class AgentsHub:
+    def __init__(self, secret: str | None = None) -> None:
         self.secret = secret or os.getenv("FLOW_AGENTS_API_SECRET", "") or DEMO_API_SECRET
-        self.timeout = timeout
+        self._lock = threading.Lock()
+        self._actions: dict[str, _Action] = {}
+        self._overview: dict[str, Any] | None = None
+        self._registry: dict[str, Any] | None = None
+        self._seen = 0.0
 
-    def _token(self, user: dict[str, Any] | None) -> str:
-        now = int(time.time())
-        claims: dict[str, Any] = {"iss": "flow-platform-api", "aud": "flow-agents-api", "sub": "platform-api",
-                                  "iat": now, "exp": now + 60}
-        if user:
-            claims["user"] = {"username": str(user.get("username") or user.get("email") or ""),
-                              "name": str(user.get("name") or user.get("username") or ""),
-                              "roles": sorted({str(r) for r in user.get("roles", [])})}
-        return jwt.encode(claims, self.secret, algorithm="HS256")
-
-    def request(self, method: str, path: str, payload: dict[str, Any] | None = None,
-                user: dict[str, Any] | None = None) -> dict[str, Any]:
-        if not re.fullmatch(r"/v1/[A-Za-z0-9_/?=&.-]*", path):
-            raise AgentsRejected(400, "ungültiger Pfad")
-        data = json.dumps(payload, ensure_ascii=False).encode() if payload is not None else None
-        headers = {"Accept": "application/json", "Authorization": f"Bearer {self._token(user)}"}
-        if data is not None:
-            headers["Content-Type"] = "application/json"
-        request = urllib.request.Request(self.base_url + path, data=data, method=method, headers=headers)
+    # -- Orchestrator-Seite --------------------------------------------------------------
+    def verify(self, authorization: str) -> None:
+        if not authorization.startswith("Bearer "):
+            raise AgentsRejected(401, "Token fehlt")
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                return json.loads(response.read(8_000_000) or b"{}")
-        except urllib.error.HTTPError as exc:
-            try:
-                detail = str(json.loads(exc.read(20_000)).get("detail", ""))
-            except (ValueError, AttributeError):
-                detail = ""
-            raise AgentsRejected(exc.code, detail or f"Orchestrator antwortete {exc.code}") from None
-        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
-            raise AgentsUnavailable(f"Orchestrator nicht erreichbar ({type(exc).__name__})") from None
+            claims = jwt.decode(authorization[7:], self.secret, algorithms=["HS256"], audience=SYNC_AUDIENCE,
+                                issuer="flow-agents", options={"require": ["exp", "iat", "aud", "iss"]})
+        except jwt.PyJWTError:
+            raise AgentsRejected(401, "Token ungültig") from None
+        if int(claims["exp"]) - int(claims["iat"]) > 300:
+            raise AgentsRejected(401, "Token zu lange gültig")
+
+    def pending(self) -> list[dict[str, Any]]:
+        now = time.time()
+        with self._lock:
+            self._seen = now
+            ready = [a for a in self._actions.values() if a.result is None and a.leased_until < now]
+            for action in ready[:20]:
+                action.leased_until = now + LEASE_SECONDS
+            return [{"id": a.id, "kind": a.kind, "payload": a.payload, "person": a.person} for a in ready[:20]]
+
+    def complete(self, results: list[dict[str, Any]]) -> int:
+        count = 0
+        with self._lock:
+            for result in results:
+                action = self._actions.get(str(result.get("id", "")))
+                if action is None or action.result is not None:
+                    continue
+                action.result = {"status": int(result.get("status", 500)), "body": result.get("body")}
+                action.done.set()
+                count += 1
+        return count
+
+    def publish(self, overview: dict[str, Any], registry: dict[str, Any] | None) -> None:
+        with self._lock:
+            self._overview = overview
+            if registry:
+                self._registry = registry
+            self._seen = time.time()
+
+    # -- Portal-Seite --------------------------------------------------------------------
+    def connected(self) -> bool:
+        return time.time() - self._seen < STALE_AFTER
 
     def overview(self) -> dict[str, Any]:
-        try:
-            return {"available": True, **self.request("GET", "/v1/overview")}
-        except AgentsUnavailable as exc:
-            return self.offline(str(exc))
+        with self._lock:
+            overview, seen = self._overview, self._seen
+        if overview is None or not self.connected():
+            last = time.strftime("%H:%M:%S", time.localtime(seen)) if seen else "noch nie"
+            return self.offline(f"Orchestrator meldet sich nicht (letzter Kontakt: {last})")
+        return {"available": True, **overview}
+
+    def registry(self) -> dict[str, Any]:
+        with self._lock:
+            registry = self._registry
+        if registry is None or not self.connected():
+            raise AgentsUnavailable("Orchestrator nicht verbunden")
+        return registry
+
+    def request(self, kind: str, payload: dict[str, Any], person: dict[str, Any] | None,
+                *, wait: float = 12.0) -> dict[str, Any]:
+        if not self.connected():
+            raise AgentsUnavailable("Orchestrator nicht verbunden – Aktion wurde nicht angenommen")
+        action = _Action(id=secrets.token_hex(8), kind=kind, payload=payload, created=time.time(),
+                         person={"username": str(person.get("username") or person.get("email") or ""),
+                                 "name": str(person.get("name") or person.get("username") or ""),
+                                 "roles": sorted({str(r) for r in person.get("roles", [])})} if person else None)
+        with self._lock:
+            self._expire()
+            self._actions[action.id] = action
+        if not action.done.wait(wait):
+            raise AgentsUnavailable("Orchestrator hat die Aktion noch nicht bestätigt; bitte Status prüfen")
+        result = action.result or {"status": 500, "body": {}}
+        if result["status"] >= 400:
+            body = result.get("body") or {}
+            raise AgentsRejected(result["status"], str(body.get("detail", "Aktion abgelehnt")))
+        return result.get("body") or {}
+
+    def _expire(self) -> None:
+        cutoff = time.time() - 600
+        for key in [k for k, a in self._actions.items() if a.created < cutoff]:
+            self._actions.pop(key, None)
+        while len(self._actions) >= MAX_ACTIONS:
+            self._actions.pop(next(iter(self._actions)))
 
     @staticmethod
     def offline(reason: str) -> dict[str, Any]:

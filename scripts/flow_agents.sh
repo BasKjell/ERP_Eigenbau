@@ -44,7 +44,7 @@ start() {
   if running; then echo "FLOWAGENTS läuft bereits (PID $(cat "$PIDFILE"))."; return; fi
   ensure_venv
   (cd "$ROOT" && PYTHONPATH="$ROOT/services/agent_orchestrator" FLOW_AGENTS_STATE="$STATE" \
-    nohup "$VENV/bin/python" -m flowagents serve --config "$CONFIG" --repo-root "$ROOT" >>"$LOG" 2>&1 &
+    nohup "$VENV/bin/python" -m flowagents serve --config "$CONFIG" --repo-root "$ROOT" </dev/null >>"$LOG" 2>&1 &
     echo $! > "$PIDFILE")
   for _ in $(seq 1 30); do
     if curl -fsS "$URL" >/dev/null 2>&1; then echo "FLOWAGENTS gestartet: $URL (Log: $LOG)"; return; fi

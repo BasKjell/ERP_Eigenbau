@@ -95,16 +95,14 @@ services:
       OIDC_CLIENT_ID: platform-portal
       OIDC_EXTERNAL_ISSUER: ${OIDC_EXTERNAL_ISSUER:-http://localhost:8082/realms/open-manufacturing}
       OIDC_INTERNAL_ISSUER: http://keycloak:8080/realms/open-manufacturing
-      # FLOWAGENTS: Register (read-only), Orchestrator auf dem Host und RM-Adapter-Geheimnis.
+      # FLOWAGENTS: Register (read-only). Der Orchestrator läuft auf dem Host und meldet sich
+      # selbst an (Pull-Modell); er braucht keinen von Containern erreichbaren Port.
       AGENT_REGISTRY_DIR: /app/agents
-      AGENTS_API_URL: ${AGENTS_API_URL:-http://host.docker.internal:8095}
       FLOW_AGENTS_API_SECRET: ${FLOW_AGENTS_API_SECRET:-local-agents-api-secret-change-before-network-use}
       FLOW_AGENT_RM_SECRET: ${FLOW_AGENT_RM_SECRET:-local-agent-rm-secret-change-before-network-use}
       PAPERLESS_REMOTE_USER_HEADER: X-Flow-Sso-User
     ports:
       - "${DEMO_API_PORT:-8088}:8080"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       - demo-state:/data
       - ./output/pdf:/app/documents:ro
