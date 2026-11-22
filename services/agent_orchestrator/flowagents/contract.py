@@ -199,8 +199,11 @@ def validate(raw: dict[str, Any], *, role: str, kind: str, limit: int | None = N
             raise ContractError("fertig (bereit) ist mit blockierenden Befunden unzulässig")
         if status == "nacharbeit" and not blocking:
             raise ContractError("nacharbeit braucht mindestens einen Befund der Schwere hoch oder mittel")
-    elif status == "fertig" and not artifacts:
-        raise ContractError("fertig braucht mindestens ein Artefakt")
+    else:
+        if status == "nacharbeit":
+            raise ContractError("Ersteller melden nach einer Überarbeitung „fertig“; „nacharbeit“ ist Prüfrollen vorbehalten")
+        if status == "fertig" and not artifacts:
+            raise ContractError("fertig braucht mindestens ein Artefakt")
     return Handoff(status, summary, artifacts, findings, questions)
 
 

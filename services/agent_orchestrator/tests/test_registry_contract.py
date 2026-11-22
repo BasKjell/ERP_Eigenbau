@@ -123,6 +123,8 @@ def test_valid_requirement_handoff() -> None:
          "anforderungspruefung", "review", "blockierenden"),
         ({"status": "fertig", "summary": "x", "artifacts": [requirement()]}, "anforderungspruefung", "review", "Prüfrollen"),
         ({"status": "entscheidung_offen", "summary": "x", "artifacts": []}, "anforderungen", "create", "Frage"),
+        ({"status": "nacharbeit", "summary": "überarbeitet", "artifacts": [requirement()]}, "anforderungen", "create",
+         "Prüfrollen vorbehalten"),
         ({"status": "entscheidung_offen", "summary": "x", "questions": [{"to": "jeder", "question": "?"}]},
          "anforderungen", "create", "questions"),
     ],

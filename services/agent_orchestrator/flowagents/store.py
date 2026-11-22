@@ -152,7 +152,7 @@ class Store:
         return self._run(row) if row else None
 
     def update_run(self, run_id: str, **fields: Any) -> None:
-        allowed = {"status", "step_index", "corrections", "model_calls", "output_tokens", "reason"}
+        allowed = {"status", "step_index", "corrections", "model_calls", "output_tokens", "reason", "registry_digest"}
         if set(fields) - allowed:
             raise ValueError("unzulässige Laufspalte")
         values = {k: canonical(v) if k == "corrections" else v for k, v in fields.items()}
@@ -278,6 +278,7 @@ class Store:
         question: str,
         context: dict[str, Any],
         digest: str = "",
+        actor: str = "orchestrator",
     ) -> dict[str, Any]:
         decision_id = f"ENT-{secrets.token_hex(4).upper()}"
         with self._lock, self.db:
@@ -287,7 +288,7 @@ class Store:
                 (decision_id, run_id, step_id, gate, decider, "offen", title, question, canonical(context),
                  digest, time.time()),
             )
-            self._event(run_id, "entscheidung_offen", "orchestrator", f"mensch:{decider}",
+            self._event(run_id, "entscheidung_offen", actor, f"mensch:{decider}",
                         f"{title}: Entscheidung durch {decider} erforderlich", {"decision": decision_id, "gate": gate})
         return self.decision(decision_id)
 

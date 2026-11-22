@@ -266,10 +266,15 @@ def test_restart_recovers_interrupted_step(make_engine) -> None:  # noqa: ANN001
     assert open_decision(engine, run["id"])["gate"] == "G4"
 
 
-def test_changed_registry_blocks_running_run(make_engine) -> None:  # noqa: ANN001
+def test_changed_registry_blocks_running_run_until_a_human_rebinds_it(make_engine) -> None:  # noqa: ANN001
     engine = make_engine()
     run = submit(engine)
     engine.store.db.execute("UPDATE runs SET registry_digest='alt' WHERE id=?", (run["id"],))
     engine.store.db.commit()
     engine.cycle()
-    assert "Agentenregister" in open_decision(engine, run["id"])["question"]
+    decision = open_decision(engine, run["id"])
+    assert "Agentenregister" in decision["question"]
+    engine.decide(decision["id"], TECH_LEAD, "annehmen", "Neue Rollenanweisungen geprüft")
+    assert engine.store.run(run["id"])["registry_digest"] == engine.registry.digest
+    drive(engine)
+    assert open_decision(engine, run["id"])["gate"] == "G4"

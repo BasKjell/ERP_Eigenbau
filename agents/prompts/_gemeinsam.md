@@ -29,7 +29,9 @@ Antworte mit genau einem JSON-Objekt ohne weiteren Text:
 }
 ```
 
-- `fertig`: Ergebnis vollständig. Bei Prüfungen bedeutet `fertig` „bereit“ ohne blockierenden Befund.
-- `nacharbeit`: Bei Prüfungen gibt es mindestens einen blockierenden Befund (`hoch` oder `mittel`).
+- `fertig`: Ergebnis vollständig – auch nach einer Überarbeitung von Befunden. Bei Prüfungen bedeutet
+  `fertig` „bereit“ ohne blockierenden Befund.
+- `nacharbeit`: **nur für Prüfrollen**: Es gibt mindestens einen blockierenden Befund (`hoch` oder `mittel`).
+  Erstellende Rollen verwenden `nacharbeit` nie.
 - `entscheidung_offen`: Eine fachliche Entscheidung fehlt; `questions` ist dann nicht leer.
 - `abgebrochen`: Der Auftrag ist nicht bearbeitbar; begründe es in `summary`.

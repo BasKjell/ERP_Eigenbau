@@ -318,7 +318,9 @@ def load(directory: Path) -> Registry:
     rounds = flow.get("max_correction_rounds")
     _require(isinstance(rounds, int) and 1 <= rounds <= 5, "max_correction_rounds muss 1 bis 5 sein")
 
-    digest = hashlib.sha256(raw_registry + b"\0" + raw_workflow).hexdigest()
+    # Rollenanweisungen gehören zum Rollenvertrag (KI-U-05): jede Änderung ändert den Registerstand.
+    prompt_bytes = b"".join(path.name.encode() + b"\0" + path.read_bytes() for path in sorted(prompts_dir.glob("*.md")))
+    digest = hashlib.sha256(raw_registry + b"\0" + raw_workflow + b"\0" + prompt_bytes).hexdigest()
     return Registry(
         version=int(data.get("version", 0)),
         register_id=str(data.get("register_id", "")),

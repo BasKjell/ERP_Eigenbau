@@ -258,7 +258,7 @@ class Engine:
                 run["id"], step.id, "frage", decider, f"Rückfrage von {agent.name}",
                 "\n".join(f"- {q['question']}" + (f" ({q['impact']})" if q.get("impact") else "")
                           for q in handoff.questions),
-                {"agent": agent.id, "summary": handoff.summary},
+                {"agent": agent.id, "summary": handoff.summary}, actor=agent.role,
             )
             return
         if step.kind == "review" and handoff.status == "nacharbeit":
@@ -273,7 +273,7 @@ class Engine:
                         run["id"], step.id, "korrekturlimit", "tech-lead",
                         f"{self.registry.max_correction_rounds} Korrekturrunden ohne Erfolg",
                         "Befunde bestehen weiter. Weitere Runde zulassen oder Lauf abbrechen?",
-                        {"findings": handoff.blocking_findings(), "back_to": back_to},
+                        {"findings": handoff.blocking_findings(), "back_to": back_to}, actor=agent.role,
                     )
                     return
                 self._set_corrections(run, counts=counts, pending={back_to: handoff.blocking_findings()})
@@ -289,7 +289,7 @@ class Engine:
             self.store.open_decision(
                 run["id"], step.id, "eskalation", decider, step.on_rework.get("reason", f"Bedenken von {agent.name}"),
                 handoff.summary + "\n" + "\n".join(f"- {f['impact']}" for f in handoff.blocking_findings()),
-                {"agent": agent.id, "findings": handoff.findings},
+                {"agent": agent.id, "findings": handoff.findings}, actor=agent.role,
             )
             return
         self._block(run, f"{agent.name} meldet {handoff.status}: {handoff.summary}", "blockade", step_id=step.id)
@@ -484,7 +484,7 @@ class Engine:
                 self.store.open_decision(run["id"], step.id, "korrekturlimit", "tech-lead",
                                          "Integrationsprüfung wiederholt rot",
                                          "Weitere Runde zulassen oder Lauf abbrechen?",
-                                         {"findings": finding, "back_to": back_to})
+                                         {"findings": finding, "back_to": back_to}, actor="integration")
                 return
             self._set_corrections(run, counts=counts, pending={back_to: finding})
             self.store.update_run(run["id"], step_index=self.registry.step_index(back_to))
@@ -516,7 +516,7 @@ class Engine:
             self.store.update_run(run["id"], status="wartet", reason=f"{step.id} wartet auf {step.decider}")
             self.store.open_decision(run["id"], step.id, step.id, step.decider or "tech-lead",
                                      f"{step.id} · {step.label}", self._gate_question(run, step),
-                                     self._gate_context(run, step), digest)
+                                     self._gate_context(run, step), digest, actor=step.id)
             return
         self.store.event(run["id"], "gate", step.id, step.id, f"{step.id} im genehmigten Standardweg erfüllt",
                          {"digest": digest})
@@ -692,6 +692,11 @@ class Engine:
             self._set_corrections(run, counts=counts, pending={back_to: decision["context"].get("findings", [])})
             self.store.update_run(run["id"], status="aktiv", step_index=self.registry.step_index(back_to), reason="")
         else:  # frage, blockade: denselben Schritt mit der Antwort erneut ausführen
+            if gate == "blockade" and run["registry_digest"] != self.registry.digest:
+                # Ein Mensch stellt den Lauf bewusst auf den aktuellen Regelstand um.
+                self.store.update_run(run["id"], registry_digest=self.registry.digest)
+                self.store.event(run["id"], "steuerung", f"mensch:{decision['decider']}", "orchestrator",
+                                 f"Lauf auf Registerstand {self.registry.digest[:12]} umgestellt durch {person['name']}")
             self.store.update_run(run["id"], status="aktiv", reason="")
 
     def _authorize(self, user: dict[str, Any], decider: str) -> None:
@@ -748,9 +753,11 @@ class Engine:
                          {"from_step": step.id, "to_step": following.id})
 
     def _block(self, run: dict[str, Any], reason: str, gate: str, *, step_id: str) -> None:
+        step = next((s for s in self.registry.steps if s.id == step_id), None)
+        actor = (step.role or ("integration" if step.kind == "check" else step.id)) if step else "orchestrator"
         self.store.update_run(run["id"], status="blockiert", reason=reason[:500])
         self.store.open_decision(run["id"], step_id, gate, "tech-lead", "Lauf blockiert", reason[:1500],
-                                 {"step": step_id})
+                                 {"step": step_id}, actor=actor)
 
     def _set_corrections(
         self, run: dict[str, Any], *, counts: dict[str, int] | None = None,
