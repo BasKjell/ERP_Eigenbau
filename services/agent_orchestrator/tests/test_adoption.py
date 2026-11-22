@@ -44,8 +44,11 @@ def test_accepted_fachabnahme_becomes_a_local_branch_without_touching_the_checko
     run = submit(engine)
     drive(engine)
     decision = open_decision(engine, run["id"])
-    assert decision["gate"] == "G4" and decision["context"]["preview_url"] == "http://localhost:8098"
-    assert preview.started and engine.overview()["runs"][0]["preview_url"] == "http://localhost:8098"
+    assert decision["gate"] == "G4" and decision["context"]["preview_url"] == "http://localhost:8098/dms"
+    assert preview.started and engine.overview()["runs"][0]["preview_url"] == "http://localhost:8098/dms"
+    task = engine.overview()["decisions"][0]
+    assert task["auftrag"]["id"] == "A-001" and task["auftrag"]["title"].startswith("Verfahrensanweisungen")
+    assert task["context"]["preview_url"] == "http://localhost:8098/dms"
     engine.decide(decision["id"], KEY_USER, "annehmen", "passt")
     assert preview.stopped >= 1
     result = engine.store.latest_artifact(run["id"], "uebernahme")["content"]

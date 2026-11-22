@@ -541,7 +541,9 @@ class Engine:
             if step.id == "G4" and self.preview is not None:
                 implementation = self.store.latest_artifact(run["id"], "implementierung") or {}
                 try:
-                    context["preview_url"] = self.preview.start(Path(str(implementation["refs"]["workspace"])))
+                    base = self.preview.start(Path(str(implementation["refs"]["workspace"])))
+                    dms = any("dms" in path for path in run["auftrag"].get("paths", []))
+                    context["preview_url"] = base + ("/dms" if dms else "/")
                     self.store.event(run["id"], "vorschau", "integration", "mensch:key-user",
                                      f"Kandidat zur Abnahme unter {context['preview_url']} gestartet")
                 except (SandboxError, KeyError, OSError) as exc:
@@ -899,7 +901,7 @@ class Engine:
             "pipeline": [{"id": s.id, "label": s.label, "kind": s.kind, "role": s.role, "decider": s.decider}
                          for s in steps],
             "runs": [self._run_summary(run, open_decisions) for run in runs],
-            "decisions": [self._decision_summary(d) for d in open_decisions],
+            "decisions": [self._decision_summary(d, {r["id"]: r for r in runs}) for d in open_decisions],
             "events": events[-40:],
             "interactions": [
                 {"from": a, "to": b, "kind": kind, "count": count, "last_at": last_seen[(a, b, kind)]}
@@ -931,10 +933,24 @@ class Engine:
             "branch": ((self.store.latest_artifact(run["id"], "uebernahme") or {}).get("content") or {}).get("branch"),
         }
 
-    @staticmethod
-    def _decision_summary(decision: dict[str, Any]) -> dict[str, Any]:
-        return {key: decision[key] for key in ("id", "run_id", "step_id", "gate", "decider", "title", "question",
-                                                "digest", "created_at", "context")}
+    def _decision_summary(self, decision: dict[str, Any], runs: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        """Entscheidung mit Bezug zum Fachauftrag, damit die Person sofort sieht, worum es geht."""
+        summary = {key: decision[key] for key in ("id", "run_id", "step_id", "gate", "decider", "title", "question",
+                                                   "digest", "created_at", "context")}
+        run = runs.get(decision["run_id"])
+        if run is None:
+            try:
+                run = self.store.run(decision["run_id"])
+            except KeyError:
+                run = None
+        if run is not None:
+            auftrag = run["auftrag"]
+            summary["auftrag"] = {
+                "id": run["auftrag_id"], "title": run["title"], "change_class": run["change_class"],
+                "requested_by": run["requested_by"].get("name"), "goal": auftrag.get("goal", ""),
+                "success_example": auftrag.get("success_example", ""), "scope_label": auftrag.get("scope_label", ""),
+            }
+        return summary
 
     def run_detail(self, run_id: str) -> dict[str, Any]:
         run = self.store.run(run_id)

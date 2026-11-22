@@ -28,6 +28,12 @@
   const STATE_LABEL = { arbeitet: "arbeitet", als_naechstes: "als Nächstes", wartet: "wartet auf Mensch", bereit: "bereit", pausiert: "pausiert", inaktiv: "nicht freigegeben", unbekannt: "—" };
   const KIND_LABEL = { uebergabe: "übergibt", ruecklauf: "gibt zurück", entscheidung_offen: "fragt", entscheidung: "entscheidet", werkzeug: "schreibt", start: "beginnt", ergebnis: "liefert", gate: "Gate", baseline: "fixiert", auftrag: "beauftragt", vertrag: "Vertrag", pausiert: "pausiert", abschluss: "Abschluss", abbruch: "Abbruch", steuerung: "Steuerung", wiederanlauf: "Wiederanlauf" };
 
+  const previewUrl = (d) => {
+    const url = d?.context?.preview_url || "";
+    return /^http:\/\/localhost:\d+(\/[a-z]*)?$/.test(url) ? url : "";
+  };
+  window.FlowAgents = { previewUrl, esc };
+
   function nodeLabel(id, data) {
     if (id.startsWith("mensch:")) return data.human_roles?.[id.slice(7)]?.label || id.slice(7);
     if (/^G[1-5]$/.test(id)) return (data.pipeline || []).find((s) => s.id === id)?.label || id;
@@ -91,7 +97,7 @@
             <div class="ac-detail" data-detail><small>Klicke auf einen Agenten, ein Gate oder eine Entscheidungsrolle, um Auftrag, Grenzen und aktuelle Arbeit zu sehen.</small></div>
           </div>
           <aside class="ac-side">
-            <section class="ac-panel"><h3>Deine Entscheidungen <span data-inbox-count></span></h3><div class="ac-inbox" data-inbox></div></section>
+            <section class="ac-panel" id="meine-entscheidungen"><h3>Deine Entscheidungen <span data-inbox-count></span></h3><div class="ac-inbox" data-inbox></div></section>
             <section class="ac-panel"><h3>Live-Protokoll <span>NEUESTE ZUERST</span></h3><div class="ac-feed" data-feed></div></section>
           </aside>
         </div>
@@ -290,6 +296,9 @@
       const box = this.$("[data-inbox]");
       const focused = box.contains(document.activeElement) && document.activeElement.tagName === "TEXTAREA";
       if (focused) return; // Eingabe nicht durch die Aktualisierung zerstören
+      const signature = JSON.stringify([decisions.map((d) => [d.id, d.can, d.context?.preview_url]), data.available]);
+      if (signature === this.inboxSignature) return;
+      this.inboxSignature = signature;
       if (!decisions.length) {
         box.innerHTML = `<div class="ac-empty">${data.available === false ? "Orchestrator nicht verbunden." : "Keine offene Entscheidung. Routine läuft im Hintergrund."}</div>`;
         return;
@@ -297,8 +306,9 @@
       box.innerHTML = decisions.slice(0, this.full ? 20 : 4).map((d) => `
         <article class="ac-decision" data-decision="${esc(d.id)}">
           <header><b>${esc(d.title)}</b><span class="ac-chip ${d.can ? "lime" : ""}">${esc(data.human_roles?.[d.decider]?.label || d.decider)}</span></header>
+          ${d.auftrag ? `<div class="ac-task-ref"><span class="ac-chip lime">${esc(d.auftrag.id)}</span> <b>${esc(d.auftrag.title)}</b><small>beauftragt von ${esc(d.auftrag.requested_by || "–")} · ${esc(d.auftrag.scope_label || "")}</small>${d.gate === "G4" && d.auftrag.success_example ? `<small>Prüfe: ${esc(d.auftrag.success_example)}</small>` : ""}</div>` : ""}
           <p>${esc(d.question)}</p>
-          ${d.context?.preview_url && /^http:\/\/localhost:\d+$/.test(d.context.preview_url) ? `<p><a class="ac-btn small" href="${esc(d.context.preview_url)}/dms" target="_blank" rel="noopener">Kandidat in der Vorschau prüfen ↗</a></p>` : ""}
+          ${previewUrl(d) ? `<p><a class="ac-btn small primary" href="${esc(previewUrl(d))}" target="_blank" rel="noopener">Ergebnis in der Vorschau ansehen ↗</a> <a class="ac-btn small" href="/agents?run=${encodeURIComponent(d.run_id)}">Auftrag öffnen</a></p>` : ""}
           ${d.context?.preview_error ? `<small>Vorschau nicht verfügbar: ${esc(d.context.preview_error)}</small>` : ""}
           <small>${esc(d.run_id)}${d.digest ? ` · gebunden an ${esc(d.digest.slice(0, 23))}…` : ""}</small>
           ${d.can ? `<textarea placeholder="Begründung (bei Ablehnung Pflicht)" maxlength="2000"></textarea>
@@ -320,6 +330,7 @@
         const result = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(result.detail || `Entscheidung abgelehnt (${response.status})`);
         card.innerHTML = `<div class="ac-empty">Entscheidung „${esc(button.dataset.outcome)}“ protokolliert.</div>`;
+        this.inboxSignature = "";
         setTimeout(() => this.poll(), 400);
       } catch (error) {
         card.querySelectorAll("button").forEach((b) => { b.disabled = false; });
@@ -329,11 +340,20 @@
 
     renderFeed(data, previous = 0) {
       const events = [...(data.events || [])].reverse().slice(0, this.full ? 60 : 16);
-      this.$("[data-feed]").innerHTML = events.length ? events.map((e) => `<div class="ac-event ${esc(e.kind)}${previous && e.id > previous ? " new" : ""}"><time>${esc(time(e.at))}</time><div><span class="route">${esc(routeText(e, data))}</span> · ${esc(e.message)}</div></div>`).join("") : '<div class="ac-empty">Noch keine Aktivität.</div>';
+      const feed = this.$("[data-feed]");
+      const newest = events.length ? events[0].id : 0;
+      if (newest && newest === this.feedNewest) return; // nichts Neues: Lese- und Scrollposition behalten
+      this.feedNewest = newest;
+      const scrolled = feed.scrollTop;
+      feed.innerHTML = events.length ? events.map((e) => `<div class="ac-event ${esc(e.kind)}${previous && e.id > previous ? " new" : ""}"><time>${esc(time(e.at))}</time><div><span class="route">${esc(routeText(e, data))}</span> · ${esc(e.message)}</div></div>`).join("") : '<div class="ac-empty">Noch keine Aktivität.</div>';
+      if (scrolled > 0) feed.scrollTop = scrolled + feed.querySelectorAll(".ac-event.new").length * 30;
     }
 
     renderRuns(data) {
       const runs = (data.runs || []).slice(0, this.full ? 30 : 4);
+      const signature = JSON.stringify(runs.map((r) => [r.id, r.status, r.step, r.model_calls, r.waiting_for, r.branch]));
+      if (signature === this.runsSignature) return;
+      this.runsSignature = signature;
       this.$("[data-runs]").innerHTML = runs.length ? runs.map((run) => `
         <button class="ac-run" type="button" data-run="${esc(run.id)}">
           <span><span class="key">${esc(run.auftrag_id)}</span><br><small>${esc(run.change_class.replace("_", " "))}</small></span>

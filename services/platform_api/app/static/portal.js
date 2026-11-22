@@ -109,6 +109,33 @@ $("#copy-prompt").addEventListener("click", async (event) => {
   }
 });
 
+// Prüfaufgaben der Agenten: worauf geht die Aufgabe zurück, wo kann ich das Ergebnis ansehen?
+async function loadReviewTasks() {
+  const target = $("#review-tasks");
+  try {
+    const response = await fetch("/api/agents/overview", { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("Agentenzentrale nicht verfügbar");
+    const data = await response.json();
+    const roles = new Set(data.viewer?.roles || []);
+    const mine = (data.decisions || []).filter((d) => {
+      const allowed = data.human_roles?.[d.decider]?.keycloak_roles || [];
+      return allowed.some((role) => roles.has(role)) || (data.demo_mode && roles.has("platform-admin"));
+    });
+    $("#review-count").textContent = mine.length ? `${mine.length} offen` : "";
+    const preview = (d) => (/^http:\/\/localhost:\d+(\/[a-z]*)?$/.test(d.context?.preview_url || "") ? d.context.preview_url : "");
+    target.innerHTML = mine.length ? mine.map((d) => `<article class="focus-action review-task ${d.gate === "G4" ? "g4" : ""}"><span class="focus-priority"></span><div><b>${escapeHtml(d.title)}</b><small><span class="ref">${escapeHtml(d.auftrag?.id || d.run_id)}</span>${escapeHtml(d.auftrag?.title || "")}${d.auftrag?.requested_by ? ` · beauftragt von ${escapeHtml(d.auftrag.requested_by)}` : ""}</small>${d.gate === "G4" && d.auftrag?.success_example ? `<small>Prüfe: ${escapeHtml(d.auftrag.success_example)}</small>` : ""}<div class="review-links">${preview(d) ? `<a class="primary" href="${escapeHtml(preview(d))}" target="_blank" rel="noopener">Ergebnis ansehen ↗</a>` : ""}<a href="/agents?run=${encodeURIComponent(d.run_id)}">Auftrag öffnen</a><a href="/agents#meine-entscheidungen">Entscheiden</a></div></div><div class="focus-meta"><span>${escapeHtml(data.human_roles?.[d.decider]?.label || d.decider)}</span></div></article>`).join("")
+      : `<div class="loading-card">${data.available === false ? "Agenten nicht verbunden." : "Nichts zu prüfen."}</div>`;
+    document.querySelectorAll("#today-list .review-today").forEach((element) => element.remove());
+    const today = $("#today-list");
+    if (today && mine.length) {
+      today.insertAdjacentHTML("afterbegin", mine.slice(0, 3).map((d) => `<a class="review-today" href="${escapeHtml(preview(d) || `/agents?run=${encodeURIComponent(d.run_id)}`)}" ${preview(d) ? 'target="_blank" rel="noopener"' : ""}><span class="today-icon high">✓</span><span><b>${escapeHtml(d.title)}</b><small>${escapeHtml(d.auftrag?.id || "")} ${escapeHtml(d.auftrag?.title || "")}</small></span></a>`).join(""));
+    }
+  } catch (error) {
+    target.innerHTML = `<div class="loading-card">${escapeHtml(error.message)}</div>`;
+  }
+}
+
 setDate();
-initWorkplace();
+initWorkplace().then(loadReviewTasks);
 renderWork();
+setInterval(() => { if (!document.hidden) loadReviewTasks(); }, 15000);
