@@ -49,6 +49,7 @@ class Agent:
     evidence: str
     limits: dict[str, Any] = field(default_factory=dict)
     umbrella: str = ""
+    data_classes: tuple[str, ...] = ()
 
     def active(self, today: date | None = None) -> bool:
         return self.status in ACTIVE_STATUSES and (today or date.today()) <= self.approved_until
@@ -242,6 +243,7 @@ def load(directory: Path) -> Registry:
             evidence=str(entry["evidence"]),
             limits=dict(entry.get("limits") or {}),
             umbrella=str(entry.get("umbrella") or ""),
+            data_classes=tuple(str(c) for c in entry.get("data_classes") or ()),
         )
     _require(bool(agents), "Register enthält keine Agenten")
     for agent in agents.values():

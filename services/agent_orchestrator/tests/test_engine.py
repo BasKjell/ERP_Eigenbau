@@ -147,6 +147,23 @@ def test_approval_roles_are_separated_and_match_the_keycloak_realm(make_engine) 
         "Plattformbetrieb erhält keine Freigaberechte über die Sammelrolle"
 
 
+def test_overview_lists_rights_per_agent_and_who_approves(make_engine) -> None:  # noqa: ANN001
+    engine = make_engine()
+    agents = {a["role"]: a for a in engine.overview()["agents"]}
+    developer = agents["entwicklung"]["rights"]
+    assert developer["identity"]["role"] == "entwicklung" and developer["model"]["alias"] == "flow-coder"
+    assert {t["name"] for t in developer["tools"]} == set(engine.registry.agent("entwicklung").tools)
+    assert all(t["label"] and t["enforced_by"] for t in developer["tools"])
+    assert developer["repository"] and "freigegebenen Pfade" in developer["repository"][0]
+    assert developer["reviewed_by"], "Codeprüfung ist als Prüfer eingetragen"
+    assert {d["role"] for d in developer["decided_by"]} >= {"tech-lead"}
+    assert all(d["keycloak_roles"] for d in developer["decided_by"])
+    requirements = agents["anforderungen"]["rights"]
+    assert any(d["gate"] == "G1" and d["role"] == "product-owner" for d in requirements["decided_by"])
+    assert "fachlich freigeben" in requirements["never"]
+    assert not any(t["name"].startswith(("repo.write", "deploy")) for t in requirements["tools"])
+
+
 def test_submit_requires_product_owner_role_and_valid_scope(make_engine) -> None:  # noqa: ANN001
     engine = make_engine()
     with pytest.raises(EngineError, match="Befugnis"):

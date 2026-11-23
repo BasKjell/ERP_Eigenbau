@@ -286,6 +286,55 @@ class Engine:
                               "findings": len(handoff.findings)})
             self._route(current, step, agent, handoff)
 
+    def _agent_rights(self, agent: Agent) -> dict[str, Any]:
+        """Welche Rechte ein Agent über welche technische Rolle hat und wer sein Ergebnis freigibt.
+
+        Rein aus Register und Konfiguration abgeleitet – dieselben Quellen, die Orchestrator,
+        FLOWWORK-RM-Adapter und FLOWGATE bei jedem Aufruf durchsetzen.
+        """
+        tools = [{"name": name, "label": self.registry.tools.get(name, name), "enforced_by": TOOL_ENFORCER.get(
+                  name.split(".", 1)[0], "Orchestrator")} for name in agent.tools]
+        steps = self.registry.steps
+        decided: list[dict[str, str]] = []
+        for index, step in enumerate(steps):
+            if step.role != agent.role:
+                continue
+            gate = next((s for s in steps[index + 1:] if s.kind == "gate"), None)
+            for decider, gate_id, gate_label, why in (
+                (gate.decider, gate.id, gate.label, "nächstes Gate nach diesem Schritt") if gate else (None,) * 4,
+                (step.on_rework.get("decision"), step.id, step.label, "bei Bedenken des Agenten"),
+            ):
+                if decider and not any(d["gate"] == gate_id and d["role"] == decider for d in decided):
+                    spec = self.registry.human_roles.get(decider, {})
+                    decided.append({"gate": gate_id, "gate_label": gate_label, "role": decider,
+                                    "label": spec.get("label", decider), "why": why,
+                                    "keycloak_roles": list(spec.get("keycloak_roles", []))})
+        escalation = (self.escalation.get("roles") or {}).get(agent.role) if self.escalation.get("enabled") else None
+        reviewer = self.registry.agents.get(agent.reviewed_by or "") if agent.reviewed_by else None
+        repository = []
+        if agent.role == "entwicklung":
+            repository.append("schreibt nur die freigegebenen Pfade des Auftrags, in einer Sandbox ohne Netz und "
+                              "ohne Zugangsdaten; übernommen wird erst nach Fachabnahme als lokaler Branch")
+        if agent.role in REFERENCE_READERS:
+            repository.append("liest Referenzdateien des Änderungsbereichs (nur lesen)")
+        return {
+            "identity": {"role": agent.role,
+                         "rm_token": f"Kurzzeit-Token für FLOWWORK mit Rolle „{agent.role}“ je Lauf",
+                         "gateway_key": f"eigener FLOWGATE-Schlüssel der Rolle „{agent.role}“"},
+            "tools": tools,
+            "model": {"alias": agent.gateway_alias, "family": agent.family, "profile": agent.model_profile,
+                      "escalation": escalation},
+            "reads": list(agent.reads),
+            "repository": repository,
+            "data_classes": list(agent.data_classes),
+            "limits": dict(agent.limits),
+            "reviewed_by": reviewer.name if reviewer else "",
+            "decided_by": decided,
+            "never": ["fachlich freigeben", "Gates entscheiden", "mergen oder pushen", "löschen",
+                      "ausliefern", "Rechte oder Register ändern"],
+            "valid_until": agent.approved_until.isoformat(),
+        }
+
     def _scope_limit(self, scope: dict[str, Any], execution: str, data_class: str) -> int:
         """70k Zeichen für lokale Modelle; komplexe Bereiche mit Abo-Worker dürfen größer sein."""
         esc = self.escalation
@@ -999,7 +1048,7 @@ class Engine:
             if controls.get(f"agent:{agent.role}") == "pausiert":
                 state = "pausiert"
             last = next((e for e in reversed(events) if e["actor"] == agent.role), None)
-            agents.append({**agent.public(), "state": state, "current": current,
+            agents.append({**agent.public(), "rights": self._agent_rights(agent), "state": state, "current": current,
                            "last": {"message": last["message"], "at": last["at"]} if last else None})
         edges: Counter[tuple[str, str, str]] = Counter()
         last_seen: dict[tuple[str, str, str], str] = {}
@@ -1121,6 +1170,10 @@ class Engine:
 
 
 # Rollen, die Referenzdateien eines Änderungsbereichs lesen (fachlicher Hintergrund, keine Implementierung).
+# Wer ein Werkzeug bei jedem Aufruf prüft (Präfix des logischen Werkzeugnamens).
+TOOL_ENFORCER = {"rm": "FLOWWORK RM-Adapter", "ticket": "FLOWWORK RM-Adapter", "knowledge": "FLOWWORK RM-Adapter",
+                 "repo": "Orchestrator-Sandbox", "ci": "Orchestrator", "sbom": "Orchestrator"}
+
 REFERENCE_READERS = {"anforderungen", "anforderungspruefung", "architektur", "entwicklung", "dokumentation",
                      "akzeptanztest", "codepruefung"}
 

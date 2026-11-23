@@ -15,8 +15,8 @@
     planung: [870, 280], akzeptanztest: [720, 280], entwicklung: [565, 280], integration: [415, 280], codepruefung: [265, 280], G3: [110, 280],
     dokumentation: [110, 400], nachweise: [265, 400], G4: [565, 400], G5: [720, 400], schwachstellen: [870, 400],
     flowwork: [1015, 280],
-    "mensch:product-owner": [150, 498], "mensch:tech-lead": [330, 498], "mensch:key-user": [510, 498],
-    "mensch:release": [690, 498], "mensch:geschaeftsfuehrung": [870, 498],
+    "mensch:product-owner": [110, 498], "mensch:tech-lead": [265, 498], "mensch:key-user": [415, 498],
+    "mensch:release": [565, 498], "mensch:isb": [720, 498], "mensch:geschaeftsfuehrung": [870, 498],
   };
   const SHORT = {
     geschaeftsfuehrung: "Geschäftsführung", anforderungen: "Anforderungen", anforderungspruefung: "Anf.-Prüfung",
@@ -24,7 +24,7 @@
     akzeptanztest: "Akzeptanztest", codepruefung: "Codeprüfung", dokumentation: "Dokumentation", nachweise: "Nachweise",
     schwachstellen: "Schwachstellen", integration: "Integration", flowwork: "FLOWWORK",
   };
-  const HUMAN_CODES = { "product-owner": "PO", "tech-lead": "TL", "key-user": "KU", release: "RL", geschaeftsfuehrung: "GF" };
+  const HUMAN_CODES = { "product-owner": "PO", "tech-lead": "TL", "key-user": "KU", release: "RL", isb: "IS", geschaeftsfuehrung: "GF" };
   const STATE_LABEL = { arbeitet: "arbeitet", als_naechstes: "als Nächstes", wartet: "wartet auf Mensch", bereit: "bereit", pausiert: "pausiert", inaktiv: "nicht freigegeben", unbekannt: "—" };
   const KIND_LABEL = { uebergabe: "übergibt", ruecklauf: "gibt zurück", entscheidung_offen: "fragt", entscheidung: "entscheidet", werkzeug: "schreibt", start: "beginnt", ergebnis: "liefert", gate: "Gate", baseline: "fixiert", auftrag: "beauftragt", vertrag: "Vertrag", pausiert: "pausiert", abschluss: "Abschluss", abbruch: "Abbruch", steuerung: "Steuerung", wiederanlauf: "Wiederanlauf" };
 
@@ -287,6 +287,7 @@ class AgentCenter {
         nodes.set(gate, { id: gate, type: "gate", code: gate, state: waiting ? "wartet" : "bereit" });
       }
       for (const [name, role] of Object.entries(data.human_roles || {})) {
+        if (!POS[`mensch:${name}`]) continue; // unbekannte Rolle: nicht in die Ecke zeichnen
         nodes.set(`mensch:${name}`, { id: `mensch:${name}`, type: "human", code: HUMAN_CODES[name] || name.slice(0, 2).toUpperCase(), state: role.open ? "wartet" : "bereit", open: role.open || 0, role });
       }
       return nodes;
@@ -388,6 +389,7 @@ class AgentCenter {
         <div class="ac-hint">${esc(agent.mission || "")}</div>
         <div class="chips"><span class="ac-chip ${agent.state === "arbeitet" ? "lime" : agent.state === "wartet" ? "amber" : agent.state === "pausiert" ? "red" : ""}">${esc(STATE_LABEL[agent.state] || agent.state)}</span>${agent.current ? `<span class="ac-chip">${esc(agent.current.auftrag_id || "")} · ${esc(agent.current.label || "")}</span>` : ""}${(agent.tools || []).map((t) => `<span class="ac-chip">${esc(t)}</span>`).join("")}</div>
         ${agent.last ? `<div class="ac-hint">Zuletzt (${esc(time(agent.last.at))}): ${esc(agent.last.message)}</div>` : ""}
+        ${rightsBlock(agent)}
         ${this.full && isAdmin && data.available !== false ? `<div class="chips"><button class="ac-btn small ${paused ? "" : "danger"}" type="button" data-agent-control="${paused ? "resume" : "pause"}" data-role="${esc(agent.role)}">${paused ? "Agent fortsetzen" : "Agent pausieren (Stopp-Schalter)"}</button></div>` : ""}`;
       panel.querySelector("[data-agent-control]")?.addEventListener("click", (event) => this.control(event.currentTarget.dataset.agentControl, event.currentTarget.dataset.role));
     }
@@ -587,6 +589,7 @@ class AgentCenter {
           <div class="agent-grid">${(data.agents || []).map((a) => `<article class="agent-card ${esc(a.state)}" data-card="${esc(a.role)}"><header><span class="code">${a.role === "geschaeftsfuehrung" ? "GF" : String(a.number).padStart(2, "0")}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip ${a.state === "arbeitet" ? "lime" : a.state === "wartet" ? "amber" : ""}">${esc(STATE_LABEL[a.state] || a.state)}</span></header><p>${esc(a.mission || a.scope || "")}</p><div class="chips"><span class="ac-chip">Stufe ${esc(a.autonomy)}</span><span class="ac-chip">${esc(a.model_profile || "")} ${a.family ? `/ ${esc(a.family)}` : ""}</span><span class="ac-chip">${esc(a.status)}</span></div></article>`).join("")}</div>
           ${(data.productive_agents || []).length ? `<h3 style="margin-top:14px">Produktive Fachagenten <span>STARTBESTAND KI-U-02</span></h3><div class="agent-grid">${data.productive_agents.map((a) => `<article class="agent-card"><header><span class="code">${esc(a.autonomy)}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip">${esc(a.status)}</span></header><p>${esc(a.scope)}</p></article>`).join("")}</div>` : ""}
         </section>
+        ${rightsMatrix(data)}
         ${isAdmin && data.available !== false ? `<section class="ac-panel" style="margin-top:14px"><h3>Betrieb <span>STOPP-SCHALTER</span></h3><div class="chips"><button class="ac-btn small ${data.control === "pausiert" ? "" : "danger"}" type="button" data-global="${data.control === "pausiert" ? "resume" : "pause"}">${data.control === "pausiert" ? "Alle Agenten fortsetzen" : "Alle Agenten anhalten"}</button><a class="ac-btn small" href="#" data-audit>FLOWWORK-Audit anzeigen</a></div><div data-audit-table></div></section>` : ""}`;
       extra.querySelector("[data-global]")?.addEventListener("click", (event) => this.control(event.currentTarget.dataset.global));
       extra.querySelector("[data-audit]")?.addEventListener("click", (event) => { event.preventDefault(); this.loadAudit(); });
@@ -652,6 +655,50 @@ class AgentCenter {
       <h4>Verlauf</h4><ol class="timeline">${detail.steps.map((s) => `<li class="${esc(s.status)}"><b>${esc(label(s.role))}</b> <small>${esc(s.step_id)} · Versuch ${esc(s.attempt)} · ${esc(s.status)} · ${esc(s.provider)} ${esc(s.model)}</small><p>${esc(s.summary || s.error)}</p>${(s.findings || []).length ? `<small>${s.findings.length} Befund(e)</small>` : ""}</li>`).join("")}</ol>
       <h4>Entscheidungen</h4>${detail.decisions.length ? `<ul>${detail.decisions.map((d) => `<li><b>${esc(d.title)}</b> · ${esc(d.status)}${d.decided_by?.name ? ` durch ${esc(d.decided_by.name)}` : ""}${d.comment ? ` – „${esc(d.comment)}“` : ""}</li>`).join("")}</ul>` : "<p>Keine.</p>"}
       <h4>Ergebnisse (jeweils aktuelle Version)</h4>${[...latest.values()].map((a) => `<details class="artifact"><summary><b>${esc(a.kind)}</b> v${esc(a.version)} · ${esc(label(a.role))} · <code>${esc(a.digest.slice(0, 19))}</code></summary>${renderArtifact(a)}</details>`).join("")}`;
+  }
+
+  // -- Rechte je Agent (aus Register und Konfiguration; durchgesetzt von FLOWWORK, FLOWGATE, Orchestrator) --
+  const ESCALATION_LABEL = { codex: "Codex (Abo)", claude: "Claude (Abo)" };
+  const DATA_LABEL = { oeffentlich: "öffentlich", intern: "intern", vertraulich: "vertraulich" };
+
+  function deciderChips(rights) {
+    return (rights.decided_by || []).map((d) => `<span class="ac-chip amber" title="${esc(d.why)} · Keycloak: ${esc((d.keycloak_roles || []).join(", "))}">${esc(d.gate)} · ${esc(d.label)}</span>`).join(" ") || '<span class="ac-chip">kein Gate</span>';
+  }
+
+  function rightsBlock(agent) {
+    const r = agent.rights;
+    if (!r) return "";
+    const tools = (r.tools || []).map((t) => `<tr><td><code>${esc(t.name)}</code></td><td>${esc(t.label)}</td><td>${esc(t.enforced_by)}</td></tr>`).join("");
+    const limits = Object.entries(r.limits || {}).map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(" · ");
+    return `<details class="ac-rights" open><summary>Rechte über die technische Rolle <code>${esc(r.identity?.role || agent.role)}</code></summary>
+      <div class="ac-hint">${esc(r.identity?.rm_token || "")} · ${esc(r.identity?.gateway_key || "")} · gültig bis ${esc(r.valid_until || "")}</div>
+      <table class="ac-table"><thead><tr><th>Werkzeug</th><th>Erlaubt</th><th>Geprüft durch</th></tr></thead><tbody>${tools || '<tr><td colspan="3">keine Werkzeuge</td></tr>'}</tbody></table>
+      <dl class="ac-rights-list">
+        <dt>Modell</dt><dd>${esc(r.model?.alias || "")} (${esc(r.model?.family || "")})${r.model?.escalation ? ` · komplexe Aufträge: ${esc(ESCALATION_LABEL[r.model.escalation] || r.model.escalation)}` : " · nur lokal"}</dd>
+        <dt>Liest</dt><dd>${(r.reads || []).map((k) => `<span class="ac-chip">${esc(k)}</span>`).join(" ") || "–"}</dd>
+        ${(r.repository || []).length ? `<dt>Repository</dt><dd>${r.repository.map((x) => esc(x)).join("<br>")}</dd>` : ""}
+        <dt>Datenklassen</dt><dd>${(r.data_classes || []).map((c) => esc(DATA_LABEL[c] || c)).join(", ") || "–"}</dd>
+        ${limits ? `<dt>Grenzen</dt><dd>${limits}</dd>` : ""}
+        ${r.reviewed_by ? `<dt>Geprüft von</dt><dd>${esc(r.reviewed_by)}</dd>` : ""}
+        <dt>Freigabe durch</dt><dd>${deciderChips(r)}</dd>
+        <dt>Darf nie</dt><dd>${(r.never || []).map((x) => esc(x)).join(" · ")}</dd>
+      </dl></details>`;
+  }
+
+  function rightsMatrix(data) {
+    const agents = (data.agents || []).filter((a) => a.rights);
+    if (!agents.length) return "";
+    const tools = [...new Set(agents.flatMap((a) => a.rights.tools.map((t) => t.name)))].sort();
+    const head = tools.map((t) => `<th title="${esc(agents.flatMap((a) => a.rights.tools).find((x) => x.name === t)?.label || t)}"><span class="ac-vert">${esc(t)}</span></th>`).join("");
+    const rows = agents.map((a) => {
+      const own = new Set(a.rights.tools.map((t) => t.name));
+      return `<tr data-card="${esc(a.role)}"><td><b>${esc(a.name)}</b><br><small><code>${esc(a.role)}</code> · Stufe ${esc(a.autonomy)}</small></td>${tools.map((t) => `<td class="ac-cell ${own.has(t) ? "on" : ""}">${own.has(t) ? "●" : ""}</td>`).join("")}<td>${esc(a.rights.model?.alias || "")}${a.rights.model?.escalation ? `<br><small>↗ ${esc(ESCALATION_LABEL[a.rights.model.escalation] || a.rights.model.escalation)}</small>` : ""}</td><td>${esc((a.rights.data_classes || []).map((c) => DATA_LABEL[c] || c).join(", "))}</td><td>${deciderChips(a.rights)}</td></tr>`;
+    }).join("");
+    const humans = Object.entries(data.human_roles || {}).map(([name, spec]) => `<span class="ac-chip" title="${esc(name)}">${esc(spec.label)} → ${esc((spec.keycloak_roles || []).join(", "))}</span>`).join(" ");
+    return `<section class="ac-panel" style="margin-top:14px"><h3>Rechte der Agenten <span>WERKZEUGE JE TECHNISCHER ROLLE · FREIGABE DURCH MENSCHEN</span></h3>
+      <div class="ac-hint">Jeder Agent handelt nur über seine technische Rolle: eigener FLOWGATE-Schlüssel und je Lauf ein Kurzzeit-Token für FLOWWORK. Werkzeuge prüft FLOWWORK bei jedem Aufruf serverseitig; Freigeben, Mergen, Löschen und Ausliefern hat kein Agent. Klick auf eine Zeile zeigt die Einzelheiten.</div>
+      <div class="ac-scroll"><table class="ac-table ac-matrix"><thead><tr><th>Agent / Rolle</th>${head}<th>Modell</th><th>Daten</th><th>Freigabe durch</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="ac-hint" style="margin-top:10px">Menschliche Freigaberollen (Keycloak): ${humans}</div></section>`;
   }
 
   document.querySelectorAll("[data-agent-center]").forEach((element) => {

@@ -57,6 +57,12 @@ Auf der Startseite (kompakt) und unter **`/agents`** (vollständig):
 - **Live-Protokoll:** jedes Ereignis mit Uhrzeit.
 - **Aufträge:** Fortschritt, aktueller Schritt, wartende Rolle, übernommener Branch. Klick öffnet
   die Laufdetails (Verlauf, Entscheidungen, alle Ergebnisse inkl. Diff und Nachweise).
+- **Rechte der Agenten** (Seite *Agenten*): Matrix, welcher Agent über welche technische Rolle
+  welche Werkzeuge hat, welches Modell er nutzt (und ob komplexe Aufträge an Codex/Claude gehen),
+  welche Datenklassen er verarbeiten darf und welche menschliche Rolle sein Ergebnis freigibt –
+  mit der zugehörigen Keycloak-Rolle. Klick auf einen Agenten zeigt die Einzelheiten: wer jedes
+  Werkzeug prüft (FLOWWORK RM-Adapter, Orchestrator-Sandbox), was er liest, seine Grenzen und was er
+  nie darf.
 
 ## 4. Einen Fachauftrag erteilen
 

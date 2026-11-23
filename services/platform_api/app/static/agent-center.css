@@ -184,3 +184,18 @@
 .ac-dialog .dl.add { background:#e3f6d3; color:#1f4d12; }
 .ac-dialog .dl.del { background:#fde2df; color:#8f2c25; text-decoration:line-through; }
 .ac-dialog .dl.same { color:#66767a; }
+
+/* Rechte je Agent */
+.ac-rights { margin-top:10px; }
+.ac-rights summary { cursor:pointer; color:rgba(255,255,255,.8); font-size:10.5px; font-weight:750; }
+.ac-rights code, .ac-matrix code { font-size:9.5px; color:var(--ac-lime); }
+.ac-rights-list { display:grid; grid-template-columns:max-content 1fr; gap:5px 12px; margin:10px 0 0; font-size:10px; }
+.ac-rights-list dt { color:rgba(255,255,255,.5); }
+.ac-rights-list dd { margin:0; color:rgba(255,255,255,.82); }
+.ac-scroll { overflow-x:auto; }
+.ac-matrix th { vertical-align:bottom; }
+.ac-matrix .ac-vert { writing-mode:vertical-rl; transform:rotate(180deg); white-space:nowrap; text-transform:none; letter-spacing:0; }
+.ac-matrix td.ac-cell { text-align:center; color:rgba(255,255,255,.2); }
+.ac-matrix td.ac-cell.on { color:var(--ac-lime); }
+.ac-matrix tr[data-card] { cursor:pointer; }
+.ac-matrix tr[data-card]:hover td { background:rgba(255,255,255,.04); }
