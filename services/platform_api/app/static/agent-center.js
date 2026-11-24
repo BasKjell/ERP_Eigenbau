@@ -481,6 +481,34 @@ class AgentCenter {
       }));
     }
 
+    async loadScopes() {
+      this.scopes = {};
+      try {
+        const response = await fetch("/api/agents/registry", { headers: { Accept: "application/json" } });
+        if (response.ok) this.scopes = (await response.json()).scopes || {};
+      } catch { /* ohne Bereiche bleibt die Auswahl leer */ }
+      if (this.data) this.renderFull(this.data);
+    }
+
+    // EPi „Iteration geplant“: ein Arbeitspaket als eigenen Auftrag starten.
+    async startPackage(button) {
+      const row = button.closest("[data-package]");
+      const scope = row.querySelector("select")?.value || "";
+      button.disabled = true;
+      try {
+        const response = await fetch(`/api/agents/projects/${encodeURIComponent(row.dataset.project)}/packages/${encodeURIComponent(row.dataset.package)}/start`, {
+          method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ scope }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.detail || `Start abgelehnt (${response.status})`);
+        row.querySelector("[data-package-msg]").textContent = `gestartet als ${result.auftrag_id}`;
+      } catch (error) {
+        row.querySelector("[data-package-msg]").textContent = error.message;
+        button.disabled = false;
+      }
+      this.poll();
+    }
+
     async control(action, role = "", runId = "") {
       const response = await fetch("/api/agents/control", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, role, run_id: runId }) });
       if (!response.ok) {
@@ -591,13 +619,20 @@ class AgentCenter {
       const extra = this.$("[data-full-extra]");
       if (!extra) return;
       const isAdmin = (data.viewer?.roles || []).some((r) => ["platform-admin", "it-user", "work-admin", "flow-techlead"].includes(r));
+      // Die Ansicht wird alle paar Sekunden neu gezeichnet; gewählte Bereiche der Arbeitspakete bleiben erhalten.
+      const chosen = {};
+      extra.querySelectorAll("[data-package] select").forEach((s) => { chosen[`${s.closest("[data-package]").dataset.project}/${s.closest("[data-package]").dataset.package}`] = s.value; });
       extra.innerHTML = `
+        ${projectsPanel(data, this.scopes)}
         <section class="ac-panel" style="margin-top:14px"><h3>Agentenregister <span>${esc(data.registry?.id || "")} · ${esc(data.registry?.policy_version || "")}</span></h3>
           <div class="agent-grid">${(data.agents || []).map((a) => `<article class="agent-card ${esc(a.state)}" data-card="${esc(a.role)}"><header><span class="code">${a.role === "geschaeftsfuehrung" ? "GF" : String(a.number).padStart(2, "0")}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip ${a.state === "arbeitet" ? "lime" : a.state === "wartet" ? "amber" : ""}">${esc(STATE_LABEL[a.state] || a.state)}</span></header><p>${esc(a.mission || a.scope || "")}</p><div class="chips"><span class="ac-chip">Stufe ${esc(a.autonomy)}</span><span class="ac-chip">${esc(a.model_profile || "")} ${a.family ? `/ ${esc(a.family)}` : ""}</span><span class="ac-chip">${esc(a.status)}</span></div></article>`).join("")}</div>
           ${(data.productive_agents || []).length ? `<h3 style="margin-top:14px">Produktive Fachagenten <span>STARTBESTAND KI-U-02</span></h3><div class="agent-grid">${data.productive_agents.map((a) => `<article class="agent-card"><header><span class="code">${esc(a.autonomy)}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip">${esc(a.status)}</span></header><p>${esc(a.scope)}</p></article>`).join("")}</div>` : ""}
         </section>
         ${rightsMatrix(data)}
         ${isAdmin && data.available !== false ? `<section class="ac-panel" style="margin-top:14px"><h3>Betrieb <span>STOPP-SCHALTER</span></h3><div class="chips"><button class="ac-btn small ${data.control === "pausiert" ? "" : "danger"}" type="button" data-global="${data.control === "pausiert" ? "resume" : "pause"}">${data.control === "pausiert" ? "Alle Agenten fortsetzen" : "Alle Agenten anhalten"}</button><a class="ac-btn small" href="#" data-audit>FLOWWORK-Audit anzeigen</a></div><div data-audit-table></div></section>` : ""}`;
+      extra.querySelectorAll("[data-package] select").forEach((s) => { const row = s.closest("[data-package]"); const value = chosen[`${row.dataset.project}/${row.dataset.package}`]; if (value) s.value = value; });
+      extra.querySelectorAll("[data-start-package]").forEach((button) => button.addEventListener("click", () => this.startPackage(button)));
+      if (!this.scopes && (data.projects || []).some((p) => p.packages.some((k) => k.status === "bereit" && !k.scope))) this.loadScopes();
       extra.querySelector("[data-global]")?.addEventListener("click", (event) => this.control(event.currentTarget.dataset.global));
       extra.querySelector("[data-audit]")?.addEventListener("click", (event) => { event.preventDefault(); this.loadAudit(); });
       extra.querySelectorAll("[data-card]").forEach((card) => card.addEventListener("click", () => { this.selected = card.dataset.card; this.renderMap(this.data, Infinity); this.showDetail(this.selected); this.root.scrollIntoView({ behavior: "smooth" }); }));
@@ -690,6 +725,24 @@ class AgentCenter {
         <dt>Freigabe durch</dt><dd>${deciderChips(r)}</dd>
         <dt>Darf nie</dt><dd>${(r.never || []).map((x) => esc(x)).join(" · ")}</dd>
       </dl></details>`;
+  }
+
+  const PACKAGE_LABEL = { geplant: "geplant", bereit: "bereit", in_arbeit: "in Arbeit", fertig: "fertig", gestoppt: "gestoppt" };
+  const PACKAGE_TONE = { bereit: "lime", in_arbeit: "amber", fertig: "", gestoppt: "red", geplant: "" };
+
+  // Großprojekte (Projektklasse L): Arbeitspakete laufen nach EP1 einzeln durch das V.
+  function projectsPanel(data, scopes) {
+    const projects = data.projects || [];
+    if (!projects.length) return "";
+    const roles = new Set(data.viewer?.roles || []);
+    const canStart = ["flow-po", "flow-techlead"].some((r) => roles.has(r)) || (data.demo_mode && roles.has("platform-admin"));
+    const scopeSelect = (pkg) => pkg.scope ? `<code>${esc(pkg.scope)}</code>` : `<select aria-label="Änderungsbereich für ${esc(pkg.key)}"><option value="">Bereich wählen …</option>${Object.entries(scopes || {}).map(([id, s]) => `<option value="${esc(id)}">${esc(s.label)}</option>`).join("")}</select>`;
+    return `<section class="ac-panel" style="margin-top:14px"><h3>Projekte <span>ARBEITSPAKETE NACH DEM V-MODELL</span></h3>
+      ${projects.map((p) => `<article style="margin-top:10px"><header><b>${esc(p.id)} · ${esc(p.title)}</b> <span class="ac-chip">${esc(p.project_class)}/${esc(p.criticality)}</span> <span class="ac-chip ${p.status === "abgeschlossen" ? "lime" : ""}">${esc(p.ep)}</span> <small>${esc(p.progress)} % fertig · Welle ${esc(p.current_wave)} · definiert von ${esc(p.defined_by)}</small></header>
+        <table class="ac-table"><thead><tr><th>Paket</th><th>Ebene im V</th><th>Ergebnis und Abnahmekriterium</th><th>Welle</th><th>Vorgänger</th><th>Bereich</th><th>Status</th><th></th></tr></thead><tbody>
+        ${p.packages.map((k) => `<tr data-package="${esc(k.key)}" data-project="${esc(p.id)}"><td><b>${esc(k.key)}</b><br><small>${esc(k.title)}</small></td><td>${esc((k.v_level || "").replace(/_/g, " "))}</td><td>${esc(k.result)}<br><small>${esc(k.acceptance)}</small></td><td>${esc(k.wave || 1)}</td><td>${esc((k.depends_on || []).join(", ") || "–")}</td><td>${k.status === "bereit" ? scopeSelect(k) : esc(k.scope || "–")}</td><td><span class="ac-chip ${PACKAGE_TONE[k.status] || ""}">${esc(PACKAGE_LABEL[k.status] || k.status)}</span>${k.auftrag_id ? `<br><small>${esc(k.auftrag_id)} · ${esc(k.run_status)}</small>` : ""}</td><td>${k.status === "bereit" && canStart ? '<button class="ac-btn small primary" type="button" data-start-package>Starten (EPi)</button>' : ""}<br><small data-package-msg></small></td></tr>`).join("")}
+        </tbody></table></article>`).join("")}
+    </section>`;
   }
 
   function rightsMatrix(data) {

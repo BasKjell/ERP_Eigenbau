@@ -73,6 +73,19 @@ laufen wie bisher im Kurzweg. Jedes Gate nennt seinen Entscheidungspunkt nach de
 Orchestrator zusätzlich, dass jede Anforderung der Baseline einen Akzeptanztest hat und bei M/L
 Integrationstests vorliegen.
 
+## Großprojekte mit Arbeitspaketen
+
+Ein Auftrag der Projektklasse L plant nur: Der Projektplanungs-Agent schneidet Arbeitspakete je Ebene
+des V-Modells mit Ergebnis, Abnahmekriterium, Welle, Vorgängern und Änderungsbereich. Mit EP1
+„Projekt definiert“ legt der Orchestrator daraus ein Projekt `PRJ-…` an.
+
+- Unter `/agents` zeigt der Bereich **Projekte** jedes Paket mit Status *geplant*, *bereit*, *in Arbeit*,
+  *fertig* oder *gestoppt*. Der Status folgt aus dem Lauf des Pakets.
+- **Starten (EPi)** schickt ein bereites Paket als eigenen Auftrag durch das V (Kurzweg, Kritikalität
+  aus Paket oder Projekt). Starten dürfen Product Owner und Tech Lead; Vorgänger müssen fertig sein.
+  Nennt das Paket keinen Änderungsbereich, wählt die Person einen freigegebenen Bereich.
+- Erneutes Starten erzeugt keinen zweiten Auftrag. Sind alle Pakete fertig, ist das Projekt abgeschlossen (EP9).
+
 ## Ablauf und Gates
 
 ```mermaid

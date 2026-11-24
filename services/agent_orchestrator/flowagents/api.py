@@ -32,6 +32,10 @@ class DecisionBody(BaseModel):
     comment: str = Field(default="", max_length=2000)
 
 
+class PackageBody(BaseModel):
+    scope: str = Field(default="", max_length=40)
+
+
 class ControlBody(BaseModel):
     action: str = Field(pattern="^(pause|resume|cancel)$")
     role: str = Field(default="", max_length=64)
@@ -130,6 +134,13 @@ def create_app(runtime: Runtime, *, start_worker: bool = True) -> FastAPI:
     def decide(decision_id: str, body: DecisionBody, claims: Caller) -> dict[str, Any]:
         try:
             return engine.decide(decision_id, person(claims), body.outcome, body.comment)
+        except EngineError as exc:
+            raise HTTPException(status_code=403 if "Befugnis" in str(exc) else 409, detail=str(exc)) from None
+
+    @app.post("/v1/projects/{project_id}/packages/{key}/start", status_code=201)
+    def start_package(project_id: str, key: str, body: PackageBody, claims: Caller) -> dict[str, Any]:
+        try:
+            return engine.start_package(project_id, key, person(claims), body.scope)
         except EngineError as exc:
             raise HTTPException(status_code=403 if "Befugnis" in str(exc) else 409, detail=str(exc)) from None
 

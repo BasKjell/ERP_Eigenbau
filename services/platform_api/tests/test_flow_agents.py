@@ -271,6 +271,32 @@ def test_rejections_from_the_orchestrator_reach_the_portal(fresh_hub) -> None:  
     assert client.post("/api/agents/decisions/ENT-1A2B3C4D", json={"outcome": "vielleicht"}).status_code == 422
 
 
+def test_package_start_is_forwarded_as_epi_action(fresh_hub) -> None:  # noqa: ANN001
+    publish_state()
+    seen: list[dict[str, Any]] = []
+
+    def orchestrator() -> None:
+        for _ in range(100):
+            actions = client.get("/api/agents/sync/actions", headers={"Authorization": f"Bearer {sync_token()}"}).json()
+            if actions:
+                seen.extend(actions)
+                client.post("/api/agents/sync/results", json={"results": [
+                    {"id": actions[0]["id"], "status": 201, "body": {"id": "RUN-20261124-ABC123", "auftrag_id": "A-002"}}]},
+                    headers={"Authorization": f"Bearer {sync_token()}"})
+                return
+            time.sleep(0.05)
+
+    worker = threading.Thread(target=orchestrator)
+    worker.start()
+    response = client.post("/api/agents/projects/PRJ-001/packages/AP-1/start", json={"scope": "dms-doku"})
+    worker.join(5)
+    assert response.status_code == 201, response.text
+    assert seen[0]["kind"] == "start_package"
+    assert seen[0]["payload"] == {"project_id": "PRJ-001", "package_key": "AP-1", "scope": "dms-doku"}
+    assert client.post("/api/agents/projects/xyz/packages/AP-1/start", json={}).status_code == 404
+    assert client.post("/api/agents/projects/PRJ-001/packages/AP-1/start", json={"scope": "Bad Scope"}).status_code == 422
+
+
 def test_agents_page_and_dms_page_are_served() -> None:
     agents = client.get("/agents")
     assert agents.status_code == 200 and "Agentenzentrale" in agents.text

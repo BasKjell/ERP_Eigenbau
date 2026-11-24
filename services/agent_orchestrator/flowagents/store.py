@@ -53,6 +53,17 @@ CREATE TABLE IF NOT EXISTS model_usage (
     provider TEXT NOT NULL, model TEXT NOT NULL, input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL,
     seconds REAL NOT NULL
 );
+-- Projekte mit Arbeitspaketen (KI-Softwareentwicklung Teil 01): ein L-Lauf plant, jedes Paket
+-- läuft danach als eigener Auftrag durch das V. Status von Paket und Projekt ergeben sich aus den Läufen.
+CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY, run_id TEXT UNIQUE NOT NULL, title TEXT NOT NULL, auftrag TEXT NOT NULL,
+    defined_by TEXT NOT NULL DEFAULT '{}', created REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS work_packages (
+    project_id TEXT NOT NULL, key TEXT NOT NULL, position INTEGER NOT NULL, spec TEXT NOT NULL,
+    run_id TEXT NOT NULL DEFAULT '', started_by TEXT NOT NULL DEFAULT '{}', started REAL,
+    PRIMARY KEY (project_id, key)
+);
 CREATE INDEX IF NOT EXISTS events_run ON events(run_id, id);
 CREATE INDEX IF NOT EXISTS decisions_open ON decisions(status, created);
 """
@@ -176,6 +187,59 @@ class Store:
         value["updated_at"] = iso(value["updated"])
         value.pop("idempotency_key", None)
         return value
+
+    # -- Projekte und Arbeitspakete -------------------------------------------------------
+    def create_project(self, run: dict[str, Any], packages: list[dict[str, Any]],
+                       defined_by: dict[str, Any]) -> dict[str, Any]:
+        """Legt zu einem Projektlauf genau ein Projekt an (idempotent über die Lauf-ID)."""
+        with self._lock, self.db:
+            existing = self.db.execute("SELECT id FROM projects WHERE run_id=?", (run["id"],)).fetchone()
+            if existing:
+                return self.project(existing["id"])
+            project_id = "PRJ-" + run["auftrag_id"].split("-", 1)[-1]
+            self.db.execute("INSERT INTO projects VALUES (?,?,?,?,?,?)",
+                            (project_id, run["id"], run["title"], canonical(run["auftrag"]), canonical(defined_by),
+                             time.time()))
+            for position, spec in enumerate(packages):
+                self.db.execute("INSERT INTO work_packages(project_id, key, position, spec) VALUES (?,?,?,?)",
+                                (project_id, str(spec["key"]), position, canonical(spec)))
+        return self.project(project_id)
+
+    def project(self, project_id: str) -> dict[str, Any]:
+        with self._lock:
+            row = self.db.execute("SELECT * FROM projects WHERE id=?", (project_id,)).fetchone()
+            if row is None:
+                raise KeyError(project_id)
+            packages = self.db.execute("SELECT * FROM work_packages WHERE project_id=? ORDER BY position",
+                                       (project_id,)).fetchall()
+        value = dict(row)
+        value["auftrag"] = json.loads(value["auftrag"])
+        value["defined_by"] = json.loads(value["defined_by"])
+        value["created_at"] = iso(value.pop("created"))
+        value["packages"] = [{**json.loads(p["spec"]), "run_id": p["run_id"], "started_by": json.loads(p["started_by"]),
+                              "started_at": iso(p["started"])} for p in packages]
+        return value
+
+    def projects(self, *, limit: int = 20) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self.db.execute("SELECT id FROM projects ORDER BY created DESC LIMIT ?", (limit,)).fetchall()
+        return [self.project(row["id"]) for row in rows]
+
+    def project_for_run(self, run_id: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self.db.execute(
+                "SELECT id FROM projects WHERE run_id=? UNION SELECT project_id FROM work_packages WHERE run_id=?",
+                (run_id, run_id)).fetchone()
+        return self.project(row[0]) if row else None
+
+    def attach_package_run(self, project_id: str, key: str, run_id: str, person: dict[str, Any]) -> None:
+        """Bindet einen Lauf genau einmal an ein Arbeitspaket."""
+        with self._lock, self.db:
+            changed = self.db.execute(
+                "UPDATE work_packages SET run_id=?, started_by=?, started=? WHERE project_id=? AND key=? AND run_id=''",
+                (run_id, canonical(person), time.time(), project_id, key)).rowcount
+            if changed != 1:
+                raise ValueError("Arbeitspaket ist bereits gestartet")
 
     # -- Schritte ------------------------------------------------------------------------
     def start_step(self, run_id: str, step_id: str, role: str | None, provider: str = "", model: str = "") -> int:

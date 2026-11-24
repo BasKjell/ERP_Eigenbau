@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import re
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -42,6 +43,10 @@ class AgentRunCreate(BaseModel):
     project: str = Field(default="FLOW-PLATFORM", pattern=r"^[A-Z][A-Z0-9-]{2,30}$")
     execution: Literal["automatisch", "lokal", "abo"] = "automatisch"
     draft_id: str = Field(default="", max_length=20, pattern=r"^(VOR-[0-9A-F]{6})?$")
+
+
+class AgentPackageStart(BaseModel):
+    scope: str = Field(default="", max_length=40, pattern=r"^[a-z0-9-]*$")
 
 
 class AgentDraftCreate(BaseModel):
@@ -257,6 +262,14 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
         if not decision_id.replace("-", "").isalnum():
             raise HTTPException(status_code=404, detail="Entscheidung nicht gefunden")
         return forward("decide", {"decision_id": decision_id, **payload.model_dump()}, request, with_person=True)
+
+    @router.post("/api/agents/projects/{project_id}/packages/{key}/start", tags=["agents"], status_code=201)
+    def agents_start_package(project_id: str, key: str, payload: AgentPackageStart, request: Request) -> dict[str, Any]:
+        """EPi „Iteration geplant“: ein Arbeitspaket als eigenen Auftrag starten (Product Owner oder Tech Lead)."""
+        if not re.fullmatch(r"PRJ-[0-9]{3,6}", project_id) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,40}", key):
+            raise HTTPException(status_code=404, detail="Arbeitspaket nicht gefunden")
+        return forward("start_package", {"project_id": project_id, "package_key": key, "scope": payload.scope},
+                       request, with_person=True)
 
     @router.post("/api/agents/control", tags=["agents"])
     def agents_control(payload: AgentControl, request: Request) -> dict[str, Any]:

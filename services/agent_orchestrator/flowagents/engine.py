@@ -964,7 +964,132 @@ class Engine:
             return self.store.decision(decision_id)
 
     def _on_project_defined(self, run: dict[str, Any], person: dict[str, Any]) -> None:
-        """EP1 für Projektklasse L: Projekt mit Arbeitspaketen anlegen (Stufe 2)."""
+        """EP1 für Projektklasse L: Projekt mit den Arbeitspaketen aus dem Projektplan anlegen."""
+        plan = (self.store.latest_artifact(run["id"], "projektplan") or {}).get("content", {})
+        packages = [{key: item.get(key) for key in ("key", "title", "result", "v_level", "acceptance", "wave", "effort",
+                                                     "depends_on", "scope", "owner_role", "criticality")
+                     if item.get(key) not in (None, "", [])} for item in plan.get("items", [])]
+        project = self.store.create_project(run, packages, person)
+        self.store.event(run["id"], "projekt", "orchestrator", "projektplanung",
+                         f"Projekt {project['id']} mit {len(packages)} Arbeitspaketen angelegt",
+                         {"project_id": project["id"]})
+
+    # =================================================================================
+    # Projekte und Arbeitspakete (Stufe 2)
+    # =================================================================================
+    def start_package(self, project_id: str, key: str, user: dict[str, Any], scope: str = "") -> dict[str, Any]:
+        """EPi „Iteration geplant“: ein Arbeitspaket als eigenen Auftrag durch das V schicken.
+
+        Entscheiden darf der Product Owner (Auftraggeber) oder der Tech Lead. Vorgänger müssen
+        fertig sein. Das Paket läuft im Kurzweg (Projektklasse S); seine Kritikalität bestimmt,
+        welche Gates Menschen entscheiden.
+        """
+        try:
+            self._authorize(user, "product-owner")
+        except EngineError:
+            self._authorize(user, "tech-lead")
+        with self.lock:
+            try:
+                project = self.store.project(project_id)
+            except KeyError:
+                raise EngineError("Projekt nicht gefunden") from None
+            states = self._package_states(project)
+            package = next((item for item in project["packages"] if item["key"] == key), None)
+            if package is None:
+                raise EngineError("Arbeitspaket nicht gefunden")
+            if package["run_id"]:
+                return self.store.run(package["run_id"])
+            open_deps = [dep for dep in package.get("depends_on", []) if states.get(dep) != "fertig"]
+            if open_deps:
+                raise EngineError(f"Vorgänger noch nicht fertig: {', '.join(open_deps)}")
+            scope_id = scope or str(package.get("scope") or "")
+            if not scope_id:
+                raise EngineError("Arbeitspaket nennt keinen Änderungsbereich; bitte einen freigegebenen Bereich wählen")
+            base = project["auftrag"]
+            values = {
+                "title": f"{key} {package['title']}"[:160],
+                "goal": f"{base.get('goal', '')} – Arbeitspaket {key}: {package['result']}"[:2000],
+                "user_group": base.get("user_group", "Fachbereich"),
+                "behavior": f"{package['result']}. Abnahmekriterium: {package['acceptance']}"[:3000],
+                "exclusions": base.get("exclusions", ""),
+                "success_example": str(package["acceptance"])[:1500],
+                "data_class": base.get("data_class", "intern"),
+                "scope": scope_id,
+                "project": base.get("project", "FLOW-PLATFORM"),
+                "execution": base.get("execution", "automatisch"),
+                "project_class": "S",
+                "criticality": str(package.get("criticality") or base.get("criticality") or "K1"),
+                "domain": base.get("domain", "it"),
+            }
+            auftrag = self._validated_auftrag(values, user)
+            auftrag.update({"project_id": project_id, "package_key": key, "v_level": package.get("v_level", ""),
+                            "parent_run": project["run_id"]})
+            try:
+                run = self.store.create_run(title=auftrag["title"], change_class=auftrag["change_class"], auftrag=auftrag,
+                                            requested_by=_person(user), registry_digest=self.registry.digest,
+                                            idempotency_key=f"{project_id}:{key}")
+                self.store.attach_package_run(project_id, key, run["id"], _person(user))
+            except ValueError as exc:
+                raise EngineError(str(exc)) from None
+            wave = package.get("wave", 1)
+            self.store.event(project["run_id"], "projekt", f"mensch:{_person(user)['username']}", "projektplanung",
+                             f"EPi Iteration geplant (Welle {wave}): {key} als {run['auftrag_id']} gestartet",
+                             {"project_id": project_id, "package": key, "run_id": run["id"]})
+            return run
+
+    def _package_states(self, project: dict[str, Any]) -> dict[str, str]:
+        """Status je Arbeitspaket aus dem Status seines Laufs: geplant, bereit, in_arbeit, fertig, gestoppt."""
+        runs = {}
+        for item in project["packages"]:
+            if item["run_id"]:
+                try:
+                    runs[item["key"]] = self.store.run(item["run_id"])["status"]
+                except KeyError:
+                    runs[item["key"]] = "abgebrochen"
+        states: dict[str, str] = {}
+        for item in project["packages"]:
+            status = runs.get(item["key"])
+            if status == "abgeschlossen":
+                states[item["key"]] = "fertig"
+            elif status in {"abgebrochen", "abgelehnt"}:
+                states[item["key"]] = "gestoppt"
+            elif status:
+                states[item["key"]] = "in_arbeit"
+        for item in project["packages"]:
+            if item["key"] not in states:
+                ready = all(states.get(dep) == "fertig" for dep in item.get("depends_on", []))
+                states[item["key"]] = "bereit" if ready else "geplant"
+        return states
+
+    def project_summary(self, project: dict[str, Any]) -> dict[str, Any]:
+        states = self._package_states(project)
+        packages = []
+        for item in project["packages"]:
+            run = self.store.run(item["run_id"]) if item["run_id"] else None
+            packages.append({**{k: v for k, v in item.items() if k != "started_by"}, "status": states[item["key"]],
+                             "auftrag_id": run["auftrag_id"] if run else "",
+                             "run_status": run["status"] if run else "",
+                             "started_by": item["started_by"].get("name", "") if item["started_by"] else ""})
+        values = list(states.values())
+        if values and all(state == "fertig" for state in values):
+            status = "abgeschlossen"
+        elif any(state == "in_arbeit" for state in values):
+            status = "in_arbeit"
+        else:
+            status = "definiert"
+        waves = sorted({int(item.get("wave") or 1) for item in project["packages"]}) or [1]
+        current_wave = next((w for w in waves if any(states[i["key"]] != "fertig" for i in project["packages"]
+                                                       if int(i.get("wave") or 1) == w)), waves[-1])
+        auftrag = project["auftrag"]
+        return {
+            "id": project["id"], "run_id": project["run_id"], "title": project["title"], "status": status,
+            "ep": "EP9 Projekt abgeschlossen" if status == "abgeschlossen" else "EP1 Projekt definiert",
+            "project_class": auftrag.get("project_class", "L"), "criticality": auftrag.get("criticality", "K1"),
+            "domain": auftrag.get("domain", "it"), "project": auftrag.get("project", ""),
+            "defined_by": project["defined_by"].get("name", ""), "created_at": project["created_at"],
+            "progress": round(sum(1 for s in values if s == "fertig") / len(values) * 100) if values else 0,
+            "current_wave": current_wave, "packages": packages,
+        }
 
     def _adopt(self, run: dict[str, Any], person: dict[str, Any], digest: str) -> None:
         if self.adoption is None:
@@ -1183,6 +1308,7 @@ class Engine:
             "pipeline": [{"id": s.id, "label": s.label, "kind": s.kind, "role": s.role, "decider": s.decider,
                           "ep": s.ep, "when": {k: list(v) for k, v in s.when.items()}} for s in steps],
             "runs": [self._run_summary(run, open_decisions) for run in runs],
+            "projects": [self.project_summary(project) for project in self.store.projects(limit=10)],
             "decisions": [self._decision_summary(d, {r["id"]: r for r in runs}) for d in open_decisions],
             "events": events[-40:],
             "interactions": [
@@ -1282,7 +1408,12 @@ class Engine:
             "decisions": self.store.decisions(run_id=run_id),
             "events": self.store.events(run_id=run_id, limit=300),
             "manifest_gaps": self.verify_manifest(run_id),
+            "project": self._project_of(run_id),
         }
+
+    def _project_of(self, run_id: str) -> dict[str, Any] | None:
+        project = self.store.project_for_run(run_id)
+        return self.project_summary(project) if project else None
 
 
 # Rollen, die Referenzdateien eines Änderungsbereichs lesen (fachlicher Hintergrund, keine Implementierung).

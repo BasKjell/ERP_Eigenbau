@@ -21,7 +21,7 @@ from .engine import Engine, EngineError
 
 AUDIENCE = "flow-platform-sync"
 ISSUER = "flow-agents"
-ACTIONS = ("submit", "decide", "control", "detail")
+ACTIONS = ("submit", "decide", "control", "detail", "start_package")
 
 
 class SyncError(RuntimeError):
@@ -71,6 +71,10 @@ class PlatformSync:
             if kind == "submit":
                 body = self.engine.submit(dict(payload.get("auftrag") or {}), person,
                                           str(payload.get("idempotency_key", "")))
+                return {"status": 201, "body": body}
+            if kind == "start_package":
+                body = self.engine.start_package(str(payload.get("project_id", "")), str(payload.get("package_key", "")),
+                                                 person, str(payload.get("scope", "")))
                 return {"status": 201, "body": body}
             if kind == "decide":
                 body = self.engine.decide(str(payload.get("decision_id", "")), person, str(payload.get("outcome", "")),
