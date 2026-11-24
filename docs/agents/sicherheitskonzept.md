@@ -3,7 +3,9 @@
 **Arbeitsreferenz:** SEC-AGT-001 · **Stand:** 2026-11-22 · **Status:** Arbeitsentwurf, in der
 Referenzumgebung implementiert und getestet; Freigabe durch Informationssicherheit und Bas offen.
 
-**Grundlagen:** KI-Entwicklungskonzept (Teil 01–10), Unternehmenskonzept KI-U-02/04/05/07/09,
+**Grundlagen:** [KI-Softwareentwicklung nach dem V-Modell](../konzepte/ki-softwareentwicklung/00-hauptdokument.md),
+[KI-Entwicklungskonzept (Teil 01–10)](../konzepte/ki-entwicklungskonzept/index.md),
+[Unternehmenskonzept KI-U-02/04/05/07/09](../konzepte/ki-unternehmenskonzept/00-hauptdokument.md),
 BSI IT-Grundschutz-Kompendium (CON.8, CON.10, OPS.1.1.3, OPS.1.1.6, ORP.1, ORP.4), ISO/IEC 27001:2022
 Anhang A, IAM-Sicherheitskonzept SEC-IAM-001. Kontrollzuordnung und Abnahmefälle:
 [Sicherheit und Nachweise](sicherheit.md).

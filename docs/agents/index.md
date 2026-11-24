@@ -5,8 +5,10 @@
 FLOWAGENTS entwickelt Fachsoftware in getrennten Rollen. Ein Fachbereich beschreibt im
 FLOWPORTAL, welche Arbeit leichter werden soll; Agenten leiten Anforderungen ab, prüfen sie,
 entwerfen Architektur, planen, testen, entwickeln, dokumentieren und stellen Nachweise zusammen.
-Menschen entscheiden an festen Punkten. Grundlage: KI-Entwicklungskonzept (Teil 01–10) und
-Unternehmenskonzept KI-U-00 bis KI-U-12.
+Menschen entscheiden an festen Punkten. Grundlage:
+[KI-Softwareentwicklung nach dem V-Modell](../konzepte/ki-softwareentwicklung/00-hauptdokument.md),
+technische Einzelheiten im [KI-Entwicklungskonzept (Teil 01–10)](../konzepte/ki-entwicklungskonzept/index.md),
+sowie das [Unternehmenskonzept KI-U-00 bis KI-U-12](../konzepte/ki-unternehmenskonzept/00-hauptdokument.md).
 
 ## Wo man was sieht
 

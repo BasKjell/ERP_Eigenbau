@@ -147,6 +147,72 @@ nav:
       - Entscheidungen: architecture/decisions.md
       - Sicherheit: architecture/security.md
       - IAM-Sicherheitskonzept (BSI): architecture/iam-security-concept.md
+  - Konzepte:
+      - "Übersicht": konzepte/index.md
+      - "KI-Softwareentwicklung (V-Modell)":
+          - "00 KI-gestützte Softwareentwicklung nach dem V-Modell": konzepte/ki-softwareentwicklung/00-hauptdokument.md
+          - "01 Projektinitiierung und Projektplanung": konzepte/ki-softwareentwicklung/01-projektinitiierung-und-planung.md
+          - "02 Das V-Modell als Rahmen und sein Zuschnitt": konzepte/ki-softwareentwicklung/02-v-modell-und-zuschnitt.md
+          - "03 Linke Seite: Anforderungen und Entwurf": konzepte/ki-softwareentwicklung/03-anforderungen-und-entwurf.md
+          - "04 Spitze und rechte Seite: Realisierung, Integration und Verifikation": konzepte/ki-softwareentwicklung/04-realisierung-integration-verifikation.md
+          - "05 Oben rechts: Abnahme, Release und Betrieb": konzepte/ki-softwareentwicklung/05-abnahme-release-betrieb.md
+          - "06 Rollen, Agenten und Unabhängigkeit": konzepte/ki-softwareentwicklung/06-rollen-agenten-unabhaengigkeit.md
+          - "07 Domänenprofile, Normen und Bewertung der KI-Werkzeuge": konzepte/ki-softwareentwicklung/07-domaenen-und-normen.md
+          - "08 Plattform, Identitäten und Rechte": konzepte/ki-softwareentwicklung/08-plattform-identitaeten-rechte.md
+          - "09 Konfigurationsmanagement, Rückverfolgbarkeit und Nachweise": konzepte/ki-softwareentwicklung/09-konfiguration-rueckverfolgbarkeit-nachweise.md
+          - "10 Arbeitsaufträge der Agenten": konzepte/ki-softwareentwicklung/10-arbeitsauftraege-der-agenten.md
+          - "11 Einführung und Abnahmetests": konzepte/ki-softwareentwicklung/11-einfuehrung-und-abnahmetests.md
+      - "KI-Unternehmenskonzept":
+          - "00 Unternehmenskonzept für den Einsatz lokaler KI": konzepte/ki-unternehmenskonzept/00-hauptdokument.md
+          - "01 Unternehmensportal FLOWPORTAL und Bedienkonzept": konzepte/ki-unternehmenskonzept/01-unternehmensportal.md
+          - "02 KI-Einsatz, Agentenregister und Freigaben": konzepte/ki-unternehmenskonzept/02-einsatz-und-freigabe.md
+          - "03 Informationsarchitektur und verbindliche Ablage": konzepte/ki-unternehmenskonzept/03-informationsarchitektur.md
+          - "04 Betrieb produktiver KI-Agenten": konzepte/ki-unternehmenskonzept/04-produktive-agenten.md
+          - "05 Agentenanweisungen und Rollenverträge": konzepte/ki-unternehmenskonzept/05-agentenanweisungen.md
+          - "06 GitLab, Repository-Struktur und Releaseverfahren": konzepte/ki-unternehmenskonzept/06-gitlab-und-releases.md
+          - "07 Keycloak, Identitäten und Berechtigungen": konzepte/ki-unternehmenskonzept/07-identitaet-und-rechte.md
+          - "08 Daten, Wissensquellen und berechtigte KI-Suche": konzepte/ki-unternehmenskonzept/08-wissensquellen-und-rag.md
+          - "09 Fachschnittstellen, APIs und MCP-Werkzeuge": konzepte/ki-unternehmenskonzept/09-api-mcp-integration.md
+          - "10 Lebenszyklus von Modellen, Werkzeugen und Lieferanten": konzepte/ki-unternehmenskonzept/10-modelle-und-lieferanten.md
+          - "11 Qualitätssicherung, Überwachung und Störungen": konzepte/ki-unternehmenskonzept/11-qualitaet-und-vorfaelle.md
+          - "12 Einführung, Schulung und Nachweise im ISMS": konzepte/ki-unternehmenskonzept/12-einfuehrung-und-isms.md
+      - "IT-Zielbild Business Applications":
+          - "Übersicht und Korrekturen": konzepte/it-zielbild/index.md
+          - "1 Zielbild und Leitprinzipien": konzepte/it-zielbild/01-zielbild.md
+          - "2 Technologie und Lizenzregeln": konzepte/it-zielbild/02-technologie.md
+          - "3 Plattform und Betrieb": konzepte/it-zielbild/03-betrieb.md
+          - "4 Portal, Anmeldung und Integration": konzepte/it-zielbild/04-portal-und-integration.md
+          - "5 ERP, DMS und weitere Anwendungen": konzepte/it-zielbild/05-erp-dms-und-anwendungen.md
+          - "6 Microsoft-Abhängigkeiten schrittweise abbauen": konzepte/it-zielbild/06-microsoft-ausstieg.md
+          - "7 Fahrplan, Kosten, Risiken und Entscheidungen": konzepte/it-zielbild/07-fahrplan.md
+      - "KI-Entwicklungskonzept (Revision)":
+          - "Übersicht": konzepte/ki-entwicklungskonzept/index.md
+          - "01 Wer die Software entwickelt und wer sie abnimmt": konzepte/ki-entwicklungskonzept/01-wer-die-software-entwickelt-und-wer-sie-abnimmt.md
+          - "02 Vom Fachauftrag zum geprüften Release": konzepte/ki-entwicklungskonzept/02-vom-fachauftrag-zum-geprueften-release.md
+          - "03 Architektur und Vertrauensgrenzen": konzepte/ki-entwicklungskonzept/03-architektur-und-vertrauensgrenzen.md
+          - "04 Dokumentrechte vom AD bis zur KI Suche": konzepte/ki-entwicklungskonzept/04-dokumentrechte-vom-ad-bis-zur-ki-suche.md
+          - "05 Normenbezug und Nachweise für den Pilot": konzepte/ki-entwicklungskonzept/05-normenbezug-und-nachweise-fuer-den-pilot.md
+          - "06 Arbeitsaufträge für Anforderungen und Architektur": konzepte/ki-entwicklungskonzept/06-arbeitsauftraege-fuer-anforderungen-und-architektur.md
+          - "07 Arbeitsaufträge für Umsetzung und Nachweise": konzepte/ki-entwicklungskonzept/07-arbeitsauftraege-fuer-umsetzung-und-nachweise.md
+          - "08 Identitäten und Werkzeuge für das Requirements Management": konzepte/ki-entwicklungskonzept/08-identitaeten-und-werkzeuge-fuer-das-requirements-management.md
+          - "09 Regeln für Gateway und lokale Modellserver": konzepte/ki-entwicklungskonzept/09-regeln-fuer-gateway-und-lokale-modellserver.md
+          - "10 Abnahmeplan für Plattform und Pilotanwendung": konzepte/ki-entwicklungskonzept/10-abnahmeplan-fuer-plattform-und-pilotanwendung.md
+      - "Vorlagen Systemdokumentation":
+          - "V00 Wegweiser: Vorlagen für die Systemdokumentation nach IT-Grundschutz und ISO 27001": konzepte/vorlagen-systemdokumentation/00-wegweiser.md
+          - "V01 Systemsteckbrief, Schutzbedarf und Modellierung": konzepte/vorlagen-systemdokumentation/01-systemsteckbrief-schutzbedarf.md
+          - "V02 Grundinstallation und Härtung des Betriebssystems": konzepte/vorlagen-systemdokumentation/02-betriebssystem-haertung.md
+          - "V03 Netz, Ports und Firewall": konzepte/vorlagen-systemdokumentation/03-netz-ports-firewall.md
+          - "V04 Konten, Service-User und Berechtigungen": konzepte/vorlagen-systemdokumentation/04-konten-berechtigungen.md
+          - "V05 Container: Images und Docker/Compose": konzepte/vorlagen-systemdokumentation/05-container-docker.md
+          - "V06 Kubernetes-Workloads": konzepte/vorlagen-systemdokumentation/06-kubernetes-workloads.md
+          - "V07 Anwendung, Webdienst und Schnittstellen": konzepte/vorlagen-systemdokumentation/07-anwendung-schnittstellen.md
+          - "V08 Datenbank": konzepte/vorlagen-systemdokumentation/08-datenbank.md
+          - "V09 Protokollierung und Überwachung": konzepte/vorlagen-systemdokumentation/09-protokollierung-ueberwachung.md
+          - "V10 Datensicherung und Wiederherstellung": konzepte/vorlagen-systemdokumentation/10-datensicherung-wiederherstellung.md
+          - "V11 Patch-, Änderungs- und Schwachstellenmanagement": konzepte/vorlagen-systemdokumentation/11-patch-change-schwachstellen.md
+          - "V12 Betriebs- und Notfallhandbuch": konzepte/vorlagen-systemdokumentation/12-betriebs-notfallhandbuch.md
+          - "V13 Grundschutz-Check, Freigabe und Inbetriebnahme": konzepte/vorlagen-systemdokumentation/13-grundschutz-check-freigabe.md
+          - "V14 Außerbetriebnahme": konzepte/vorlagen-systemdokumentation/14-ausserbetriebnahme.md
   - Demo-Daten:
       - Datensatz und Referenzen: demo/data-model.md
       - Stammdatenkatalog und Lücken: demo/master-data-catalog.md
