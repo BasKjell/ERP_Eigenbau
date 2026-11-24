@@ -89,6 +89,7 @@ nav:
       - Sicherheitskonzept: agents/sicherheitskonzept.md
       - Betrieb: agents/betrieb.md
       - Klickprüfung mit lokaler KI: agents/klickpruefung.md
+      - Fachagenten: agents/fachagenten.md
       - Sicherheit und Nachweise: agents/sicherheit.md
       - Modellbewertung: agents/modellbewertung.md
   - Werkzeuge:

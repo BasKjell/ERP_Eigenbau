@@ -86,6 +86,13 @@ des V-Modells mit Ergebnis, Abnahmekriterium, Welle, Vorgängern und Änderungsb
   Nennt das Paket keinen Änderungsbereich, wählt die Person einen freigegebenen Bereich.
 - Erneutes Starten erzeugt keinen zweiten Auftrag. Sind alle Pakete fertig, ist das Projekt abgeschlossen (EP9).
 
+## Fachagenten
+
+Neben dem Entwicklungsteam gibt es **Fachagenten** für Aufgaben außerhalb des V-Modells, etwa einen
+Einkaufs-Agenten, der Lieferantenmails beantwortet. Administratoren legen sie in der Agentenzentrale an
+(auf Wunsch mit Entwurf der lokalen KI) und weisen sie AD-Gruppen oder Personen zu. Sie laufen nur lokal und
+liefern nur Entwürfe, die ein Mensch freigibt: [Fachagenten](fachagenten.md).
+
 ## Projekte und Projektrechte
 
 Aufträge gehören zu einem Projekt aus dem **Projektkatalog** (`agents/projects.json`): FLOW-PLATFORM,

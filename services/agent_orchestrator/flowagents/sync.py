@@ -21,7 +21,7 @@ from .engine import Engine, EngineError
 
 AUDIENCE = "flow-platform-sync"
 ISSUER = "flow-agents"
-ACTIONS = ("submit", "decide", "control", "detail", "start_package", "agent_config", "agent_update")
+ACTIONS = ("submit", "decide", "control", "detail", "start_package", "agent_config", "agent_update", "fa_save", "fa_design", "fa_task", "fa_decide")
 
 
 class SyncError(RuntimeError):
@@ -81,6 +81,20 @@ class PlatformSync:
             if kind == "agent_update":
                 body = self.engine.update_agent(str(payload.get("role", "")), dict(payload.get("changes") or {}),
                                                 person, str(payload.get("reason", "")))
+                return {"status": 200, "body": body}
+            if kind == "fa_save":
+                body = self.engine.save_business_agent(dict(payload.get("spec") or {}), person,
+                                                       str(payload.get("agent_id") or ""))
+                return {"status": 200, "body": body}
+            if kind == "fa_design":
+                return {"status": 201, "body": self.engine.request_business_design(str(payload.get("description", "")), person)}
+            if kind == "fa_task":
+                body = self.engine.submit_business_task(str(payload.get("agent_id", "")), dict(payload.get("input") or {}),
+                                                        person, dict(payload.get("context") or {}))
+                return {"status": 201, "body": body}
+            if kind == "fa_decide":
+                body = self.engine.decide_business_job(str(payload.get("job_id", "")), str(payload.get("outcome", "")),
+                                                       person, dict(payload.get("edited") or {}), str(payload.get("comment", "")))
                 return {"status": 200, "body": body}
             if kind == "decide":
                 body = self.engine.decide(str(payload.get("decision_id", "")), person, str(payload.get("outcome", "")),

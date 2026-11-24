@@ -76,7 +76,7 @@ app = FastAPI(
     redoc_url=None,
 )
 app.mount("/assets", StaticFiles(directory=APP_DIR / "static"), name="assets")
-app.include_router(build_router(rm_adapter, agents_hub, dms_service, agent_drafts))
+app.include_router(build_router(rm_adapter, agents_hub, dms_service, agent_drafts, scenario=store.get))
 
 
 @app.get("/docs", include_in_schema=False)

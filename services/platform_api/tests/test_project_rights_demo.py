@@ -131,3 +131,46 @@ def test_only_admins_may_change_agent_configuration(switch_client) -> None:  # n
                       cookies=session(auth, "po.demo")).status_code == 404
     assert client.put("/api/agents/agents/planung/config", json={"changes": {}, "reason": "x"},
                       cookies=session(auth, "po.demo")).status_code == 422
+
+
+BUSINESS = {
+    "agents": [{"id": "FA-001", "name": "Einkauf", "prompt": "geheim", "assigned_roles": ["procurement-user"],
+                "assigned_users": [], "context_sources": ["einkauf"]},
+               {"id": "FA-002", "name": "Qualität", "prompt": "x", "assigned_roles": [], "assigned_users": ["demo17"],
+                "context_sources": []}],
+    "jobs": [{"id": "J1", "kind": "aufgabe", "agent_id": "FA-001", "requested_by": {"username": "demo06"},
+              "input": {"text": "Mail", "_context": {"einkauf": {}}}},
+             {"id": "J2", "kind": "aufgabe", "agent_id": "FA-001", "requested_by": {"username": "demo07"}, "input": {}},
+             {"id": "J3", "kind": "entwurf", "agent_id": "", "requested_by": {"username": "admin.demo"}, "input": {}}],
+    "sources": {"einkauf": {"roles": ["procurement-user"]}},
+}
+
+
+def test_business_agents_are_visible_only_to_assigned_people() -> None:
+    from app.flow_routes import business_for
+
+    buyer = business_for(BUSINESS, {"username": "demo06", "roles": ["procurement-user"]})
+    assert [a["id"] for a in buyer["agents"]] == ["FA-001"] and "prompt" not in buyer["agents"][0]
+    assert [j["id"] for j in buyer["jobs"]] == ["J1"] and "_context" not in buyer["jobs"][0]["input"]
+    assert buyer["can_admin"] is False
+    assert business_for(BUSINESS, {"username": "demo21", "roles": ["production-user"]})["agents"] == []
+    admin = business_for(BUSINESS, {"username": "admin.demo", "roles": ["platform-admin"]})
+    assert len(admin["agents"]) == 2 and {j["id"] for j in admin["jobs"]} == {"J1", "J2", "J3"}
+
+
+def test_background_data_only_for_entitled_people() -> None:
+    from app.flow_routes import business_context
+
+    data = {"purchase_orders": [{"id": "PO-1"}] * 40, "workplace": {"supplier_delivery_history": []}}
+    entitled = business_context(["einkauf"], BUSINESS["sources"], {"roles": ["procurement-user"]}, lambda: data)
+    assert len(entitled["einkauf"]["bestellungen"]) == 25
+    assert business_context(["einkauf"], BUSINESS["sources"], {"roles": ["sales-user"]}, lambda: data) == {}
+
+
+def test_only_admins_manage_business_agents(switch_client) -> None:  # noqa: ANN001
+    client, auth = switch_client
+    spec = {"spec": {"name": "X"}}
+    assert client.post("/api/agents/fachagenten", json=spec).status_code == 401
+    assert client.post("/api/agents/fachagenten", json=spec, cookies=session(auth, "po.demo")).status_code == 403
+    assert client.post("/api/agents/fachagenten/entwurf", json={"description": "Ein Agent für Einkaufsmails"},
+                       cookies=session(auth, "po.demo")).status_code == 403

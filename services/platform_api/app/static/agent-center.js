@@ -192,6 +192,7 @@ class AgentCenter {
           </div>
           <div class="ac-actions">
             <div class="ac-view" role="group" aria-label="Ansicht wählen"><button type="button" data-view="mine" title="Nur Aufträge, an denen du beteiligt bist, mit deinen Agenten und Entscheidungsrollen">Meine Sicht</button><button type="button" data-view="all" title="Alle Aufträge, Agenten und Entscheidungen">Alle</button></div>
+            <button class="ac-btn" type="button" data-fa-admin hidden title="Nur für Administratoren: Fachagenten mit dem lokalen Modell anlegen und Personen zuweisen">⚙ Fachagenten verwalten</button>
             <button class="ac-btn primary" type="button" data-new-run>＋ Fachauftrag starten</button>
             ${this.full ? "" : '<a class="ac-btn" href="/agents">Vollansicht →</a>'}
           </div>
@@ -210,6 +211,7 @@ class AgentCenter {
             <section class="ac-panel"><h3>Live-Protokoll <span>NEUESTE ZUERST</span></h3><div class="ac-feed" data-feed></div></section>
           </aside>
         </div>
+        <section class="ac-fa" data-fa></section>
         <section class="ac-stuck" data-stuck></section>
         <div class="ac-runs" data-runs></div>
         <div data-offline></div>
@@ -218,6 +220,7 @@ class AgentCenter {
       this.$ = (selector) => this.root.querySelector(selector);
       this.$("[data-new-run]").addEventListener("click", () => this.openRunDialog());
       this.root.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => this.setView(button.dataset.view)));
+      this.$("[data-fa-admin]").addEventListener("click", () => this.openFaAdmin());
       this.markView();
       this.bindDialog();
     }
@@ -292,6 +295,173 @@ class AgentCenter {
       map.querySelectorAll("[data-node]").forEach((node) => node.classList.toggle("dim", this.view === "mine" && !focus.has(node.dataset.node)));
     }
 
+    // -- Fachagenten: „Meine Fachagenten“ für zugewiesene Personen ------------------------------------
+    renderFa(data) {
+      const box = this.$("[data-fa]");
+      const business = data.business || {};
+      const agents = (business.agents || []).filter((a) => a.status === "aktiv" || business.can_admin);
+      if (box.contains(document.activeElement) && /^(TEXTAREA|INPUT|SELECT)$/.test(document.activeElement.tagName)) return;
+      const signature = JSON.stringify([agents.map((a) => [a.id, a.status, a.name]), (business.jobs || []).map((j) => [j.id, j.status]), this.faOpen]);
+      if (signature === this.faSignature) return;
+      this.faSignature = signature;
+      if (!agents.length) { box.innerHTML = ""; return; }
+      const templates = business.templates || {};
+      const jobs = (business.jobs || []).filter((j) => j.kind === "aufgabe");
+      box.innerHTML = `<h3>Meine Fachagenten <span>LOKALE KI · NUR ENTWÜRFE, DU GIBST FREI</span></h3>
+        <div class="ac-fa-grid">${agents.map((a) => {
+          const tpl = templates[a.template] || { inputs: {} };
+          const open = this.faOpen === a.id;
+          const mine = jobs.filter((j) => j.agent_id === a.id).slice(0, 6);
+          return `<article class="ac-fa-card" data-fa-agent="${esc(a.id)}">
+            <header><span class="code">${esc(a.id.replace("FA-", ""))}</span><div><b>${esc(a.name)}</b><small>${esc(tpl.label || a.template)} · ${esc(a.model_profile)} · ${esc(a.status)}</small></div>
+              <button class="ac-btn small ${open ? "" : "primary"}" type="button" data-fa-toggle="${esc(a.id)}">${open ? "Schließen" : "Aufgabe geben"}</button></header>
+            <p>${esc(a.purpose)}</p>
+            ${open ? `<div class="ac-fa-input">${Object.entries(tpl.inputs).map(([name, label]) => name === "text" || name === "frage"
+                ? `<label>${esc(label)}<textarea name="${esc(name)}" rows="6"></textarea></label>` : `<label>${esc(label)}<input name="${esc(name)}"></label>`).join("")}
+              <div class="row">${a.template === "mail_antwort" ? '<button class="ac-btn small" type="button" data-fa-sample>Beispielmail einfügen</button>' : ""}<button class="ac-btn small primary" type="button" data-fa-submit="${esc(a.id)}">An den Agenten geben</button><small data-fa-msg></small></div></div>` : ""}
+            ${mine.length ? `<div class="ac-fa-jobs">${mine.map((j) => faJob(j, a)).join("")}</div>` : ""}
+          </article>`;
+        }).join("")}</div>`;
+      box.querySelectorAll("[data-fa-toggle]").forEach((b) => b.addEventListener("click", () => { this.faOpen = this.faOpen === b.dataset.faToggle ? "" : b.dataset.faToggle; this.faSignature = ""; this.renderFa(this.data); }));
+      box.querySelector("[data-fa-sample]")?.addEventListener("click", (event) => {
+        const card = event.currentTarget.closest("[data-fa-agent]");
+        const sample = SAMPLE_MAILS[Math.floor(Math.random() * SAMPLE_MAILS.length)];
+        for (const [name, value] of Object.entries(sample)) { const field = card.querySelector(`[name="${name}"]`); if (field) field.value = value; }
+      });
+      box.querySelectorAll("[data-fa-submit]").forEach((b) => b.addEventListener("click", () => this.submitFaTask(b)));
+      box.querySelectorAll("[data-fa-decide]").forEach((b) => b.addEventListener("click", () => this.decideFaJob(b)));
+      box.querySelectorAll("[data-fa-copy]").forEach((b) => b.addEventListener("click", () => {
+        const job = b.closest("[data-fa-job]");
+        const text = [...job.querySelectorAll("[data-fa-out]")].map((f) => f.value || f.textContent).join("\n\n");
+        navigator.clipboard?.writeText(text).then(() => { b.textContent = "Kopiert"; }).catch(() => { b.textContent = "Kopieren nicht möglich"; });
+      }));
+    }
+
+    async submitFaTask(button) {
+      const card = button.closest("[data-fa-agent]");
+      const message = card.querySelector("[data-fa-msg]");
+      const input = Object.fromEntries([...card.querySelectorAll(".ac-fa-input [name]")].map((f) => [f.name, f.value]));
+      button.disabled = true;
+      message.textContent = "Wird übergeben …";
+      try {
+        const response = await fetch(`/api/agents/fachagenten/${encodeURIComponent(button.dataset.faSubmit)}/aufgaben`, {
+          method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ input }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(Array.isArray(result.detail) ? result.detail.map((d) => d.msg).join("; ") : result.detail || `Abgelehnt (${response.status})`);
+        this.faOpen = "";
+        this.faSignature = "";
+        document.activeElement?.blur();
+        this.poll();
+      } catch (error) {
+        message.textContent = error.message;
+        button.disabled = false;
+      }
+    }
+
+    async decideFaJob(button) {
+      const job = button.closest("[data-fa-job]");
+      const edited = Object.fromEntries([...job.querySelectorAll("textarea[data-fa-out], input[data-fa-out]")].map((f) => [f.name, f.value]));
+      button.disabled = true;
+      try {
+        const response = await fetch(`/api/agents/fachagenten/aufgaben/${encodeURIComponent(job.dataset.faJob)}/entscheidung`, {
+          method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ outcome: button.dataset.faDecide, edited }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.detail || `Abgelehnt (${response.status})`);
+        this.faSignature = "";
+        document.activeElement?.blur();
+        this.poll();
+      } catch (error) {
+        job.querySelector("[data-fa-error]").textContent = error.message;
+        button.disabled = false;
+      }
+    }
+
+    // -- Fachagenten verwalten (nur Administratoren) ----------------------------------------------------
+    async openFaAdmin(agentId = "", prefill = null) {
+      const dialog = this.$("[data-fa-dialog]");
+      const form = this.$("[data-fa-form]");
+      if (!dialog.open) { form.innerHTML = '<p class="lead">Wird geladen …</p>'; dialog.showModal(); }
+      try {
+        const response = await fetch("/api/agents/fachagenten", { headers: { Accept: "application/json" } });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.detail || `Nicht verfügbar (${response.status})`);
+        if (!result.can_admin) throw new Error("Fachagenten verwalten nur Administratoren.");
+        this.faAdmin = result;
+        const current = prefill || (result.agents || []).find((a) => a.id === agentId) || null;
+        form.innerHTML = faAdminMarkup(result, current, agentId);
+        this.bindFaAdmin(form, agentId);
+      } catch (error) {
+        form.innerHTML = `<p class="lead">${esc(error.message)}</p><div class="ac-form-actions"><span></span><button class="ac-btn" value="cancel">Schließen</button></div>`;
+      }
+    }
+
+    bindFaAdmin(form, agentId) {
+      form.querySelectorAll("[data-fa-edit]").forEach((b) => b.addEventListener("click", () => this.openFaAdmin(b.dataset.faEdit)));
+      form.querySelector("[data-fa-new]")?.addEventListener("click", () => this.openFaAdmin(""));
+      form.querySelector("[data-fa-design]")?.addEventListener("click", () => this.designFaAgent(form, agentId));
+      form.querySelector("[data-fa-save]")?.addEventListener("click", () => this.saveFaAgent(form, agentId));
+    }
+
+    faAdminMessage(text, error = false) {
+      const message = this.$("[data-fa-form] [data-fa-admin-msg]");
+      if (message) { message.textContent = text; message.className = error ? "msg error" : "msg"; }
+    }
+
+    async designFaAgent(form, agentId) {
+      const description = form.elements.description.value.trim();
+      if (description.length < 15) { this.faAdminMessage("Bitte den Agenten in mindestens 15 Zeichen beschreiben.", true); return; }
+      this.faAdminMessage("Die lokale KI entwirft den Agenten …");
+      form.querySelector("[data-fa-design]").disabled = true;
+      try {
+        const response = await fetch("/api/agents/fachagenten/entwurf", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ description }) });
+        const job = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(job.detail || `Abgelehnt (${response.status})`);
+        for (let attempt = 0; attempt < 120; attempt += 1) {
+          await new Promise((resolve) => { setTimeout(resolve, 2000); });
+          const list = await fetch("/api/agents/fachagenten", { headers: { Accept: "application/json" } }).then((r) => r.json());
+          const done = (list.jobs || []).find((j) => j.id === job.id);
+          if (done?.status === "fertig") {
+            const draft = { ...done.output, assigned_roles: done.output.assigned_roles || [], model_profile: "assistenz", status: "aktiv", description };
+            await this.openFaAdmin(agentId, { ...(this.faAdmin.agents || []).find((a) => a.id === agentId), ...draft });
+            this.faAdminMessage(`Entwurf der lokalen KI (${done.model}, ${done.seconds} s) eingesetzt. Bitte prüfen, Personen zuweisen und speichern.`);
+            return;
+          }
+          if (done?.status === "fehler") throw new Error(`Entwurf fehlgeschlagen: ${done.error}`);
+          this.faAdminMessage(`Die lokale KI entwirft den Agenten … (${(attempt + 1) * 2} s)`);
+        }
+        throw new Error("Zeitüberschreitung beim Entwurf");
+      } catch (error) {
+        this.faAdminMessage(error.message, true);
+        const button = this.$("[data-fa-form] [data-fa-design]");
+        if (button) button.disabled = false;
+      }
+    }
+
+    async saveFaAgent(form, agentId) {
+      const pick = (name) => [...form.querySelectorAll(`input[name="${name}"]:checked`)].map((i) => i.value);
+      const spec = {
+        name: form.elements.name.value, purpose: form.elements.purpose.value, template: form.elements.template.value,
+        model_profile: form.elements.model_profile.value, data_class: form.elements.data_class.value, status: form.elements.status.value,
+        prompt: form.elements.prompt.value, context_sources: pick("context_sources"), assigned_roles: pick("assigned_roles"),
+        assigned_users: form.elements.assigned_users.value.split(/[\s,;]+/).filter(Boolean),
+      };
+      this.faAdminMessage("Wird geprüft und gespeichert …");
+      try {
+        const response = await fetch("/api/agents/fachagenten", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ agent_id: agentId, spec }) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(Array.isArray(result.detail) ? result.detail.map((d) => d.msg).join("; ") : result.detail || `Abgelehnt (${response.status})`);
+        await this.openFaAdmin(result.id);
+        this.faAdminMessage(`Gespeichert als ${result.id}. Zugewiesene Personen sehen ihn unter „Meine Fachagenten“.`);
+        this.faSignature = "";
+        this.poll();
+      } catch (error) {
+        this.faAdminMessage(error.message, true);
+      }
+    }
+
     // Wo hängt jeder offene Auftrag gerade: bei einem Agenten, bei einer Person (Rolle) oder blockiert.
     renderStuck(data, view) {
       const box = this.$("[data-stuck]");
@@ -340,6 +510,8 @@ class AgentCenter {
       this.renderInbox(view);
       this.renderFeed(view, previous);
       this.renderStuck(data, view);
+      this.renderFa(data);
+      this.$("[data-fa-admin]").hidden = !data.business?.can_admin;
       this.renderRuns(view);
       if (this.selected) this.showDetail(this.selected);
       if (this.full) this.renderFull(data);
@@ -694,6 +866,7 @@ class AgentCenter {
         <div class="ac-form-actions"><span class="msg" data-run-msg>Pflichtfelder laut KI-Entwicklungskonzept Teil 08 „Fachauftrag“.</span><span><button class="ac-btn" value="cancel" formnovalidate type="submit">Abbrechen</button> <button class="ac-btn primary" type="button" data-run-submit>Auftrag einreichen</button></span></div>
       </form></dialog>
       <dialog class="ac-dialog" data-run-detail-dialog><div class="content" data-run-detail></div></dialog>
+      <dialog class="ac-dialog ac-config-dialog" data-fa-dialog><form method="dialog" data-fa-form></form></dialog>
       <dialog class="ac-dialog ac-config-dialog" data-agent-config-dialog><form method="dialog" data-agent-config-form></form></dialog>`;
     }
 
@@ -886,6 +1059,71 @@ class AgentCenter {
 
   function deciderChips(rights) {
     return (rights.decided_by || []).map((d) => `<span class="ac-chip amber" title="${esc(d.why)} · Keycloak: ${esc((d.keycloak_roles || []).join(", "))}">${esc(d.gate)} · ${esc(d.label)}</span>`).join(" ") || '<span class="ac-chip">kein Gate</span>';
+  }
+
+  // Synthetische Lieferantenmails für die Vorführung (passen zu den Demo-Bestellungen).
+  const SAMPLE_MAILS = [
+    { absender: "auftragsabwicklung@baltic-electronics.example", betreff: "PO-2027-0088 – neuer Liefertermin PCB-MAIN-42",
+      text: "Sehr geehrte Damen und Herren,\n\nleider verzögert sich die Lieferung zu Ihrer Bestellung PO-2027-0088 (5 Stück PCB-MAIN-42). Wegen eines Engpasses bei Steckverbindern können wir statt am 05.01.2027 voraussichtlich erst am 09.01.2027 liefern. Eine Teillieferung von 3 Stück wäre am 06.01. möglich.\n\nBitte teilen Sie uns mit, ob die Teillieferung gewünscht ist.\n\nMit freundlichen Grüßen\nJana Ozols\nBaltic Electronics" },
+    { absender: "sales@display-components.example", betreff: "Preisanpassung DISPLAY-7 ab Februar",
+      text: "Hallo,\n\nwir möchten Sie informieren, dass wir die Preise für DISPLAY-7 ab 01.02.2027 um 6 % anpassen müssen. Ihre laufende Bestellung PO-2027-0091 ist davon nicht betroffen. Für Rahmenvereinbarungen bis Ende Januar halten wir den aktuellen Preis.\n\nViele Grüße\nMarc Dubois\nDisplay Components Europe" },
+    { absender: "qualitaet@nordform.example", betreff: "Rückfrage Prüfzeugnis Gehäuse",
+      text: "Guten Tag,\n\nfür die nächste Lieferung der Aluminiumgehäuse benötigen wir die Info, ob Sie ein Abnahmeprüfzeugnis 3.1 oder ein Werkszeugnis 2.2 erwarten. Bisher haben wir 2.2 mitgeliefert.\n\nBeste Grüße\nNordForm Metalltechnik" },
+  ];
+  const JOB_LABEL = { wartend: "wartet auf das Modell", in_arbeit: "Agent arbeitet", fertig: "Entwurf bereit – bitte prüfen", fehler: "Fehler", freigegeben: "freigegeben", verworfen: "verworfen" };
+  const JOB_TONE = { wartend: "", in_arbeit: "amber", fertig: "lime", fehler: "red", freigegeben: "", verworfen: "" };
+
+  function faJob(job, agent) {
+    const out = job.output || {};
+    const editable = job.status === "fertig";
+    const field = (name, label, rows = 1) => out[name] === undefined ? "" : editable
+      ? `<label>${esc(label)}${rows > 1 ? `<textarea name="${esc(name)}" rows="${rows}" data-fa-out>${esc(out[name])}</textarea>` : `<input name="${esc(name)}" value="${esc(out[name])}" data-fa-out>`}</label>`
+      : `<div class="ac-fa-out"><small>${esc(label)}</small><pre data-fa-out>${esc(out[name])}</pre></div>`;
+    const list = (name, label) => (out[name] || []).length ? `<div class="ac-fa-out"><small>${esc(label)}</small><ul>${out[name].map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "";
+    const subject = job.input?.betreff || job.input?.titel || job.input?.frage || "";
+    return `<div class="ac-fa-job" data-fa-job="${esc(job.id)}">
+      <header><b>${esc(subject.slice(0, 90) || job.id)}</b><span class="ac-chip ${JOB_TONE[job.status] || ""}">${esc(JOB_LABEL[job.status] || job.status)}</span></header>
+      <small>${esc(job.id)} · ${esc(time(job.created_at))}${job.model ? ` · ${esc(job.model)} · ${esc(job.seconds)} s` : ""}${job.decided_by?.name ? ` · ${esc(job.decided_by.name)}` : ""}</small>
+      ${job.status === "fehler" ? `<div class="error">${esc(job.error)}</div>` : ""}
+      ${["fertig", "freigegeben", "verworfen"].includes(job.status) ? `
+        ${out.kategorie ? `<div class="chips"><span class="ac-chip">${esc(out.kategorie)}</span>${out.risiko ? `<span class="ac-chip ${out.risiko === "hoch" ? "red" : out.risiko === "mittel" ? "amber" : ""}">Risiko ${esc(out.risiko)}</span>` : ""}</div>` : ""}
+        ${out.zusammenfassung !== undefined && agent.template === "mail_antwort" ? `<p>${esc(out.zusammenfassung)}</p>` : ""}
+        ${field("antwort_betreff", "Antwort – Betreff")}${field("antwort_text", "Antwort – Text", 9)}
+        ${agent.template !== "mail_antwort" ? field("zusammenfassung", "Zusammenfassung", 5) : ""}${field("antwort", "Antwort", 7)}
+        ${list("rueckfragen", "Vor dem Versand klären")}${list("aufgaben", "Aufgaben")}${list("offene_fragen", "Offene Fragen")}${list("naechste_schritte", "Nächste Schritte")}${list("quellen", "Genutzte Daten")}
+        <div class="row">${editable ? '<button class="ac-btn small primary" type="button" data-fa-decide="freigeben">Freigeben</button><button class="ac-btn small danger" type="button" data-fa-decide="verwerfen">Verwerfen</button>' : ""}${job.status === "freigegeben" ? '<button class="ac-btn small" type="button" data-fa-copy>Text kopieren</button><small>Versand: noch kein Postfach angebunden – Text kopieren und im Mailprogramm senden.</small>' : ""}</div>
+        <div class="error" data-fa-error></div>` : ""}
+    </div>`;
+  }
+
+  function faAdminMarkup(data, current, agentId) {
+    const c = current || { template: "mail_antwort", model_profile: "assistenz", data_class: "intern", status: "aktiv", context_sources: [], assigned_roles: [], assigned_users: [] };
+    const templates = Object.entries(data.templates || {});
+    const groups = (data.directory?.groups || []).filter((g) => g.role && !String(g.role).startsWith("flow-prj-"));
+    const users = data.directory?.users || [];
+    const check = (name, value, label, on) => `<label title="${esc(value)}"><input type="checkbox" name="${name}" value="${esc(value)}"${on ? " checked" : ""}> ${esc(label)}</label>`;
+    return `<h3>Fachagenten verwalten <small>nur Administratoren</small></h3>
+      <p class="lead">Fachagenten arbeiten außerhalb des V-Modells, z. B. für Einkaufsmails. Sie laufen nur auf den lokalen Modellen über FLOWGATE, haben keine Werkzeuge und liefern nur Entwürfe, die ein Mensch freigibt. Hintergrunddaten bekommen sie nur, wenn die anfragende Person selbst berechtigt ist.</p>
+      <div class="ac-fa-admin">
+        <aside><b>Vorhandene Fachagenten</b>${(data.agents || []).map((a) => `<button type="button" class="ac-fa-item ${a.id === agentId ? "on" : ""}" data-fa-edit="${esc(a.id)}"><span>${esc(a.id)}</span> ${esc(a.name)}<small>${esc(a.status)} · ${esc((a.assigned_roles || []).concat(a.assigned_users || []).join(", "))}</small></button>`).join("") || '<small>noch keiner</small>'}
+          <button type="button" class="ac-btn small" data-fa-new>＋ Neuer Fachagent</button></aside>
+        <div class="ac-form">
+          <label class="wide">MIT LOKALER KI ENTWERFEN – BESCHREIBE DEN AGENTEN<textarea name="description" rows="3" placeholder="z. B. Ein Agent, der Mails von Lieferanten an den Einkauf beantwortet: Lieferverzug, Preisanpassungen, Rückfragen zu Zeugnissen. Er nutzt die Einkaufsdaten und sagt nichts zu, was nicht in den Bestellungen steht.">${esc(c.description || "")}</textarea></label>
+          <div class="wide row"><button class="ac-btn small" type="button" data-fa-design>Mit lokaler KI entwerfen</button></div>
+          <label>NAME<input name="name" value="${esc(c.name || "")}"></label>
+          <label>STATUS<select name="status">${["aktiv", "pausiert"].map((v) => `<option${v === c.status ? " selected" : ""}>${v}</option>`).join("")}</select></label>
+          <label class="wide">ZWECK<input name="purpose" value="${esc(c.purpose || "")}"></label>
+          <label>VORLAGE<select name="template">${templates.map(([k, t]) => `<option value="${esc(k)}"${k === c.template ? " selected" : ""}>${esc(t.label)}</option>`).join("")}</select></label>
+          <label>LOKALES MODELLPROFIL<select name="model_profile">${(data.profiles || []).map((p) => `<option${p === c.model_profile ? " selected" : ""}>${esc(p)}</option>`).join("")}</select></label>
+          <label>DATENKLASSE<select name="data_class">${(data.data_classes || []).map((d) => `<option${d === c.data_class ? " selected" : ""}>${esc(d)}</option>`).join("")}</select></label>
+          <fieldset class="wide ac-checks"><legend>HINTERGRUNDDATEN (NUR FÜR BERECHTIGTE NUTZER)</legend>${Object.entries(data.sources || {}).map(([k, src]) => check("context_sources", k, `${src.label} – Rollen: ${src.roles.join(", ")}`, (c.context_sources || []).includes(k))).join("")}</fieldset>
+          <label class="wide">ROLLENANWEISUNG (PROMPT)<textarea name="prompt" class="ac-prompt" rows="9">${esc(c.prompt || "")}</textarea></label>
+          <fieldset class="wide ac-checks"><legend>ZUGEWIESEN AN AD-GRUPPEN</legend>${groups.map((g) => check("assigned_roles", g.role, `${g.name} (${g.role})`, (c.assigned_roles || []).includes(g.role))).join("")}</fieldset>
+          <label class="wide">ZUGEWIESEN AN PERSONEN (BENUTZERNAMEN, MIT KOMMA GETRENNT)<input name="assigned_users" list="ac-fa-users" value="${esc((c.assigned_users || []).join(", "))}"></label>
+          <datalist id="ac-fa-users">${users.map((u) => `<option value="${esc(u.username)}">${esc(u.name)} · ${esc(u.department || "")}</option>`).join("")}</datalist>
+        </div>
+      </div>
+      <div class="ac-form-actions"><span class="msg" data-fa-admin-msg></span><span><button class="ac-btn" value="cancel" formnovalidate type="submit">Schließen</button> <button class="ac-btn primary" type="button" data-fa-save>${agentId ? "Änderungen speichern" : "Fachagent anlegen"}</button></span></div>`;
   }
 
   // Agentenregister: je Agent Rolle, Aufgaben im Ablauf, Prüfung, Modell, Werkzeuge und Daten.

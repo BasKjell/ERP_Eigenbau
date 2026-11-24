@@ -72,6 +72,17 @@ CREATE TABLE IF NOT EXISTS agent_settings_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT NOT NULL, changes TEXT NOT NULL, reason TEXT NOT NULL,
     person TEXT NOT NULL, digest TEXT NOT NULL DEFAULT '', created REAL NOT NULL
 );
+-- Fachagenten (von Administratoren angelegt) und ihre Aufgaben/Entwürfe.
+CREATE TABLE IF NOT EXISTS business_agents (
+    id TEXT PRIMARY KEY, spec TEXT NOT NULL, created_by TEXT NOT NULL, created REAL NOT NULL, updated REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS business_jobs (
+    id TEXT PRIMARY KEY, agent_id TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL, input TEXT NOT NULL,
+    output TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL, error TEXT NOT NULL DEFAULT '',
+    requested_by TEXT NOT NULL, decided_by TEXT NOT NULL DEFAULT '{}', model TEXT NOT NULL DEFAULT '',
+    seconds REAL NOT NULL DEFAULT 0, created REAL NOT NULL, updated REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS business_jobs_status ON business_jobs(status, created);
 CREATE INDEX IF NOT EXISTS events_run ON events(run_id, id);
 CREATE INDEX IF NOT EXISTS decisions_open ON decisions(status, created);
 """
@@ -196,6 +207,80 @@ class Store:
         value["created_at"] = iso(value["created"])
         value["updated_at"] = iso(value["updated"])
         value.pop("idempotency_key", None)
+        return value
+
+    # -- Fachagenten ---------------------------------------------------------------------
+    def save_business_agent(self, agent_id: str, spec: dict[str, Any], person: dict[str, Any]) -> dict[str, Any]:
+        now = time.time()
+        with self._lock, self.db:
+            if not agent_id:
+                number = self.db.execute("SELECT COUNT(*) FROM business_agents").fetchone()[0] + 1
+                agent_id = f"FA-{number:03d}"
+                while self.db.execute("SELECT 1 FROM business_agents WHERE id=?", (agent_id,)).fetchone():
+                    number += 1
+                    agent_id = f"FA-{number:03d}"
+                self.db.execute("INSERT INTO business_agents VALUES (?,?,?,?,?)",
+                                (agent_id, canonical(spec), canonical(person), now, now))
+            else:
+                changed = self.db.execute("UPDATE business_agents SET spec=?, updated=? WHERE id=?",
+                                          (canonical(spec), now, agent_id)).rowcount
+                if not changed:
+                    raise KeyError(agent_id)
+        return self.business_agent(agent_id)
+
+    def business_agent(self, agent_id: str) -> dict[str, Any]:
+        with self._lock:
+            row = self.db.execute("SELECT * FROM business_agents WHERE id=?", (agent_id,)).fetchone()
+        if row is None:
+            raise KeyError(agent_id)
+        return {"id": row["id"], **json.loads(row["spec"]), "created_by": json.loads(row["created_by"]).get("name", ""),
+                "created_at": iso(row["created"]), "updated_at": iso(row["updated"])}
+
+    def business_agents(self) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self.db.execute("SELECT id FROM business_agents ORDER BY id").fetchall()
+        return [self.business_agent(row["id"]) for row in rows]
+
+    def add_business_job(self, kind: str, agent_id: str, values: dict[str, Any], person: dict[str, Any]) -> dict[str, Any]:
+        now = time.time()
+        job_id = f"FJ-{datetime.fromtimestamp(now, UTC):%Y%m%d}-{secrets.token_hex(3).upper()}"
+        with self._lock, self.db:
+            self.db.execute("INSERT INTO business_jobs(id, agent_id, kind, input, status, requested_by, created, updated)"
+                            " VALUES (?,?,?,?,?,?,?,?)", (job_id, agent_id, kind, canonical(values), "wartend",
+                                                          canonical(person), now, now))
+        return self.business_job(job_id)
+
+    def update_business_job(self, job_id: str, **fields: Any) -> None:
+        allowed = {"status", "output", "error", "decided_by", "model", "seconds"}
+        values = {k: canonical(v) if k in {"output", "decided_by"} else v for k, v in fields.items() if k in allowed}
+        if not values:
+            return
+        with self._lock, self.db:
+            self.db.execute(f"UPDATE business_jobs SET {', '.join(f'{k}=?' for k in values)}, updated=? WHERE id=?",
+                            (*values.values(), time.time(), job_id))
+
+    def business_job(self, job_id: str) -> dict[str, Any]:
+        with self._lock:
+            row = self.db.execute("SELECT * FROM business_jobs WHERE id=?", (job_id,)).fetchone()
+        if row is None:
+            raise KeyError(job_id)
+        return self._business_job(row)
+
+    def business_jobs(self, *, status: str | None = None, limit: int = 60) -> list[dict[str, Any]]:
+        query, args = "SELECT * FROM business_jobs", []
+        if status:
+            query, args = query + " WHERE status=?", [status]
+        with self._lock:
+            rows = self.db.execute(query + (" ORDER BY created" if status else " ORDER BY created DESC") + " LIMIT ?",
+                                   [*args, limit]).fetchall()
+        return [self._business_job(row) for row in rows]
+
+    @staticmethod
+    def _business_job(row: sqlite3.Row) -> dict[str, Any]:
+        value = dict(row)
+        for key in ("input", "output", "requested_by", "decided_by"):
+            value[key] = json.loads(value[key])
+        value["created_at"], value["updated_at"] = iso(value.pop("created")), iso(value.pop("updated"))
         return value
 
     # -- Agenteneinstellungen (Übersteuerungen) -------------------------------------------

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -22,6 +23,25 @@ from .work import WorkError
 APP_DIR = Path(__file__).parent
 DEMO_PERSON = {"username": "demo-admin", "name": "Lokale Funktionsdemo", "roles": ["platform-admin"],
                "department": "Demo"}
+
+
+class BusinessAgentSave(BaseModel):
+    agent_id: str = Field(default="", pattern=r"^(FA-[0-9]{3,5})?$")
+    spec: dict[str, Any]
+
+
+class BusinessDesign(BaseModel):
+    description: str = Field(min_length=15, max_length=3000)
+
+
+class BusinessTask(BaseModel):
+    input: dict[str, str] = Field(max_length=6)
+
+
+class BusinessDecision(BaseModel):
+    outcome: Literal["freigeben", "verwerfen"]
+    edited: dict[str, str] = Field(default_factory=dict, max_length=10)
+    comment: str = Field(default="", max_length=500)
 
 
 class AgentConfigUpdate(BaseModel):
@@ -146,7 +166,53 @@ def visible_overview(overview: dict[str, Any], user: dict[str, Any]) -> dict[str
     return result
 
 
-def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, drafts: DraftService) -> APIRouter:
+# -- Fachagenten: Sichtbarkeit und Hintergrunddaten ------------------------------------------
+def _viewer_roles(user: dict[str, Any]) -> set[str]:
+    return {str(r) for r in user.get("roles", [])}
+
+
+def business_for(business: dict[str, Any] | None, user: dict[str, Any]) -> dict[str, Any]:
+    """Fachagenten und Aufgaben, die diese Person sehen darf: Admins alles, sonst zugewiesene Agenten und eigene Aufgaben."""
+    business = dict(business or {})
+    roles, username = _viewer_roles(user), str(user.get("username") or "")
+    admin = "platform-admin" in roles
+    agents = [a for a in business.get("agents") or []
+              if admin or username in a.get("assigned_users", []) or roles & set(a.get("assigned_roles", []))]
+    visible = {a["id"] for a in agents}
+    jobs = []
+    for job in business.get("jobs") or []:
+        mine = (job.get("requested_by") or {}).get("username") == username
+        if (admin and job.get("kind") == "entwurf") or (job.get("agent_id") in visible and (mine or admin)):
+            jobs.append({**job, "input": {k: v for k, v in (job.get("input") or {}).items() if not k.startswith("_")}})
+    if not admin:
+        agents = [{k: v for k, v in a.items() if k not in {"prompt"}} for a in agents]
+    return {**business, "agents": agents, "jobs": jobs, "can_admin": admin}
+
+
+def business_context(sources: list[str], allowed: dict[str, Any], user: dict[str, Any],
+                     scenario: Callable[[], dict[str, Any]] | None) -> dict[str, Any]:
+    """Hintergrunddaten je Quelle – nur, wenn die Person selbst eine der berechtigten Rollen hat."""
+    if scenario is None:
+        return {}
+    data, roles, context = scenario(), _viewer_roles(user), {}
+    for source in sources:
+        if not roles & set((allowed.get(source) or {}).get("roles", [])):
+            continue
+        if source == "einkauf":
+            context[source] = {"bestellungen": (data.get("purchase_orders") or [])[:25],
+                               "lieferhistorie": ((data.get("workplace") or {}).get("supplier_delivery_history") or [])[:25],
+                               "zahlungsbedingungen": ((data.get("commercial_master_data") or {}).get("payment_terms") or [])[:10]}
+        elif source == "qualitaet":
+            quality = data.get("quality") or {}
+            context[source] = {"wareneingang": (quality.get("receipts") or [])[:20],
+                               "abweichungen": (quality.get("ncrs") or [])[:20]}
+        elif source == "auftrag":
+            context[source] = {"auftrag": data.get("order") or {}, "fertigung": ((data.get("mes") or {}).get("jobs") or [])[:20]}
+    return context
+
+
+def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, drafts: DraftService,
+                 scenario: Callable[[], dict[str, Any]] | None = None) -> APIRouter:
     router = APIRouter()
 
     # -- Seiten ------------------------------------------------------------------------
@@ -235,7 +301,62 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
         overview["viewer"] = {k: v for k, v in viewer.items() if k in {"username", "name", "roles"}}
         overview["viewer"]["projects"] = project_rights(overview.get("project_catalog") or {}, viewer,
                                                         bool(overview.get("demo_mode")))
+        overview["business"] = business_for(overview.get("business"), viewer)
         return overview
+
+    # -- Fachagenten ------------------------------------------------------------------------
+    def require_admin(request: Request) -> dict[str, Any]:
+        viewer = person(request)
+        if viewer is None:
+            raise HTTPException(status_code=401, detail="Anmeldung über FLOWID erforderlich")
+        if "platform-admin" not in _viewer_roles(viewer):
+            raise HTTPException(status_code=403, detail="Fachagenten legen nur Administratoren an")
+        return viewer
+
+    @router.get("/api/agents/fachagenten", tags=["agents"])
+    def business_list(request: Request) -> dict[str, Any]:
+        viewer = person(request) or {}
+        result = business_for(agents.overview().get("business"), viewer)
+        if result["can_admin"] and scenario is not None:
+            iam = scenario().get("iam") or {}
+            result["directory"] = {
+                "groups": [{"name": g.get("name"), "role": g.get("role"), "description": g.get("description")}
+                           for g in (iam.get("directory") or {}).get("groups") or []],
+                "users": [{"username": u.get("username"), "name": u.get("name"), "department": u.get("department")}
+                          for u in [*(iam.get("users") or []), *(iam.get("demo_accounts") or [])]],
+            }
+        return result
+
+    @router.post("/api/agents/fachagenten", tags=["agents"])
+    def business_save(payload: BusinessAgentSave, request: Request) -> dict[str, Any]:
+        require_admin(request)
+        return forward("fa_save", payload.model_dump(), request, with_person=True)
+
+    @router.post("/api/agents/fachagenten/entwurf", tags=["agents"], status_code=201)
+    def business_design(payload: BusinessDesign, request: Request) -> dict[str, Any]:
+        require_admin(request)
+        return forward("fa_design", payload.model_dump(), request, with_person=True)
+
+    @router.post("/api/agents/fachagenten/{agent_id}/aufgaben", tags=["agents"], status_code=201)
+    def business_task(agent_id: str, payload: BusinessTask, request: Request) -> dict[str, Any]:
+        if not re.fullmatch(r"FA-[0-9]{3,5}", agent_id):
+            raise HTTPException(status_code=404, detail="Fachagent nicht gefunden")
+        viewer = person(request)
+        if viewer is None:
+            raise HTTPException(status_code=401, detail="Anmeldung über FLOWID erforderlich")
+        business = agents.overview().get("business") or {}
+        spec = next((a for a in business.get("agents") or [] if a.get("id") == agent_id), None)
+        if spec is None:
+            raise HTTPException(status_code=404, detail="Fachagent nicht gefunden")
+        context = business_context(list(spec.get("context_sources") or []), business.get("sources") or {}, viewer, scenario)
+        return forward("fa_task", {"agent_id": agent_id, "input": payload.input, "context": context}, request,
+                       with_person=True)
+
+    @router.post("/api/agents/fachagenten/aufgaben/{job_id}/entscheidung", tags=["agents"])
+    def business_decide(job_id: str, payload: BusinessDecision, request: Request) -> dict[str, Any]:
+        if not re.fullmatch(r"FJ-[0-9]{8}-[0-9A-F]{6}", job_id):
+            raise HTTPException(status_code=404, detail="Aufgabe nicht gefunden")
+        return forward("fa_decide", {"job_id": job_id, **payload.model_dump()}, request, with_person=True)
 
     @router.get("/api/agents/registry", tags=["agents"])
     def agents_registry() -> dict[str, Any]:

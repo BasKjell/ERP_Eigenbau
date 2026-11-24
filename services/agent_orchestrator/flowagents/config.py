@@ -109,6 +109,11 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
                 value = f"agw-demo-{role}-{DEMO_SECRET_HINT}"
             if value:
                 keys[role] = value
+        # Fachagenten nutzen einen eigenen FLOWGATE-Schlüssel (nur lokale Aliasse, siehe agentgateway/config.yaml).
+        env_name = prefix + "FACHAGENTEN"
+        value = os.environ.get(env_name, "") or (f"agw-demo-fachagenten-{DEMO_SECRET_HINT}" if settings.get("demo_mode") else "")
+        if value:
+            keys["fachagenten"] = value
         providers["gateway"] = GatewayProvider(
             str(gateway.get("url", "http://127.0.0.1:4000")), keys,
             timeout=float(gateway.get("timeout_seconds", 900)), no_think=bool(gateway.get("no_think", True)),

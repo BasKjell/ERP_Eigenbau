@@ -17,11 +17,13 @@ import subprocess
 import threading
 import time
 from collections import Counter
+from datetime import date
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from . import fachagenten as fa
 from . import registry as registry_module
 from .adoption import Adoption, Preview
 from .contract import ARTIFACTS, REVIEW_ONLY, ContractError, Handoff, extract_json, validate
@@ -263,6 +265,8 @@ class Engine:
         """Bearbeitet höchstens einen Schritt. Liefert True, wenn Arbeit erledigt wurde."""
         if self.store.control("global", "bereit") != "bereit":
             return False
+        if self.process_business_job():
+            return True
         with self.lock:
             run = self.store.next_active()
             if run is None:
@@ -1232,6 +1236,129 @@ class Engine:
                                  f"Lauf auf Registerstand {self.registry.digest[:12]} umgestellt durch {person['name']}")
             self.store.update_run(run["id"], status="aktiv", reason="")
 
+    # -- Fachagenten (außerhalb des V-Modells, nur lokale Modelle, nur Entwürfe) ----------------
+    def _local_profiles(self) -> dict[str, Any]:
+        profiles = yaml_profiles(self._agents_dir())
+        return {name: spec for name, spec in profiles.items()
+                if self.profile_providers.get(name) in {"gateway", "simulated"}}
+
+    def save_business_agent(self, spec: dict[str, Any], user: dict[str, Any], agent_id: str = "") -> dict[str, Any]:
+        if not fa.is_admin(user):
+            raise EngineError("Fachagenten legen nur Administratoren an")
+        try:
+            clean = fa.validate_spec(spec, self._local_profiles())
+        except fa.SpecError as exc:
+            raise EngineError(str(exc)) from None
+        person = _person(user)
+        try:
+            saved = self.store.save_business_agent(agent_id, clean, person)
+        except KeyError:
+            raise EngineError("Fachagent nicht gefunden") from None
+        self.store.event(None, "steuerung", f"mensch:{person['username']}", "fachagenten",
+                         f"{person['name']} {'ändert' if agent_id else 'legt an'}: Fachagent {saved['id']} {saved['name']}"
+                         f" ({saved['status']}, für {', '.join(clean['assigned_roles'] + clean['assigned_users'])})"[:300])
+        return saved
+
+    def request_business_design(self, description: str, user: dict[str, Any]) -> dict[str, Any]:
+        """Die lokale KI entwirft aus einer Beschreibung einen Fachagenten (nur Vorschlag für den Admin)."""
+        if not fa.is_admin(user):
+            raise EngineError("Fachagenten legen nur Administratoren an")
+        description = " ".join(str(description or "").split())
+        if not 15 <= len(description) <= 3000:
+            raise EngineError("Beschreibung: 15 bis 3000 Zeichen")
+        return self.store.add_business_job("entwurf", "", {"beschreibung": description}, _person(user))
+
+    def submit_business_task(self, agent_id: str, values: dict[str, Any], user: dict[str, Any],
+                             context: dict[str, Any] | None = None) -> dict[str, Any]:
+        try:
+            spec = self.store.business_agent(agent_id)
+        except KeyError:
+            raise EngineError("Fachagent nicht gefunden") from None
+        if not fa.may_use(spec, user):
+            raise EngineError("Keine Befugnis für diesen Fachagenten")
+        if spec["status"] != "aktiv":
+            raise EngineError("Fachagent ist pausiert")
+        try:
+            clean = fa.validate_input(spec["template"], values)
+        except fa.SpecError as exc:
+            raise EngineError(str(exc)) from None
+        allowed = {k: v for k, v in (context or {}).items() if k in spec["context_sources"]}
+        return self.store.add_business_job("aufgabe", agent_id, {**clean, "_context": allowed}, _person(user))
+
+    def decide_business_job(self, job_id: str, outcome: str, user: dict[str, Any], edited: dict[str, Any] | None = None,
+                            comment: str = "") -> dict[str, Any]:
+        if outcome not in {"freigeben", "verwerfen"}:
+            raise EngineError("Ergebnis muss freigeben oder verwerfen sein")
+        try:
+            job = self.store.business_job(job_id)
+        except KeyError:
+            raise EngineError("Aufgabe nicht gefunden") from None
+        if job["kind"] != "aufgabe" or job["status"] != "fertig":
+            raise EngineError("Nur fertige Entwürfe lassen sich freigeben oder verwerfen")
+        if job["requested_by"].get("username") != user.get("username") and not fa.is_admin(user):
+            raise EngineError("Keine Befugnis: freigeben darf, wer die Aufgabe gestellt hat, oder ein Administrator")
+        output = dict(job["output"])
+        if outcome == "freigeben" and edited:
+            for key, value in edited.items():
+                if key in output and isinstance(value, str):
+                    output[key] = value.strip()[:8000]
+        person = _person(user)
+        self.store.update_business_job(job_id, status="freigegeben" if outcome == "freigeben" else "verworfen",
+                                       output=output, decided_by={**person, "comment": " ".join(comment.split())[:500]})
+        self.store.event(None, "entscheidung", f"mensch:{person['username']}", "fachagenten",
+                         f"{person['name']}: Entwurf {job_id} {'freigegeben' if outcome == 'freigeben' else 'verworfen'}")
+        return self.store.business_job(job_id)
+
+    def _business_agent_identity(self, profile: str, name: str) -> Agent:
+        spec = yaml_profiles(self._agents_dir())[profile]
+        return Agent(id="FA", role="fachagenten", number=99, name=name, owner="Administration", status="testbetrieb",
+                     autonomy="A1", approved_until=date.max, model_profile=profile, family=str(spec["family"]),
+                     gateway_alias=str(spec["gateway_alias"]), kind="create", mission=name, tools=(), reads=(),
+                     prompt_file=self._agents_dir() / "prompts" / "_gemeinsam.md", reviewed_by=None, escalation="",
+                     evidence="")
+
+    def process_business_job(self) -> bool:
+        """Eine wartende Fachagenten-Aufgabe mit dem lokalen Modell bearbeiten."""
+        waiting = self.store.business_jobs(status="wartend", limit=1)
+        if not waiting:
+            return False
+        job = waiting[0]
+        self.store.update_business_job(job["id"], status="in_arbeit")
+        started = time.monotonic()
+        try:
+            if job["kind"] == "entwurf":
+                profile, name = "assistenz", "Fachagenten-Entwurf"
+                system, user_text = fa.COMMON + "\n\n" + fa.DESIGN_PROMPT, "# Beschreibung\n" + job["input"]["beschreibung"]
+                context = {"kind": "entwurf", "beschreibung": job["input"]["beschreibung"]}
+            else:
+                spec = self.store.business_agent(job["agent_id"])
+                profile, name = spec["model_profile"], spec["name"]
+                values = {k: v for k, v in job["input"].items() if not k.startswith("_")}
+                system, user_text = fa.task_prompt(spec, values, job["input"].get("_context") or {})
+                context = {"kind": "aufgabe", "template": spec["template"], "input": values}
+            agent = self._business_agent_identity(profile, name)
+            provider = self.providers[self.profile_providers[profile]]
+            reply = provider.generate(AgentRequest(job["id"], "fachagent", agent, system, user_text, 3000, context))
+            result = extract_json(reply.text)
+            output = fa.normalize_design(result) if job["kind"] == "entwurf" else \
+                fa.normalize_output(spec["template"], result)
+        except (ProviderError, ContractError, fa.SpecError, KeyError, ValueError) as exc:
+            self.store.update_business_job(job["id"], status="fehler", error=str(exc)[:300],
+                                           seconds=round(time.monotonic() - started, 1))
+            return True
+        self.store.record_usage(job["id"], "fachagent", "fachagenten", reply.provider, reply.model,
+                                reply.input_tokens, reply.output_tokens, reply.seconds)
+        self.store.update_business_job(job["id"], status="fertig", output=output, model=f"{reply.provider}/{reply.model}",
+                                       seconds=round(time.monotonic() - started, 1))
+        return True
+
+    def business_overview(self) -> dict[str, Any]:
+        jobs = self.store.business_jobs(limit=60)
+        agents = self.store.business_agents()
+        for agent in agents:
+            agent["open_jobs"] = sum(1 for j in jobs if j["agent_id"] == agent["id"] and j["status"] in {"wartend", "in_arbeit", "fertig"})
+        return {"agents": agents, "jobs": jobs, "profiles": sorted(self._local_profiles()), **fa.public_templates()}
+
     # -- Agenteneigenschaften ansehen und ändern -----------------------------------------------
     def _agents_dir(self) -> Path:
         return self.registry.prompts_dir.parent
@@ -1540,6 +1667,7 @@ class Engine:
             "runs": [self._run_summary(run, open_decisions) for run in runs],
             "projects": [self.project_summary(project) for project in self.store.projects(limit=20)],
             "project_catalog": self.project_catalog(),
+            "business": self.business_overview(),
             "decisions": [self._decision_summary(d, {r["id"]: r for r in runs}) for d in open_decisions],
             "events": events[-40:],
             "interactions": [

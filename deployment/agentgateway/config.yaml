@@ -74,6 +74,15 @@ llm:
           purpose: flow-agents
         allowedModels:
         - flow-assist
+      - key: ${FLOW_AGENT_GATEWAY_KEY_FACHAGENTEN}
+        metadata:
+          consumer: agent-fachagenten
+          purpose: flow-fachagenten
+        allowedModels:
+        - flow-assist
+        - flow-builder
+        - flow-reviewer
+        - flow-coder
       - key: ${FLOW_AGENT_GATEWAY_KEY_PROJEKTPLANUNG}
         metadata:
           consumer: agent-projektplanung

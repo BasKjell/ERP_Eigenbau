@@ -241,6 +241,30 @@ class SimulatedProvider:
         return list(content.get("items") or [])
 
     # -- Rollen -------------------------------------------------------------------------
+    def _fachagenten(self, context: dict[str, Any]) -> dict[str, Any]:
+        """Fachagenten: Entwurf eines Agenten oder Ergebnis nach Vorlage (simuliert)."""
+        if context.get("kind") == "entwurf":
+            text = str(context.get("beschreibung", ""))
+            mail = "mail" in text.lower()
+            return {"name": "Einkaufs-Mail-Agent" if mail else "Fachassistent",
+                    "purpose": "Beantwortet Lieferantenmails mit einem Entwurf zur Freigabe." if mail
+                    else "Beantwortet Fachfragen mit einem Entwurf zur Freigabe.",
+                    "template": "mail_antwort" if mail else "assistent",
+                    "context_sources": ["einkauf"] if "einkauf" in text.lower() else [], "data_class": "intern",
+                    "prompt": "Du beantwortest E-Mails von Lieferanten sachlich und höflich. Du sagst nichts zu, was "
+                              "nicht in den Einkaufsdaten steht, und stellst sonst Rückfragen. (simuliert)",
+                    "suggested_roles": ["procurement-user"]}
+        values = context.get("input") or {}
+        if context.get("template") == "mail_antwort":
+            return {"kategorie": "Lieferterminverschiebung", "zusammenfassung": "Lieferant meldet Verzug. (simuliert)",
+                    "antwort_betreff": f"Re: {values.get('betreff', '')}".strip(),
+                    "antwort_text": "Guten Tag,\n\nvielen Dank für Ihre Nachricht. Wir prüfen die Auswirkung auf "
+                                    "unsere Fertigung und melden uns bis morgen.\n\nFreundliche Grüße\nEinkauf",
+                    "rueckfragen": ["Neuer Liefertermin verbindlich?"], "risiko": "mittel"}
+        if context.get("template") == "zusammenfassen":
+            return {"zusammenfassung": "Zusammenfassung (simuliert).", "aufgaben": ["Aufgabe 1"], "offene_fragen": []}
+        return {"antwort": "Antwort (simuliert).", "quellen": [], "naechste_schritte": []}
+
     def _geschaeftsfuehrung(self, context: dict[str, Any]) -> dict[str, Any]:
         auftrag = self._auftrag(context)
         final = context.get("subject_kind") == "nachweise"
