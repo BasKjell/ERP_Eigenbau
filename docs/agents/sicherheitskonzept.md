@@ -7,8 +7,9 @@ Referenzumgebung implementiert und getestet; Freigabe durch Informationssicherhe
 [KI-Entwicklungskonzept (Teil 01–10)](../konzepte/ki-entwicklungskonzept/index.md),
 [Unternehmenskonzept KI-U-02/04/05/07/09](../konzepte/ki-unternehmenskonzept/00-hauptdokument.md),
 BSI IT-Grundschutz-Kompendium (CON.8, CON.10, OPS.1.1.3, OPS.1.1.6, ORP.1, ORP.4), ISO/IEC 27001:2022
-Anhang A, IAM-Sicherheitskonzept SEC-IAM-001. Kontrollzuordnung und Abnahmefälle:
-[Sicherheit und Nachweise](sicherheit.md).
+Anhang A, IAM-Sicherheitskonzept SEC-IAM-001. Umsetzung und bekannte Abweichungen:
+[Sicherheit (Systemdokumentation)](sicherheit.md). Die Zuordnung zu einzelnen Anforderungen führt der ISB im
+Anforderungs- bzw. ISMS-System.
 
 ## 1. Ziel und Geltungsbereich
 
@@ -58,18 +59,18 @@ flowchart LR
   API -->|im Namen der Person| PL[Paperless-ngx]
 ```
 
-| Grenze | Kontrolle | Nachweis |
+| Grenze | Kontrolle | Umgesetzt in |
 |---|---|---|
-| Browser → Plattform-API | FLOWID (Keycloak, OIDC), Rollenprüfung je Pfad | `auth.py`, Tests in `test_auth.py` |
-| Plattform-API ↔ Orchestrator | Orchestrator öffnet keinen Port für Container; Pull mit HS256-Token `aud=flow-platform-sync`, ≤ 5 min | REQ-AGT-013 |
-| Orchestrator → FLOWGATE | virtueller Schlüssel je Rolle, nur Modellprofil-Alias; LLM-Port nur Loopback | REQ-AGT-010, live 401/403 |
-| Orchestrator → FLOWWORK | Token je Rolle und Lauf (`aud=flowwork-rm`, ≤ 10 min); Adapter prüft Register und Operation erneut | REQ-AGT-010/-011, REQ-REQ-001…004 |
-| Orchestrator → Sandbox | exakter Commit, keine `.env`, nur freigegebene Pfade, Prüfcontainer `--network none`, read-only | REQ-AGT-009 |
-| Sandbox → Repository | Übernahme nur nach G4, Integritätsprüfung je Datei, eigener Worktree, Merge durch Menschen | REQ-AGT-015 |
-| Plattform-API → Paperless | Remote-User aus der Sitzung, kein technischer Rückfall im OIDC-Modus | REQ-DOC-002 |
-| Orchestrator → OpenCode-Worker | eigenes internes Netz, nur FLOWGATE erreichbar, read-only, keine Werkzeuge, Rollenschlüssel nur über die Prozessumgebung | `test_opencode.py` |
-| Orchestrator → Prüfbrowser | internes Netz `flow-agents-ui` nur mit der Vorschau, keine fremden Adressen, Schreibzugriffe gesperrt | `uicheck.py`, `deployment/ui-runner` |
-| Plattform-API → Übersicht im Browser | Projektrechte filtern Aufträge, Entscheidungen, Projekte und Fachagenten-Aufgaben je Person | `test_project_rights_demo.py` |
+| Browser → Plattform-API | FLOWID (Keycloak, OIDC), Rollenprüfung je Pfad | `app/auth.py` |
+| Plattform-API ↔ Orchestrator | Orchestrator öffnet keinen Port für Container; Pull mit HS256-Token `aud=flow-platform-sync`, ≤ 5 min | `app/agents_bff.py`, `flowagents/sync.py` |
+| Orchestrator → FLOWGATE | virtueller Schlüssel je Rolle, nur Modellprofil-Alias; LLM-Port nur Loopback | `deployment/agentgateway/config.yaml` |
+| Orchestrator → FLOWWORK | Token je Rolle und Lauf (`aud=flowwork-rm`, ≤ 10 min); Adapter prüft Register und Operation erneut | `app/rm_adapter.py`, `app/agent_policy.py` |
+| Orchestrator → Sandbox | exakter Commit, keine `.env`, nur freigegebene Pfade, Prüfcontainer `--network none`, read-only | `flowagents/sandbox.py` |
+| Sandbox → Repository | Übernahme nur nach G4, Integritätsprüfung je Datei, eigener Worktree, Merge durch Menschen | `flowagents/adoption.py` |
+| Plattform-API → Paperless | Remote-User aus der Sitzung, kein technischer Rückfall im OIDC-Modus | `app/dms.py` |
+| Orchestrator → OpenCode-Worker | eigenes internes Netz, nur FLOWGATE erreichbar, read-only, keine Werkzeuge, Rollenschlüssel nur über die Prozessumgebung | `flowagents/opencode.py` |
+| Orchestrator → Prüfbrowser | internes Netz `flow-agents-ui` nur mit der Vorschau, keine fremden Adressen, Schreibzugriffe gesperrt | `flowagents/uicheck.py`, `deployment/ui-runner` |
+| Plattform-API → Übersicht im Browser | Projektrechte filtern Aufträge, Entscheidungen, Projekte und Fachagenten-Aufgaben je Person | `app/flow_routes.py` |
 
 ## 4. Identitäten
 
@@ -162,4 +163,4 @@ Kein TLS lokal; Demo-Geheimnisse; Abo-Worker teilen Anmeldung und Netze mit Trad
 Exchange; fälschbarer Remote-User-Header im internen Netz; keine
 Modell-Evaluation je Rolle; kein Paketspiegel und keine SBOM; Vorschau nutzt das technische
 Paperless-Konto; „Person wechseln“ nur für die Demo; Übersteuerungen und Fachagenten nicht im versionierten
-Register; Zustand in SQLite ohne Hochverfügbarkeit (Zielbild: [Orchestrierung](plattformstrategie.md)). Details und Abnahmestatus: [Sicherheit und Nachweise](sicherheit.md).
+Register; Zustand in SQLite ohne Hochverfügbarkeit (Zielbild: [Orchestrierung](plattformstrategie.md)). Details: [Sicherheit (Systemdokumentation)](sicherheit.md).

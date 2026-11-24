@@ -91,7 +91,7 @@ nav:
       - Klickprüfung mit lokaler KI: agents/klickpruefung.md
       - Fachagenten: agents/fachagenten.md
       - "Orchestrierung: Eigenbau und fertige Werkzeuge": agents/plattformstrategie.md
-      - Sicherheit und Nachweise: agents/sicherheit.md
+      - Sicherheit (Systemdokumentation): agents/sicherheit.md
       - Modellbewertung: agents/modellbewertung.md
   - Werkzeuge:
       - Katalog und Matrix: tools/index.md

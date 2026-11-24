@@ -1,85 +1,60 @@
-# FLOWAGENTS – Sicherheit, Kontrollzuordnung und Nachweise
+# FLOWAGENTS – Sicherheit (Systemdokumentation)
 
-**Status:** Arbeitsvorschlag. Eine Maßnahme ist erst „wirksam“, wenn ein zuständiger Mensch Umsetzung
-und Stichprobe geprüft hat (KI-EK Teil 05). „Getestet“ heißt hier: automatisierter Test im Repository
-besteht; der Nachweis gegen das betriebliche Grundschutzmodell, die SoA und die Zertifikatsbasis des
-Unternehmens steht aus [FIRMENANGABE U-12].
+**Stand:** 2026-11-24 · **Status:** Arbeitsentwurf, Freigabe durch Informationssicherheit und Bas offen
 
-## Kontrollzuordnung (ISO/IEC 27001:2022 Anhang A, IT-Grundschutz-Kompendium Edition 2023)
+Diese Seite beschreibt, wie FLOWAGENTS abgesichert ist – als Grunddokumentation wie für jedes andere System
+(Aufbau nach den [Vorlagen Systemdokumentation](../konzepte/vorlagen-systemdokumentation/00-wegweiser.md)).
+Sie enthält bewusst **keine Zuordnung zu einzelnen Anforderungen** aus IT-Grundschutz oder ISO/IEC 27001
+und **keine Tests je Anforderung**. Welche Anforderungen diese Dokumentation erfüllt, ordnet der ISB im
+Anforderungs- bzw. ISMS-System zu [FIRMENANGABE U-12]. Regeln und Begründungen stehen im
+[Sicherheitskonzept](sicherheitskonzept.md).
 
-| Anhang A | Baustein | Umsetzung in der Referenzumgebung | Beleg | Status |
-|---|---|---|---|---|
-| A.8.25–A.8.27 | CON.8, CON.10 | Anforderungen mit Quelle und Akzeptanzkriterien vor jeder Umsetzung; Architektur- und Sicherheitsrolle vor G2 | `requirements/catalog.yaml`, Agenten 1–4, ADR-007/008 | getestet |
-| A.8.28, A.8.29 | CON.8, OPS.1.1.6 | Codeprüfung durch andere Modellfamilie, Integrationsprüfung offline am Digest, unabhängige Akzeptanztests | REQ-AGT-002/-006/-009 | getestet |
-| A.8.31–A.8.33 | OPS.1.1.3, OPS.1.1.6 | Sandbox ohne Netzwerk/Zugangsdaten, Export ohne `.env`, nur synthetische Daten, Produktion außerhalb des Agentennetzes (G5) | REQ-AGT-009/-014 | getestet |
-| A.5.3, A.5.15–A.5.18, A.8.4 | ORP.1, ORP.4 | Rollenregister mit Ablaufdatum, Werkzeugmatrix serverseitig, keine Selbstfreigabe, getrennte Identitäten je Rolle (Token, FLOWGATE-Schlüssel) | REQ-AGT-001/-010/-011 | getestet; Rezertifizierung offen |
-| A.8.8, A.8.13, A.8.15, A.8.16 | OPS.1.1.3, CON.3, OPS.1.1.5 | Audit ohne Inhalte (FLOWWORK `rm_audit`, Orchestrator-Ereignisse), Wiederanlauf mit idempotenten Schritten | REQ-AGT-012/-013, REQ-REQ-001 | teilweise; SBOM-Agent (11) und Restore-Probe offen |
-| A.5.19–A.5.22 | – | Lokale Modelle als Standard, keine Cloud-Fallbacks im Gateway; Eskalation zu Codex/Claude-Abo-Workern nur für interne Daten, mit Egress-Proxy, getrenntem Login je Anbieter und Familienprüfung | REQ-AGT-014, REQ-AGT-021, `deployment/agentgateway/config.yaml`, `config/orchestrator.yaml` | implementiert; Modelllizenzen und Herkunft offen; Worker teilen Login und Netze mit Trading_Ai |
-| A.8.3, A.5.10 | APP.3.1, CON.6 | DMS: Abfrage im Namen der Person, kein technischer Rückfall im OIDC-Modus | REQ-DOC-002 | getestet |
-| A.5.15, A.5.18, A.8.3 | ORP.4 | Projektrechte aus AD-Gruppen `AD-GG-FLOW-PRJ-*-LESEN/-AENDERN`: Einreichen und Paketstart nur mit Änderungsrecht, Entscheiden nur als Mitglied, Übersicht filtert fremde Projekte; Aufsicht (ISB, GF) sieht alles | `agents/projects.json`, `test_project_rights.py`, `test_project_rights_demo.py` | getestet; Rezertifizierung der Gruppen offen |
-| A.8.9, A.8.32 | OPS.1.1.6, ORP.4 | Agentenkonfiguration nur durch `platform-admin`, mit Begründung, Prüfung wie das Register (Unabhängigkeit, Werkzeuge, Datenklassen, Stufe), Protokoll, Registerstand ändert sich | `test_agent_config.py` | getestet; Übersteuerungen nicht im versionierten Register |
-| A.8.22, A.8.31 | SYS.1.6, NET.1.1 | OpenCode-Worker: internes Netz nur zu FLOWGATE, read-only, keine Werkzeuge, Schlüssel nicht in der Befehlszeile; Prüfbrowser im internen Netz ohne Internet, Schreibzugriffe gesperrt | `test_opencode.py`, `deployment/ui-runner` | getestet; Netztest von außen offen |
-| A.5.15, A.8.11, A.8.12 | ORP.4, APP.3.1 | Fachagenten: anlegen nur Admins, nutzen nur zugewiesene AD-Gruppen/Personen, Hintergrunddaten nur bei eigener Rolle der anfragenden Person, nur lokale Modelle, nur Entwürfe mit menschlicher Freigabe | `test_fachagenten.py`, `test_project_rights_demo.py` | getestet; kein Postfach angebunden |
+## Steckbrief
 
-## Abnahmeplan (KI-EK Teil 10) – Abdeckung
+| Feld | Eintrag |
+|---|---|
+| System | FLOWAGENTS – Agentenplattform für die Entwicklung eigener Fachsoftware und für Fachagenten |
+| Komponenten | Orchestrator (Host-Dienst), Plattform-API mit Agentenzentrale, FLOWGATE (agentgateway), lokale Modelle (Ollama), Prüf-Sandbox, Vorschau und Prüfbrowser, Worker (OpenCode lokal; Codex/Claude über Abo), FLOWWORK (Anforderungen), Keycloak/AD |
+| Betriebsort | Referenzumgebung: ein Rechner mit Docker Compose; Produktivbetrieb nach IT-Zielbild offen |
+| Verantwortlich | Teamleitung Business Applications [FIRMENANGABE U-04] |
+| Schutzbedarf | festzulegen durch ISB [FIRMENANGABE U-01] |
+| Verweis Anforderungssystem | [FIRMENANGABE U-12] |
 
-Ausgangsstatus aller Prüfungen ist **OFFEN**. Die Tabelle zeigt, welche Prüfziele automatisierte
-Tests im Repository abdecken. Sie ersetzt nicht das Prüfprotokoll mit Umgebung, Testidentität, Soll,
-Ist, Beleg-ID und Urteil.
+## Sicherheitsmaßnahmen
 
-| Fall | Kurzbeschreibung | Abdeckung im Repository |
+| Thema | Umsetzung | Festgelegt in |
 |---|---|---|
-| 01 | Alle erlaubten Werkzeuge je Rolle funktionieren | teilweise (`test_flow_agents.py`, Live-Lauf A-001) |
-| 02 | Entwicklung legt keinen RM-Entwurf an | `test_02_developer_cannot_create_requirement_drafts` |
-| 03 | Nicht freigegebenes Modell | `test_03_gateway_uses_role_key_and_profile_alias_only`; live: FLOWGATE 403 |
-| 04 | Ohne / abgelaufenes Token | `test_04_*` (Orchestrator und RM-Adapter) |
-| 05 | Token für andere Zielressource | `test_05_*` (Orchestrator und RM-Adapter) |
-| 06 | Push auf fremden Branch | Sandbox: `test_06_changes_outside_the_approved_scope_are_rejected`; GitHub-Weg noch nicht aktiv |
-| 07 | Geschützte CI-/Rechtedateien ändern | `test_07_protected_and_unsafe_paths_are_rejected` |
-| 08 | Testrolle fordert Implementierung | Register-Prüfung `test_acceptance_tester_may_not_read_implementation` |
-| 09 | Dienstkonto gibt fachlich frei | `test_09_agents_cannot_approve_requirements` |
-| 10 | Anforderung verlangt Regeländerung | strukturell (keine Werkzeuge); Bewertung der Modellreaktion offen |
-| 11 | Sandbox ruft extern auf | `--network none` im Prüfcontainer; Netztest offen |
-| 12 | Nicht freigegebenes Paket | offen (kein Paketspiegel) |
-| 13 | Produktivdienst aus der KI-Zone | offen (keine getrennte Produktion in der Referenzumgebung) |
-| 14 | Laufbudget erschöpft | `test_14_budget_exhaustion_blocks_further_model_calls` |
-| 15 | Agent sperren, wartender Auftrag | `test_15_paused_agent_holds_waiting_runs` |
-| 16 | Freigabe ohne Befugnis | `test_16_person_without_role_cannot_decide` |
-| 17 | Ereignisse rückverfolgbar, ohne Rohinhalte | Audit ohne Payload (`test_02_*`), Orchestrator-Ereignisse; Stichprobe offen |
-| 18 | Suche ohne Recht verrät nichts | `test_18_search_runs_in_the_name_of_the_person` |
-| 19–23 | RAG/Cache/Entzug | offen (Wissenssuche nicht Teil dieser Änderung) |
-| 24 | mTLS zum Adapter | offen (lokal kein TLS) |
-| 25 | Fremder Personenheader | FLOWDOC setzt den Header nur aus der Sitzung; Netzwerktrennung zu Paperless offen |
-| 26 | Wiederholung nach Timeout | `test_26_*` (Orchestrator und RM-Adapter) |
-| 27 | Versionskonflikt | `test_27_concurrent_updates_against_same_version_conflict` |
-| 28 | Neuer Commit nach Review | `test_28_*`, Digest-Bindung in `_gate_checks` |
-| 29 | Anderes Artefakt nach Abnahme | `test_29_changed_candidate_invalidates_fachabnahme` |
-| 30 | Nachweis-Agent meldet Erfolg ohne Bericht | `test_30_manifest_gap_blocks_fachabnahme`, `verify_manifest` |
-| 31 | Verdeckter Datenzugriff in UI-Change | offen (Klassifizierung nach Diff noch nicht automatisiert) |
-| 32 | Vertrauliche Quelle in breiteres Ticket | offen |
-| 33 | Restore und Fortsetzung | teilweise (`test_restart_recovers_interrupted_step`) |
-| 34 | Modell-/Promptwechsel | Prompts im Register-Digest; Läufe blockieren bis zur Umstellung (`test_changed_registry_*`); Referenzfall-Evaluation offen |
-| 35 | Standardfall und kritischer Fall | `test_35_*`; kritischer Fall offen |
-| 36 | Abnahme verweigern, neuer Kandidat | G4-Ablehnung führt zur Entwicklung zurück; erste Entscheidung bleibt sichtbar |
+| Anmeldung und Rechte von Personen | Anmeldung über Keycloak (OIDC); Freigaberollen `flow-*` und Projektrollen `flow-prj-*` aus AD-Gruppen; Entscheiden nur in der eigenen Rolle und als Projektmitglied, Einreichen und Paketstart nur mit Änderungsrecht im Projekt; Übersicht zeigt nur eigene Projekte | `scripts/generate_iam_demo.py`, `agents/projects.json`, `agents/registry.yaml` (`human_roles`) |
+| Rollen der Agenten | Nur Agenten mit gültigem Registereintrag (Owner, Stufe, Ablaufdatum) arbeiten; Werkzeuge je Rolle, serverseitig im RM-Adapter erneut geprüft; kein Agent hat Freigabe-, Merge-, Lösch- oder Deploy-Werkzeuge | `agents/registry.yaml`, `flowagents/registry.py`, `app/rm_adapter.py` |
+| Unabhängigkeit und Freigaben | Prüfer aus anderer Modellfamilie als Ersteller; Testagenten ohne Zugriff auf die Implementierung; Gates EP1 und G1–G5 durch Menschen je nach Einstufung; G4 und G5 immer menschlich; Review, Integrationsprüfung und Abnahme an den Digest des Stands gebunden | `agents/workflow.yaml`, `flowagents/engine.py` |
+| Änderungen an Agenten | Übersteuerungen nur durch `platform-admin`, mit Begründung, geprüft wie das Register, protokolliert; der Registerstand ändert sich, offene Läufe halten bis zur Umstellung | `flowagents/registry.py`, `flowagents/engine.py` |
+| Modelle | Nur lokale Modelle über FLOWGATE; je Rolle bzw. Dienst ein virtueller Schlüssel, der nur das freigegebene Modell erlaubt; kein Cloud-Rückfall im Gateway | `deployment/agentgateway/config.yaml` |
+| Externe Modelle | Codex/Claude nur für komplexe, nicht vertrauliche Aufträge; eigenes internes Netz je Anbieter mit Egress-Proxy, Anmeldedaten schreibgeschützt, kein Repository | `config/orchestrator.yaml` (`escalation`, `container`), `flowagents/container.py` |
+| Isolation | Prüf-Sandbox ohne Netz und Zugangsdaten, nur freigegebene Pfade; OpenCode-Worker im internen Netz nur zu FLOWGATE, ohne Werkzeuge; Prüfbrowser im internen Netz nur mit der Vorschau, Schreibzugriffe gesperrt | `flowagents/sandbox.py`, `flowagents/opencode.py`, `deployment/ui-runner` |
+| Daten | Nur synthetische oder freigegebene Entwicklungsdaten; vertrauliche Aufträge nur lokal; Agenten lesen nur die Ergebnisarten ihres Registereintrags; Fachagenten bekommen Hintergrunddaten nur, wenn die anfragende Person selbst berechtigt ist | `flowagents/engine.py`, `flowagents/fachagenten.py`, `app/flow_routes.py` |
+| Fachagenten | Anlegen nur durch Administratoren, Nutzung nur durch zugewiesene AD-Gruppen oder Personen, nur lokale Modelle, nur Entwürfe mit menschlicher Freigabe | `flowagents/fachagenten.py` |
+| Schnittstelle Plattform – Orchestrator | Orchestrator öffnet keinen Port zu den Containern; Aktionen und Zustand per Pull mit kurzlebigem Dienst-Token | `app/agents_bff.py`, `flowagents/sync.py` |
+| Protokollierung | Ereignisse und Audit ohne Inhalte (Lauf, Rolle, Operation, Objekt, Entscheidung); Modellnutzung je Rolle ohne Prompts | `flowagents/store.py`, FLOWWORK `rm_audit` |
+| Anhalten und Wiederanlauf | Stopp-Schalter je Agent und global; Laufbudget; Blockade bei ungültiger Antwort, Fehler oder geänderten Regeln; unterbrochene Schritte werden nach Neustart idempotent wiederholt | `flowagents/engine.py`, [Betrieb](betrieb.md) |
+| Übernahme von Ergebnissen | Nur nach G4 als lokaler Branch mit Integritätsprüfung; Merge und Auslieferung durch Menschen | `flowagents/adoption.py` |
 
-## Bekannte Lücken (vor einem Pilot mit Echtdaten zu schließen)
+Automatisierte Tests im Repository (`services/agent_orchestrator/tests`, `services/platform_api/tests`)
+sichern diese Maßnahmen bei jeder Änderung ab; sie sind Entwicklungsnachweis, kein Prüfprotokoll.
 
-1. Lokaler Betrieb ohne TLS; Demo-Geheimnisse mit `change-before-network-use`; Demo-Kennwörter und
-   „Person wechseln“ (`DEMO_USER_SWITCH`) nur für die lokale Demo.
-2. HS256-Geheimnisse zwischen Orchestrator und Plattform; Ziel: asymmetrische Schlüssel oder
-   Keycloak-Dienstkonten je Rolle (Token Exchange, KI-EK Teil 09).
-3. Paperless-Remote-User-Header ist im internen Netz fälschbar; Ziel: OIDC-Token-Weitergabe oder
-   strikte Netzsegmentierung (nur Plattform-API → Paperless).
-4. Entscheidungs- und Projektrollen kommen aus eigenen AD-Gruppen (`flow-*`, `flow-prj-*`); offen sind
-   MFA-Pflicht für diese Gruppen, benannte Vertretungen und die echte LDAP-Föderation statt der Simulation.
-5. Kein Paketspiegel, keine SBOM-Erzeugung; Schwachstellen-Agent inaktiv.
-6. Modell-Evaluation (Referenzfälle je Rolle) fehlt; die Live-Läufe zeigen, dass lokale Prüfer
-   unpräzise Kriterien durchlassen können – deshalb bleibt G1 bei neuen Funktionen menschlich.
-7. Integration in `main` per GitHub-PR durch Agenten ist nicht aktiv; Änderungen entstehen nur in der
-   Sandbox und werden von Menschen übernommen.
-8. Abo-Worker (Codex/Claude) teilen Anmeldung, Netze und Egress-Proxys mit Trading_Ai; Ziel: eigene
-   Login-Volumes und Netze für FLOW.
-9. Agentenkonfiguration (Übersteuerungen) und Fachagenten liegen in der Orchestrator-Datenbank, nicht im
-   versionierten Register; dauerhafte Änderungen gehören per Review in `agents/registry.yaml`.
-10. Zustand in SQLite mit einer eigenen Ablaufschleife; Hochverfügbarkeit und Wiederaufnahme sind nicht für
-    den Unternehmensbetrieb ausgelegt (Zielbild: [Orchestrierung](plattformstrategie.md)).
+## Bekannte Abweichungen
+
+| Abweichung | Behandlung |
+|---|---|
+| Lokaler Betrieb ohne TLS; Demo-Geheimnisse (`change-before-network-use`); Demo-Kennwörter und „Person wechseln“ nur für die lokale Demo | vor jeder Netzwerknutzung beheben |
+| Symmetrische Tokens zwischen Orchestrator und Plattform statt Keycloak-Dienstkonten mit Token Exchange | Ziel nach KI-EK Teil 09 |
+| Paperless-Remote-User-Header im internen Netz fälschbar | Netzsegmentierung oder OIDC-Weitergabe |
+| AD-Anbindung simuliert; MFA-Pflicht für Freigabe- und Projektgruppen und benannte Vertretungen offen | mit echter LDAP-Föderation |
+| Kein Paketspiegel, keine SBOM; Schwachstellen-Agent inaktiv | offen |
+| Keine Modell-Evaluation je Rolle; lokale Prüfer können unpräzise Kriterien durchlassen | G1 bei neuen Funktionen bleibt menschlich |
+| Kein automatischer PR-Weg; Ergebnisse nur als lokaler Branch | bewusst |
+| Abo-Worker teilen Anmeldung, Netze und Egress-Proxys mit Trading_Ai | eigene Volumes und Netze für FLOW |
+| Übersteuerungen der Agentenkonfiguration und Fachagenten nicht im versionierten Register | dauerhafte Änderungen per Review in `agents/registry.yaml` |
+| Zustand in SQLite mit eigener Ablaufschleife, keine Hochverfügbarkeit | Zielbild [Orchestrierung](plattformstrategie.md) |
+
+Für die Produktivsetzung wird FLOWAGENTS wie jedes System mit den Vorlagen V01 bis V13 dokumentiert und
+freigegeben.

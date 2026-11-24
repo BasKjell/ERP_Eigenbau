@@ -173,4 +173,4 @@ Demo-Modus darf `platform-admin` zusätzlich entscheiden; das ist im Portal sich
 5. Den Lauf auf der Karte und in „Wo es gerade hängt“ verfolgen; Entscheidungen erscheinen in
    „Deine Entscheidungen“.
 
-Weiter: [Betrieb](betrieb.md) · [Sicherheit und Nachweise](sicherheit.md)
+Weiter: [Betrieb](betrieb.md) · [Sicherheit (Systemdokumentation)](sicherheit.md)
