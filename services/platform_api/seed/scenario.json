@@ -2145,7 +2145,7 @@
       "name": "FLOWCORP Active Directory",
       "domain": "flowcorp.example.invalid",
       "mode": "simulated",
-      "users": 58,
+      "users": 60,
       "groups": [
         {
           "name": "AD-GG-FLOW-PLATFORM-ADMIN",
@@ -2335,6 +2335,62 @@
           "description": "FLOWAGENTS Geschäftsführung: Rückfragen des Geschäftsführungs-Agenten",
           "source": "Active Directory (simuliert)",
           "ad_dn": "CN=AD-GG-FLOW-AGENTS-GF,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+          "role": "flow-prj-flow-platform-lesen",
+          "description": "Projekt FLOW-PLATFORM – FLOW-Plattform – Portal, ERP-Anbindung und Fachmodule: lesen und als Projektmitglied entscheiden",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN",
+          "role": "flow-prj-flow-platform-aendern",
+          "description": "Projekt FLOW-PLATFORM – FLOW-Plattform – Portal, ERP-Anbindung und Fachmodule: Aufträge einreichen und Pakete starten",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+          "role": "flow-prj-flow-dms-lesen",
+          "description": "Projekt FLOW-DMS – FLOWDOC – Dokumentenmanagement: lesen und als Projektmitglied entscheiden",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRJ-FLOW-DMS-LESEN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN",
+          "role": "flow-prj-flow-dms-aendern",
+          "description": "Projekt FLOW-DMS – FLOWDOC – Dokumentenmanagement: Aufträge einreichen und Pakete starten",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRJ-TM-100-LESEN",
+          "role": "flow-prj-tm-100-lesen",
+          "description": "Projekt TM-100 – Testprodukt TM-100 – Gerätesoftware Messgerät: lesen und als Projektmitglied entscheiden",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRJ-TM-100-LESEN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRJ-TM-100-AENDERN",
+          "role": "flow-prj-tm-100-aendern",
+          "description": "Projekt TM-100 – Testprodukt TM-100 – Gerätesoftware Messgerät: Aufträge einreichen und Pakete starten",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRJ-TM-100-AENDERN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+          "role": "flow-prj-ps-tm100-lesen",
+          "description": "Projekt PS-TM100 – Prüfstand TM-100 – Endprüfsoftware Fertigung: lesen und als Projektmitglied entscheiden",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRJ-PS-TM100-LESEN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        },
+        {
+          "name": "AD-GG-FLOW-PRJ-PS-TM100-AENDERN",
+          "role": "flow-prj-ps-tm100-aendern",
+          "description": "Projekt PS-TM100 – Prüfstand TM-100 – Endprüfsoftware Fertigung: Aufträge einreichen und Pakete starten",
+          "source": "Active Directory (simuliert)",
+          "ad_dn": "CN=AD-GG-FLOW-PRJ-PS-TM100-AENDERN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
         }
       ],
       "sync": "AD/LDAP → Keycloak User Federation",
@@ -3277,7 +3333,359 @@
         ],
         "manager": false
       }
-    ]
+    ],
+    "demo_accounts": [
+      {
+        "username": "admin.demo",
+        "name": "Alex Vollzugriff",
+        "department": "IT",
+        "function": "Administration – alle Rechte",
+        "groups": [
+          "AD-GG-FLOW-AGENTS-GF",
+          "AD-GG-FLOW-AGENTS-ISB",
+          "AD-GG-FLOW-AGENTS-KEYUSER",
+          "AD-GG-FLOW-AGENTS-PO",
+          "AD-GG-FLOW-AGENTS-RELEASE",
+          "AD-GG-FLOW-AGENTS-TECHLEAD",
+          "AD-GG-FLOW-AI-USER",
+          "AD-GG-FLOW-GRAFANA-VIEWER",
+          "AD-GG-FLOW-IT-USER",
+          "AD-GG-FLOW-MANAGEMENT-USER",
+          "AD-GG-FLOW-PLATFORM-ADMIN",
+          "AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN",
+          "AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+          "AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN",
+          "AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+          "AD-GG-FLOW-PRJ-PS-TM100-AENDERN",
+          "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+          "AD-GG-FLOW-PRJ-TM-100-AENDERN",
+          "AD-GG-FLOW-PRJ-TM-100-LESEN"
+        ],
+        "roles": [
+          "ai-user",
+          "flow-gf",
+          "flow-isb",
+          "flow-keyuser",
+          "flow-po",
+          "flow-prj-flow-dms-aendern",
+          "flow-prj-flow-dms-lesen",
+          "flow-prj-flow-platform-aendern",
+          "flow-prj-flow-platform-lesen",
+          "flow-prj-ps-tm100-aendern",
+          "flow-prj-ps-tm100-lesen",
+          "flow-prj-tm-100-aendern",
+          "flow-prj-tm-100-lesen",
+          "flow-release",
+          "flow-techlead",
+          "grafana-viewer",
+          "it-user",
+          "management-user",
+          "platform-admin"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "aendern",
+          "FLOW-DMS": "aendern",
+          "TM-100": "aendern",
+          "PS-TM100": "aendern"
+        }
+      },
+      {
+        "username": "po.demo",
+        "name": "Petra Ohm",
+        "department": "Projekte & Engineering",
+        "function": "Product Owner",
+        "groups": [
+          "AD-GG-FLOW-AGENTS-PO",
+          "AD-GG-FLOW-DMS-USER",
+          "AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN",
+          "AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+          "AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+          "AD-GG-FLOW-PRJ-TM-100-AENDERN",
+          "AD-GG-FLOW-PRJ-TM-100-LESEN",
+          "AD-GG-FLOW-PROJECT-USER",
+          "AD-GG-FLOW-REQUIREMENTS-USER",
+          "AD-GG-FLOW-WORK-USER"
+        ],
+        "roles": [
+          "dms-user",
+          "flow-po",
+          "flow-prj-flow-dms-aendern",
+          "flow-prj-flow-dms-lesen",
+          "flow-prj-flow-platform-lesen",
+          "flow-prj-tm-100-aendern",
+          "flow-prj-tm-100-lesen",
+          "project-user",
+          "requirements-user",
+          "work-user"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "lesen",
+          "FLOW-DMS": "aendern",
+          "TM-100": "aendern",
+          "PS-TM100": ""
+        }
+      },
+      {
+        "username": "po2.demo",
+        "name": "Paula Brandt",
+        "department": "Qualität",
+        "function": "Product Owner",
+        "groups": [
+          "AD-GG-FLOW-AGENTS-PO",
+          "AD-GG-FLOW-DMS-USER",
+          "AD-GG-FLOW-PRJ-PS-TM100-AENDERN",
+          "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+          "AD-GG-FLOW-PRJ-TM-100-LESEN",
+          "AD-GG-FLOW-QUALITY-USER",
+          "AD-GG-FLOW-REQUIREMENTS-USER",
+          "AD-GG-FLOW-WORK-USER"
+        ],
+        "roles": [
+          "dms-user",
+          "flow-po",
+          "flow-prj-ps-tm100-aendern",
+          "flow-prj-ps-tm100-lesen",
+          "flow-prj-tm-100-lesen",
+          "quality-user",
+          "requirements-user",
+          "work-user"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "",
+          "FLOW-DMS": "",
+          "TM-100": "lesen",
+          "PS-TM100": "aendern"
+        }
+      },
+      {
+        "username": "techlead.demo",
+        "name": "Tarek Lindner",
+        "department": "IT",
+        "function": "Tech Lead",
+        "groups": [
+          "AD-GG-FLOW-AGENTS-TECHLEAD",
+          "AD-GG-FLOW-AI-USER",
+          "AD-GG-FLOW-DMS-USER",
+          "AD-GG-FLOW-IT-USER",
+          "AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN",
+          "AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+          "AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN",
+          "AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+          "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+          "AD-GG-FLOW-PRJ-TM-100-AENDERN",
+          "AD-GG-FLOW-PRJ-TM-100-LESEN",
+          "AD-GG-FLOW-REQUIREMENTS-USER",
+          "AD-GG-FLOW-WORK-USER"
+        ],
+        "roles": [
+          "ai-user",
+          "dms-user",
+          "flow-prj-flow-dms-aendern",
+          "flow-prj-flow-dms-lesen",
+          "flow-prj-flow-platform-aendern",
+          "flow-prj-flow-platform-lesen",
+          "flow-prj-ps-tm100-lesen",
+          "flow-prj-tm-100-aendern",
+          "flow-prj-tm-100-lesen",
+          "flow-techlead",
+          "it-user",
+          "requirements-user",
+          "work-user"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "aendern",
+          "FLOW-DMS": "aendern",
+          "TM-100": "aendern",
+          "PS-TM100": "lesen"
+        }
+      },
+      {
+        "username": "keyuser.demo",
+        "name": "Kira Unger",
+        "department": "Qualität",
+        "function": "Key User (Fachabnahme)",
+        "groups": [
+          "AD-GG-FLOW-AGENTS-KEYUSER",
+          "AD-GG-FLOW-DMS-USER",
+          "AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+          "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+          "AD-GG-FLOW-PRJ-TM-100-LESEN",
+          "AD-GG-FLOW-QUALITY-USER",
+          "AD-GG-FLOW-REQUIREMENTS-USER",
+          "AD-GG-FLOW-WORK-USER"
+        ],
+        "roles": [
+          "dms-user",
+          "flow-keyuser",
+          "flow-prj-flow-dms-lesen",
+          "flow-prj-ps-tm100-lesen",
+          "flow-prj-tm-100-lesen",
+          "quality-user",
+          "requirements-user",
+          "work-user"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "",
+          "FLOW-DMS": "lesen",
+          "TM-100": "lesen",
+          "PS-TM100": "lesen"
+        }
+      },
+      {
+        "username": "release.demo",
+        "name": "Rafael Rehm",
+        "department": "IT",
+        "function": "Release-Verantwortung",
+        "groups": [
+          "AD-GG-FLOW-AGENTS-RELEASE",
+          "AD-GG-FLOW-DMS-USER",
+          "AD-GG-FLOW-IT-USER",
+          "AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+          "AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+          "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+          "AD-GG-FLOW-PRJ-TM-100-LESEN",
+          "AD-GG-FLOW-REQUIREMENTS-USER",
+          "AD-GG-FLOW-WORK-USER"
+        ],
+        "roles": [
+          "dms-user",
+          "flow-prj-flow-dms-lesen",
+          "flow-prj-flow-platform-lesen",
+          "flow-prj-ps-tm100-lesen",
+          "flow-prj-tm-100-lesen",
+          "flow-release",
+          "it-user",
+          "requirements-user",
+          "work-user"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "lesen",
+          "FLOW-DMS": "lesen",
+          "TM-100": "lesen",
+          "PS-TM100": "lesen"
+        }
+      },
+      {
+        "username": "dev.demo",
+        "name": "Dennis Engel",
+        "department": "Projekte & Engineering",
+        "function": "Entwicklung (nur lesen)",
+        "groups": [
+          "AD-GG-FLOW-AI-USER",
+          "AD-GG-FLOW-DMS-USER",
+          "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+          "AD-GG-FLOW-PRJ-TM-100-LESEN",
+          "AD-GG-FLOW-PROJECT-USER",
+          "AD-GG-FLOW-REQUIREMENTS-USER",
+          "AD-GG-FLOW-WORK-USER"
+        ],
+        "roles": [
+          "ai-user",
+          "dms-user",
+          "flow-prj-ps-tm100-lesen",
+          "flow-prj-tm-100-lesen",
+          "project-user",
+          "requirements-user",
+          "work-user"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "",
+          "FLOW-DMS": "",
+          "TM-100": "lesen",
+          "PS-TM100": "lesen"
+        }
+      },
+      {
+        "username": "isb.demo",
+        "name": "Ines Sommer",
+        "department": "Informationssicherheit",
+        "function": "Informationssicherheit (Aufsicht)",
+        "groups": [
+          "AD-GG-FLOW-AGENTS-ISB",
+          "AD-GG-FLOW-DMS-USER",
+          "AD-GG-FLOW-GRAFANA-VIEWER",
+          "AD-GG-FLOW-REQUIREMENTS-USER",
+          "AD-GG-FLOW-WORK-USER"
+        ],
+        "roles": [
+          "dms-user",
+          "flow-isb",
+          "grafana-viewer",
+          "requirements-user",
+          "work-user"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "",
+          "FLOW-DMS": "",
+          "TM-100": "",
+          "PS-TM100": ""
+        }
+      },
+      {
+        "username": "gf.demo",
+        "name": "Georg Falk",
+        "department": "Geschäftsführung",
+        "function": "Geschäftsführung (Aufsicht)",
+        "groups": [
+          "AD-GG-FLOW-AGENTS-GF",
+          "AD-GG-FLOW-DMS-USER",
+          "AD-GG-FLOW-MANAGEMENT-USER",
+          "AD-GG-FLOW-REQUIREMENTS-USER",
+          "AD-GG-FLOW-WORK-USER"
+        ],
+        "roles": [
+          "dms-user",
+          "flow-gf",
+          "management-user",
+          "requirements-user",
+          "work-user"
+        ],
+        "projects": {
+          "FLOW-PLATFORM": "",
+          "FLOW-DMS": "",
+          "TM-100": "",
+          "PS-TM100": ""
+        }
+      }
+    ],
+    "projects": {
+      "FLOW-PLATFORM": {
+        "title": "FLOW-Plattform – Portal, ERP-Anbindung und Fachmodule",
+        "domain": "it",
+        "criticality": "K1",
+        "groups": {
+          "lesen": "AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+          "aendern": "AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN"
+        }
+      },
+      "FLOW-DMS": {
+        "title": "FLOWDOC – Dokumentenmanagement",
+        "domain": "it",
+        "criticality": "K1",
+        "groups": {
+          "lesen": "AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+          "aendern": "AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN"
+        }
+      },
+      "TM-100": {
+        "title": "Testprodukt TM-100 – Gerätesoftware Messgerät",
+        "domain": "produkt",
+        "criticality": "K2",
+        "groups": {
+          "lesen": "AD-GG-FLOW-PRJ-TM-100-LESEN",
+          "aendern": "AD-GG-FLOW-PRJ-TM-100-AENDERN"
+        }
+      },
+      "PS-TM100": {
+        "title": "Prüfstand TM-100 – Endprüfsoftware Fertigung",
+        "domain": "pruefsoftware",
+        "criticality": "K2",
+        "groups": {
+          "lesen": "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+          "aendern": "AD-GG-FLOW-PRJ-PS-TM100-AENDERN"
+        }
+      }
+    }
   },
   "desksharing": {
     "settings": {

@@ -28,6 +28,8 @@ class OidcAuth:
 
     SESSION_COOKIE = "platform_session"
     FLOW_COOKIE = "platform_oidc_flow"
+    # ID-Token nur als Hinweis für die Abmeldung bei Keycloak (id_token_hint), getrennt von der Sitzung.
+    ID_TOKEN_COOKIE = "platform_id_token"
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -66,9 +68,10 @@ class OidcAuth:
             "desksharing_user_id": None,
         }
 
-    def login(self, next_path: str = "/") -> Response:
+    def login(self, next_path: str = "/", *, login_hint: str = "") -> Response:
         if not self.enabled:
             return RedirectResponse(next_path if self._safe_next(next_path) else "/")
+        extra = {"login_hint": login_hint, "prompt": "login"} if login_hint else {}
         state = secrets.token_urlsafe(32)
         nonce = secrets.token_urlsafe(32)
         verifier = secrets.token_urlsafe(64)
@@ -86,6 +89,7 @@ class OidcAuth:
                 "nonce": nonce,
                 "code_challenge": challenge,
                 "code_challenge_method": "S256",
+                **extra,
             }
         )
         response = RedirectResponse(
@@ -181,13 +185,35 @@ class OidcAuth:
             path="/",
         )
         response.delete_cookie(self.FLOW_COOKIE, path="/")
+        response.set_cookie(
+            self.ID_TOKEN_COOKIE,
+            str(id_token),
+            max_age=self.settings.auth_session_minutes * 60,
+            httponly=True,
+            secure=self.settings.auth_cookie_secure,
+            samesite="lax",
+            path="/auth",
+        )
         return response
 
-    def logout(self) -> Response:
-        target = f"{self.settings.platform_public_url.rstrip('/')}/"
-        query = urllib.parse.urlencode(
-            {"client_id": self.settings.oidc_client_id, "post_logout_redirect_uri": target}
-        )
+    def switch(self, request: Request, username: str, next_path: str = "/") -> Response:
+        """Demo-Benutzerwechsel: bei Keycloak abmelden und mit vorbelegtem Konto neu anmelden.
+
+        Kein Kennwort und keine Rolle kommt aus dem Browser; Keycloak prüft die Anmeldung, die Rollen
+        stammen wie sonst aus den AD-Gruppen.
+        """
+        next_path = next_path if self._safe_next(next_path) else "/"
+        login = (f"{self.settings.platform_public_url.rstrip('/')}/auth/login?"
+                 + urllib.parse.urlencode({"next": next_path, "login_hint": username}))
+        return self.logout(request, target=login)
+
+    def logout(self, request: Request | None = None, *, target: str = "") -> Response:
+        target = target or f"{self.settings.platform_public_url.rstrip('/')}/"
+        values = {"client_id": self.settings.oidc_client_id, "post_logout_redirect_uri": target}
+        id_token = request.cookies.get(self.ID_TOKEN_COOKIE, "") if request is not None else ""
+        if id_token:
+            values["id_token_hint"] = id_token
+        query = urllib.parse.urlencode(values)
         location = (
             f"{self.settings.oidc_external_issuer.rstrip('/')}/protocol/openid-connect/logout?{query}"
             if self.enabled
@@ -196,6 +222,7 @@ class OidcAuth:
         response = RedirectResponse(location)
         response.delete_cookie(self.SESSION_COOKIE, path="/")
         response.delete_cookie(self.FLOW_COOKIE, path="/")
+        response.delete_cookie(self.ID_TOKEN_COOKIE, path="/auth")
         return response
 
     @staticmethod

@@ -145,6 +145,13 @@
     state.available = apps.filter(allowed);
     setupLauncher();
     setupManagementTour();
+    if (window.location.origin === new URL(platformHref("/") || "/", window.location.href).origin && !document.querySelector("script[data-demo-switch]")) {
+      const script = document.createElement("script");
+      script.src = "/assets/demo-switch.js?v=20261124";
+      script.defer = true;
+      script.dataset.demoSwitch = "1";
+      document.head.append(script);
+    }
     document.dispatchEvent(new CustomEvent("platform-apps-ready", { detail: state }));
   }
 

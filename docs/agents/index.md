@@ -86,6 +86,15 @@ des V-Modells mit Ergebnis, Abnahmekriterium, Welle, Vorgängern und Änderungsb
   Nennt das Paket keinen Änderungsbereich, wählt die Person einen freigegebenen Bereich.
 - Erneutes Starten erzeugt keinen zweiten Auftrag. Sind alle Pakete fertig, ist das Projekt abgeschlossen (EP9).
 
+## Projekte und Projektrechte
+
+Aufträge gehören zu einem Projekt aus dem **Projektkatalog** (`agents/projects.json`): FLOW-PLATFORM,
+FLOW-DMS, Testprodukt TM-100 und Prüfstand PS-TM100. Je Projekt gibt es zwei AD-Gruppen
+(`AD-GG-FLOW-PRJ-<KÜRZEL>-LESEN` und `-AENDERN`). Einreichen und Paketstart verlangen Änderungsrecht im
+Projekt, Entscheiden die Projektmitgliedschaft; jedes Projekt erlaubt nur seine Änderungsbereiche und gibt
+eine Mindest-Kritikalität vor. Im Portal sieht jede Person nur ihre Projekte. Einzelheiten, Demo-Konten und
+der Benutzerwechsel: [Demo-Projekte und Projektrechte](../demo/projekte/index.md).
+
 ## Ablauf und Gates
 
 ```mermaid

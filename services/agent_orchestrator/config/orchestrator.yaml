@@ -200,6 +200,19 @@ scopes:
       - docs/user-guides/finance.md
       - docs/user-guides/desksharing.md
       - docs/user-guides/flowwork.md
+  # Demo-Projekte aus agents/projects.json (Testprodukt und Prüfstand). Beide Projekte dürfen nur ihre
+  # eigenen Projektunterlagen ändern; Gerätesoftware und Prüfsoftware liegen nicht in diesem Repository.
+  tm100-doku:
+    label: Testprodukt TM-100 – Projektunterlagen (Lastenheft, Architektur, Tests)
+    paths:
+      - docs/demo/projekte/tm-100/lastenheft.md
+      - docs/demo/projekte/tm-100/architektur.md
+      - docs/demo/projekte/tm-100/verifikation.md
+  ps-tm100-doku:
+    label: Prüfstand TM-100 – Prüfspezifikation und Validierung
+    paths:
+      - docs/demo/projekte/ps-tm100/pruefspezifikation.md
+      - docs/demo/projekte/ps-tm100/validierung.md
 # Laufbudget je Änderungsklasse (überschreibt agents/workflow.yaml). Der Tech Lead kann bei
 # „Laufbudget erschöpft“ bewusst je 20 weitere Modellaufrufe freigeben.
 budgets:

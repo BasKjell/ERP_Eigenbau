@@ -10,6 +10,7 @@ Entscheidungs-Inbox.
 from __future__ import annotations
 
 import difflib
+import fnmatch
 import json
 import re
 import subprocess
@@ -31,6 +32,9 @@ from .uicheck import UiCheckError, UiRunner, scenarios_from
 ORCHESTRATOR = ("orchestrator", "FLOW-ORCHESTRATOR")
 # Laufsteuerung (Pause, Fortsetzen, Abbrechen): Plattformbetrieb und Tech Lead (KI-EK Teil 02).
 CONTROL_ROLES = frozenset({"platform-admin", "it-user", "work-admin", "flow-techlead"})
+# Aufsicht sieht alle Projekte, entscheidet aber nur in ihrer eigenen Rolle (Projektkatalog, agents/projects.json).
+OVERSIGHT_ROLES = frozenset({"platform-admin", "flow-isb", "flow-gf"})
+CATALOG_OWNER = {"username": "projektkatalog", "name": "Projektkatalog"}
 GATE_BACK_TO = {"EP1": "projektplanung", "G1": "anforderungen", "G2": "architektur", "G3": "entwicklung", "G4": "entwicklung"}
 DATA_CLASSES = ("oeffentlich", "intern", "vertraulich")
 # Domänenprofile (KI-Softwareentwicklung Teil 07).
@@ -61,6 +65,7 @@ class Engine:
         budgets: dict[str, dict[str, int]] | None = None,
         escalation: dict[str, Any] | None = None,
         ui_runner: UiRunner | None = None,
+        projects: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         missing = {profile for profile in {a.model_profile for a in registry.agents.values()}
                    if profile_providers.get(profile) not in providers}
@@ -73,6 +78,16 @@ class Engine:
         self.adoption, self.preview, self.budgets = adoption, preview, budgets or {}
         self.escalation = escalation or {}
         self.ui_runner = ui_runner
+        # Projektkatalog mit Projektrechten. Ohne Katalog gilt der bisherige Ablauf ohne Projektprüfung.
+        self.projects = dict(projects or {})
+        for code, spec in self.projects.items():
+            if not re.fullmatch(r"[A-Z][A-Z0-9-]{2,30}", code):
+                raise EngineError(f"Projektkürzel {code} ungültig")
+            if spec.get("criticality", "K1") not in CRITICALITIES or spec.get("domain", "it") not in DOMAINS:
+                raise EngineError(f"Projekt {code}: Kritikalität oder Domäne ungültig")
+            unknown = [s for s in self.project_scopes(code) if s not in self.scopes]
+            if not self.project_scopes(code) or unknown:
+                raise EngineError(f"Projekt {code}: Änderungsbereiche fehlen oder sind unbekannt {unknown}")
         if self.sandbox is not None:
             for scope in self.scopes.values():
                 for path in [*scope.get("paths", []), *scope.get("reads", [])]:
@@ -113,6 +128,22 @@ class Engine:
                 raise EngineError(f"{name}: {low} bis {high} Zeichen erforderlich")
             return value
 
+        project = str(values.get("project") or "FLOW-PLATFORM")
+        if not re.fullmatch(r"[A-Z][A-Z0-9-]{2,30}", project):
+            raise EngineError("Projektkürzel ungültig")
+        catalog = self.projects.get(project)
+        if self.projects:
+            if catalog is None:
+                raise EngineError(f"Projekt {project} steht nicht im Projektkatalog")
+            self._require_project(user, project, "aendern")
+            values = dict(values)
+            if not values.get("domain"):
+                values["domain"] = catalog.get("domain", "it")
+            floor = str(catalog.get("criticality", "K1"))
+            given = str(values.get("criticality") or "")
+            if floor != "K1" and (not given or (given in CRITICALITIES and
+                                                CRITICALITIES.index(given) < CRITICALITIES.index(floor))):
+                values["criticality"] = floor  # das Projekt gibt die Mindest-Kritikalität vor
         project_class, criticality, change_class = self._classify(values)
         domain = str(values.get("domain") or "it")
         if domain not in DOMAINS:
@@ -126,6 +157,8 @@ class Engine:
         scope = self.scopes.get(scope_id)
         if scope is None:
             raise EngineError("Änderungsbereich (scope) fehlt oder ist nicht freigegeben")
+        if catalog is not None and scope_id not in self.project_scopes(project):
+            raise EngineError(f"Änderungsbereich {scope_id} gehört nicht zum Projekt {project}")
         checked = list(scope.get("paths", []))
         reads = [path for path in scope.get("reads", []) if path not in checked]
         if self.sandbox is not None and checked:
@@ -143,9 +176,6 @@ class Engine:
             raise EngineError("Umsetzung muss automatisch, lokal oder abo sein")
         if execution == "abo" and data_class == "vertraulich":
             raise EngineError("vertrauliche Daten werden nur lokal verarbeitet")
-        project = str(values.get("project") or "FLOW-PLATFORM")
-        if not re.fullmatch(r"[A-Z][A-Z0-9-]{2,30}", project):
-            raise EngineError("Projektkürzel ungültig")
         return {
             "title": text("title", 5, 160),
             "goal": text("goal", 10, 2000),
@@ -939,6 +969,7 @@ class Engine:
                 raise EngineError("Entscheidung ist nicht mehr offen")
             self._authorize(user, decision["decider"])
             run = self.store.run(decision["run_id"])
+            self._require_project(user, str(run["auftrag"].get("project", "")), "lesen")
             if run["status"] not in {"wartet", "blockiert"}:
                 raise EngineError("Lauf wartet nicht auf diese Entscheidung")
             step = self.registry.steps[run["step_index"]]
@@ -1083,6 +1114,7 @@ class Engine:
         auftrag = project["auftrag"]
         return {
             "id": project["id"], "run_id": project["run_id"], "title": project["title"], "status": status,
+            "code": auftrag.get("project", ""), "catalog": bool(auftrag.get("catalog")),
             "ep": "EP9 Projekt abgeschlossen" if status == "abgeschlossen" else "EP1 Projekt definiert",
             "project_class": auftrag.get("project_class", "L"), "criticality": auftrag.get("criticality", "K1"),
             "domain": auftrag.get("domain", "it"), "project": auftrag.get("project", ""),
@@ -1167,6 +1199,83 @@ class Engine:
                 self.store.event(run["id"], "steuerung", f"mensch:{decision['decider']}", "orchestrator",
                                  f"Lauf auf Registerstand {self.registry.digest[:12]} umgestellt durch {person['name']}")
             self.store.update_run(run["id"], status="aktiv", reason="")
+
+    # -- Projektrechte ------------------------------------------------------------------------
+    def project_scopes(self, code: str) -> list[str]:
+        """Änderungsbereiche eines Katalogprojekts; Muster wie dms-* werden gegen die Bereiche aufgelöst."""
+        patterns = [str(p) for p in (self.projects.get(code) or {}).get("scopes", [])]
+        return [scope for scope in self.scopes if any(fnmatch.fnmatchcase(scope, p) for p in patterns)] + \
+            [p for p in patterns if not any(ch in p for ch in "*?[") and p not in self.scopes]
+
+    @staticmethod
+    def project_roles(code: str) -> dict[str, str]:
+        return {right: f"flow-prj-{code.lower()}-{right}" for right in ("lesen", "aendern")}
+
+    def project_access(self, user: dict[str, Any], code: str) -> str:
+        """Recht einer Person im Projekt: aendern, lesen oder leer. Projekte außerhalb des Katalogs
+        (Altaufträge) sind nicht zugeordnet und bleiben für alle wie bisher bearbeitbar."""
+        if not self.projects or code not in self.projects:
+            return "aendern"
+        roles = {str(r) for r in user.get("roles", [])}
+        if self.demo_mode and "platform-admin" in roles:
+            return "aendern"
+        names = self.project_roles(code)
+        if names["aendern"] in roles:
+            return "aendern"
+        return "lesen" if names["lesen"] in roles else ""
+
+    def can_see_project(self, user: dict[str, Any], code: str) -> bool:
+        roles = {str(r) for r in user.get("roles", [])}
+        return bool(self.project_access(user, code)) or bool(roles & OVERSIGHT_ROLES)
+
+    def _require_project(self, user: dict[str, Any], code: str, need: str) -> None:
+        access = self.project_access(user, code)
+        if access == "aendern" or (need == "lesen" and access == "lesen"):
+            return
+        missing = "Änderungsrecht" if need == "aendern" else "Projektmitgliedschaft"
+        raise EngineError(f"Keine Befugnis im Projekt {code}: {missing} fehlt (AD-Gruppe "
+                          f"AD-GG-FLOW-PRJ-{code}-{'AENDERN' if need == 'aendern' else 'LESEN'})")
+
+    def seed_projects(self) -> list[str]:
+        """Legt die Katalogprojekte mit Arbeitspaketen als Projekte an (idempotent, beim Start)."""
+        created = []
+        for code, spec in self.projects.items():
+            packages = [dict(item) for item in spec.get("packages", [])]
+            if not packages:
+                continue
+            project_id = f"PRJ-{code}"
+            try:
+                self.store.project(project_id)
+                continue
+            except KeyError:
+                pass
+            auftrag = {"title": spec["title"], "goal": spec.get("goal", spec["title"]),
+                       "user_group": spec.get("user_group", "Fachbereich"), "behavior": spec.get("goal", spec["title"]),
+                       "exclusions": "", "success_example": "Alle Arbeitspakete sind abgenommen.",
+                       "data_class": "intern", "change_class": "kritisch" if spec.get("criticality") in {"K2", "K3"}
+                       else "neue_funktion", "project_class": "L", "criticality": spec.get("criticality", "K1"),
+                       "domain": spec.get("domain", "it"), "scope": "", "scope_label": "", "paths": [],
+                       "reference_paths": [], "project": code, "execution": "automatisch",
+                       "owner": spec.get("owner", "Projektkatalog"), "catalog": True}
+            with self.lock:
+                run = self.store.create_run(title=spec["title"], change_class=auftrag["change_class"], auftrag=auftrag,
+                                            requested_by=CATALOG_OWNER, registry_digest=self.registry.digest,
+                                            idempotency_key=f"katalog:{code}", announce=False)
+                self.store.update_run(run["id"], status="abgeschlossen", step_index=len(self.registry.steps),
+                                      reason="Projekt aus dem Projektkatalog angelegt; Arbeitspakete laufen als eigene Aufträge")
+                project = self.store.create_project(run, packages, CATALOG_OWNER, project_id=project_id)
+                self.store.event(run["id"], "projekt", "orchestrator", "projektplanung",
+                                 f"Projekt {project['id']} aus dem Projektkatalog mit {len(packages)} Arbeitspaketen angelegt",
+                                 {"project_id": project["id"]})
+            created.append(project_id)
+        return created
+
+    def project_catalog(self) -> dict[str, Any]:
+        return {code: {"title": spec.get("title", code), "domain": spec.get("domain", "it"),
+                       "criticality": spec.get("criticality", "K1"), "owner": spec.get("owner", ""),
+                       "scopes": self.project_scopes(code), "roles": self.project_roles(code),
+                       "groups": {right: f"AD-GG-FLOW-PRJ-{code}-{right.upper()}" for right in ("lesen", "aendern")}}
+                for code, spec in self.projects.items()}
 
     def _authorize(self, user: dict[str, Any], decider: str) -> None:
         roles = {str(role) for role in user.get("roles", [])}
@@ -1308,7 +1417,8 @@ class Engine:
             "pipeline": [{"id": s.id, "label": s.label, "kind": s.kind, "role": s.role, "decider": s.decider,
                           "ep": s.ep, "when": {k: list(v) for k, v in s.when.items()}} for s in steps],
             "runs": [self._run_summary(run, open_decisions) for run in runs],
-            "projects": [self.project_summary(project) for project in self.store.projects(limit=10)],
+            "projects": [self.project_summary(project) for project in self.store.projects(limit=20)],
+            "project_catalog": self.project_catalog(),
             "decisions": [self._decision_summary(d, {r["id"]: r for r in runs}) for d in open_decisions],
             "events": events[-40:],
             "interactions": [
@@ -1341,7 +1451,7 @@ class Engine:
             "ep": current.ep if current else "", "project_class": auftrag.get("project_class", "S"),
             "criticality": auftrag.get("criticality", "K1"), "domain": auftrag.get("domain", "it"),
             "project_id": auftrag.get("project_id", ""), "package_key": auftrag.get("package_key", ""),
-            "requested_by": run["requested_by"].get("name"), "updated_at": run["updated_at"],
+            "project": auftrag.get("project", ""), "requested_by": run["requested_by"].get("name"), "updated_at": run["updated_at"],
             "created_at": run["created_at"], "model_calls": run["model_calls"],
             "waiting_for": waiting["decider"] if waiting else None,
             "preview_url": (waiting or {}).get("context", {}).get("preview_url"),
@@ -1366,7 +1476,7 @@ class Engine:
                 "requested_by": run["requested_by"].get("name"), "goal": auftrag.get("goal", ""),
                 "success_example": auftrag.get("success_example", ""), "scope_label": auftrag.get("scope_label", ""),
                 "project_class": auftrag.get("project_class", "S"), "criticality": auftrag.get("criticality", "K1"),
-                "domain": auftrag.get("domain", "it"),
+                "domain": auftrag.get("domain", "it"), "project": auftrag.get("project", ""),
             }
         return summary
 

@@ -122,6 +122,7 @@ class Store:
         requested_by: dict[str, Any],
         registry_digest: str,
         idempotency_key: str,
+        announce: bool = True,
     ) -> dict[str, Any]:
         with self._lock, self.db:
             existing = self.db.execute(
@@ -144,8 +145,9 @@ class Store:
                  registry_digest, idempotency_key, now, now),
             )
             self._add_artifact(run_id, "auftrag", "auftraggeber", "eingang", stored, {})
-            self._event(run_id, "auftrag", str(requested_by.get("username") or "mensch"), "geschaeftsfuehrung",
-                        f"Fachauftrag {auftrag_id} „{title}“ eingereicht ({change_class})", {})
+            if announce:  # Katalogprojekte gehen nicht durch die Geschäftsführung
+                self._event(run_id, "auftrag", str(requested_by.get("username") or "mensch"), "geschaeftsfuehrung",
+                            f"Fachauftrag {auftrag_id} „{title}“ eingereicht ({change_class})", {})
             return self.run(run_id)
 
     def run(self, run_id: str) -> dict[str, Any]:
@@ -190,13 +192,13 @@ class Store:
 
     # -- Projekte und Arbeitspakete -------------------------------------------------------
     def create_project(self, run: dict[str, Any], packages: list[dict[str, Any]],
-                       defined_by: dict[str, Any]) -> dict[str, Any]:
+                       defined_by: dict[str, Any], *, project_id: str = "") -> dict[str, Any]:
         """Legt zu einem Projektlauf genau ein Projekt an (idempotent über die Lauf-ID)."""
         with self._lock, self.db:
             existing = self.db.execute("SELECT id FROM projects WHERE run_id=?", (run["id"],)).fetchone()
             if existing:
                 return self.project(existing["id"])
-            project_id = "PRJ-" + run["auftrag_id"].split("-", 1)[-1]
+            project_id = project_id or "PRJ-" + run["auftrag_id"].split("-", 1)[-1]
             self.db.execute("INSERT INTO projects VALUES (?,?,?,?,?,?)",
                             (project_id, run["id"], run["title"], canonical(run["auftrag"]), canonical(defined_by),
                              time.time()))

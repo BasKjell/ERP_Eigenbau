@@ -294,6 +294,7 @@ def test_package_start_is_forwarded_as_epi_action(fresh_hub) -> None:  # noqa: A
     assert seen[0]["kind"] == "start_package"
     assert seen[0]["payload"] == {"project_id": "PRJ-001", "package_key": "AP-1", "scope": "dms-doku"}
     assert client.post("/api/agents/projects/xyz/packages/AP-1/start", json={}).status_code == 404
+    assert client.post("/api/agents/projects/PRJ-tm/packages/AP-1/start", json={}).status_code == 404
     assert client.post("/api/agents/projects/PRJ-001/packages/AP-1/start", json={"scope": "Bad Scope"}).status_code == 422
 
 

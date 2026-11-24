@@ -38,7 +38,8 @@ class AgentRunCreate(BaseModel):
     change_class: Literal["standard", "neue_funktion", "kritisch"] | None = None
     project_class: Literal["", "S", "M", "L"] = ""
     criticality: Literal["", "K1", "K2", "K3"] = ""
-    domain: Literal["it", "produkt", "pruefsoftware", "werkzeug"] = "it"
+    # leer = Domäne des Projekts aus dem Projektkatalog
+    domain: Literal["", "it", "produkt", "pruefsoftware", "werkzeug"] = ""
     scope: str = Field(min_length=2, max_length=40)
     project: str = Field(default="FLOW-PLATFORM", pattern=r"^[A-Z][A-Z0-9-]{2,30}$")
     execution: Literal["automatisch", "lokal", "abo"] = "automatisch"
@@ -86,6 +87,57 @@ def person(request: Request) -> dict[str, Any] | None:
     if identity:
         return identity
     return DEMO_PERSON if settings.auth_mode != "oidc" else None
+
+
+# -- Projektrechte (agents/projects.json → AD-Gruppen AD-GG-FLOW-PRJ-* → Realm-Rollen flow-prj-*) -------
+OVERSIGHT_ROLES = frozenset({"platform-admin", "flow-isb", "flow-gf"})
+
+
+def project_rights(catalog: dict[str, Any], user: dict[str, Any], demo_mode: bool) -> dict[str, str]:
+    """Recht der Person je Katalogprojekt: aendern, lesen oder leer. Die Durchsetzung macht der Orchestrator;
+    die Plattform blendet nur aus, was die Person nicht sehen darf."""
+    roles = {str(r) for r in user.get("roles", [])}
+    result = {}
+    for code, spec in catalog.items():
+        names = spec.get("roles") or {}
+        if (demo_mode and "platform-admin" in roles) or names.get("aendern") in roles:
+            result[code] = "aendern"
+        elif names.get("lesen") in roles:
+            result[code] = "lesen"
+        else:
+            result[code] = ""
+    return result
+
+
+def project_visible(catalog: dict[str, Any], user: dict[str, Any], code: str, demo_mode: bool) -> bool:
+    if code not in catalog:
+        return True  # Altaufträge ohne Katalogprojekt bleiben für alle sichtbar
+    if {str(r) for r in user.get("roles", [])} & OVERSIGHT_ROLES:
+        return True
+    return bool(project_rights(catalog, user, demo_mode).get(code))
+
+
+def visible_overview(overview: dict[str, Any], user: dict[str, Any]) -> dict[str, Any]:
+    catalog = overview.get("project_catalog") or {}
+    if not catalog:
+        return overview
+    demo = bool(overview.get("demo_mode"))
+
+    def shown(code: Any) -> bool:
+        return project_visible(catalog, user, str(code or ""), demo)
+
+    runs = overview.get("runs") or []
+    hidden = {run.get("id") for run in runs if not shown(run.get("project"))}
+    result = dict(overview)
+    result["runs"] = [run for run in runs if run.get("id") not in hidden]
+    result["projects"] = [p for p in overview.get("projects") or [] if shown(p.get("code"))]
+    result["decisions"] = [d for d in overview.get("decisions") or []
+                           if d.get("run_id") not in hidden and shown((d.get("auftrag") or {}).get("project"))]
+    result["events"] = [e for e in overview.get("events") or [] if e.get("run_id") not in hidden]
+    result["project_catalog"] = {code: spec for code, spec in catalog.items() if shown(code)}
+    if hidden:
+        result["hidden_runs"] = len(hidden)
+    return result
 
 
 def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, drafts: DraftService) -> APIRouter:
@@ -172,8 +224,11 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
 
     @router.get("/api/agents/overview", tags=["agents"])
     def agents_overview(request: Request) -> dict[str, Any]:
-        overview = agents.overview()
-        overview["viewer"] = {k: v for k, v in (person(request) or {}).items() if k in {"username", "name", "roles"}}
+        viewer = person(request) or {}
+        overview = visible_overview(agents.overview(), viewer)
+        overview["viewer"] = {k: v for k, v in viewer.items() if k in {"username", "name", "roles"}}
+        overview["viewer"]["projects"] = project_rights(overview.get("project_catalog") or {}, viewer,
+                                                        bool(overview.get("demo_mode")))
         return overview
 
     @router.get("/api/agents/registry", tags=["agents"])
@@ -187,7 +242,12 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
     def agents_run(run_id: str, request: Request) -> dict[str, Any]:
         if not run_id.replace("-", "").isalnum():
             raise HTTPException(status_code=404, detail="Lauf nicht gefunden")
-        return forward("detail", {"run_id": run_id}, request, with_person=False)
+        detail = forward("detail", {"run_id": run_id}, request, with_person=False)
+        catalog = (agents.overview().get("project_catalog") or {})
+        code = str(((detail.get("run") or {}).get("auftrag") or {}).get("project", ""))
+        if not project_visible(catalog, person(request) or {}, code, bool(agents.overview().get("demo_mode"))):
+            raise HTTPException(status_code=404, detail="Lauf nicht gefunden")
+        return detail
 
     @router.post("/api/agents/runs", tags=["agents"], status_code=201)
     def agents_submit(payload: AgentRunCreate, request: Request) -> dict[str, Any]:
@@ -266,7 +326,7 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
     @router.post("/api/agents/projects/{project_id}/packages/{key}/start", tags=["agents"], status_code=201)
     def agents_start_package(project_id: str, key: str, payload: AgentPackageStart, request: Request) -> dict[str, Any]:
         """EPi „Iteration geplant“: ein Arbeitspaket als eigenen Auftrag starten (Product Owner oder Tech Lead)."""
-        if not re.fullmatch(r"PRJ-[0-9]{3,6}", project_id) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,40}", key):
+        if not re.fullmatch(r"PRJ-(?:[0-9]{3,6}|[A-Z][A-Z0-9-]{2,30})", project_id) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,40}", key):
             raise HTTPException(status_code=404, detail="Arbeitspaket nicht gefunden")
         return forward("start_package", {"project_id": project_id, "package_key": key, "scope": payload.scope},
                        request, with_person=True)

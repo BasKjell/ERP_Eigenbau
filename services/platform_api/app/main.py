@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import csv
+import functools
 import hmac
 import io
+import json
 from collections.abc import Callable
 from datetime import date, datetime
 from html import escape
@@ -569,8 +571,40 @@ def finance_index() -> FileResponse:
 
 
 @app.get("/auth/login", include_in_schema=False)
-def auth_login(next: str = "/") -> Response:
-    return oidc_auth.login(next)
+def auth_login(next: str = "/", login_hint: str = "") -> Response:
+    hint = login_hint if login_hint in _demo_usernames() else ""
+    return oidc_auth.login(next, login_hint=hint)
+
+
+@functools.cache
+def _demo_catalog() -> dict[str, Any]:
+    try:
+        iam = json.loads(settings.seed_file.read_text(encoding="utf-8")).get("iam") or {}
+    except (OSError, ValueError):
+        return {"accounts": [], "projects": {}}
+    return {"accounts": list(iam.get("demo_accounts") or []), "projects": dict(iam.get("projects") or {})}
+
+
+def _demo_usernames() -> set[str]:
+    return {str(a.get("username")) for a in _demo_catalog()["accounts"]} if settings.demo_user_switch else set()
+
+
+@app.get("/api/auth/demo-accounts", tags=["authentication"])
+def auth_demo_accounts(request: Request) -> dict[str, Any]:
+    """Demo-Konten für den Benutzerwechsel mit Funktion, AD-Gruppen und Projektrechten."""
+    if not settings.demo_user_switch:
+        raise HTTPException(status_code=404, detail="Benutzerwechsel ist nicht aktiviert")
+    user = oidc_auth.current_user(request) or {}
+    return {"enabled": oidc_auth.enabled, "current": user.get("username"), **_demo_catalog()}
+
+
+@app.get("/auth/switch", include_in_schema=False)
+def auth_switch(request: Request, user: str = "", next: str = "/") -> Response:
+    if user not in _demo_usernames():
+        raise HTTPException(status_code=404, detail="Unbekanntes Demo-Konto")
+    if not oidc_auth.enabled:
+        raise HTTPException(status_code=409, detail="Benutzerwechsel braucht die Anmeldung über FLOWID (AUTH_MODE=oidc)")
+    return oidc_auth.switch(request, user, next)
 
 
 @app.get("/auth/callback", include_in_schema=False)
@@ -582,8 +616,8 @@ def auth_callback(request: Request) -> Response:
 
 
 @app.get("/auth/logout", include_in_schema=False)
-def auth_logout() -> Response:
-    return oidc_auth.logout()
+def auth_logout(request: Request) -> Response:
+    return oidc_auth.logout(request)
 
 
 @app.get("/auth/me", tags=["authentication"])

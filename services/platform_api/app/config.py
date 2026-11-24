@@ -82,6 +82,9 @@ class Settings:
     auth_session_minutes: int = int(os.getenv("AUTH_SESSION_MINUTES", "480"))
     auth_cookie_secure: bool = _env_bool("AUTH_COOKIE_SECURE")
     demo_admin_api_token: str = os.getenv("PLATFORM_DEMO_ADMIN_TOKEN", "")
+    # Benutzerwechsel in der Demo: Kopfzeile listet die Demo-Konten; der Wechsel meldet über Keycloak
+    # neu an (prompt=login), die Rechte kommen weiter aus den AD-Gruppen. Vor jeder Netzwerknutzung aus.
+    demo_user_switch: bool = _env_bool("DEMO_USER_SWITCH")
     reporting_api_token: str = os.getenv(
         "REPORTING_API_TOKEN", "local-reporting-token-change-before-network-use"
     )

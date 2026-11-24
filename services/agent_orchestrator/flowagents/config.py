@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -160,7 +161,9 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
     engine = Engine(registry, store, providers, profile_providers, rm, sandbox,
                     scopes=dict(settings.get("scopes") or {}), demo_mode=bool(settings.get("demo_mode")),
                     adoption=adoption, preview=preview, budgets=budgets,
-                    escalation={**escalation, "roles": escalation_roles}, ui_runner=ui_runner)
+                    escalation={**escalation, "roles": escalation_roles}, ui_runner=ui_runner,
+                    projects=_projects(agents_dir))
+    engine.seed_projects()
     listen = str(settings.get("listen", "127.0.0.1:8095"))
     host, _, port = listen.rpartition(":")
     api_secret = _secret(settings, "api_secret_env", f"local-agents-api-secret-{DEMO_SECRET_HINT}")
@@ -169,6 +172,20 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
         sync = PlatformSync(engine, str(settings["platform_url"]), api_secret)
     return Runtime(engine, store, settings, api_secret, host or "127.0.0.1", int(port),
                    float(settings.get("poll_seconds", 3)), sync)
+
+
+def _projects(agents_dir: Path) -> dict[str, dict[str, Any]]:
+    """Projektkatalog mit Projektrechten (agents/projects.json). Fehlt die Datei, gibt es keine Projektprüfung."""
+    path = agents_dir / "projects.json"
+    if not path.exists():
+        return {}
+    try:
+        projects = json.loads(path.read_text(encoding="utf-8")).get("projects") or {}
+    except (OSError, ValueError) as exc:
+        raise ConfigError(f"Projektkatalog nicht lesbar: {exc}") from None
+    if not isinstance(projects, dict):
+        raise ConfigError("Projektkatalog: projects muss ein Objekt sein")
+    return projects
 
 
 WORKER_FAMILY = {"codex": "openai", "claude": "anthropic"}

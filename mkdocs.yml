@@ -216,3 +216,9 @@ nav:
   - Demo-Daten:
       - Datensatz und Referenzen: demo/data-model.md
       - Stammdatenkatalog und Lücken: demo/master-data-catalog.md
+      - Demo-Projekte und Projektrechte: demo/projekte/index.md
+      - "TM-100 Lastenheft": demo/projekte/tm-100/lastenheft.md
+      - "TM-100 Architektur": demo/projekte/tm-100/architektur.md
+      - "TM-100 Verifikation": demo/projekte/tm-100/verifikation.md
+      - "PS-TM100 Prüfspezifikation": demo/projekte/ps-tm100/pruefspezifikation.md
+      - "PS-TM100 Validierung": demo/projekte/ps-tm100/validierung.md

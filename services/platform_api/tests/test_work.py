@@ -34,7 +34,7 @@ def test_portal_and_flowwork_pages_expose_shared_app_launcher() -> None:
     assert work.status_code == 200
     assert work.headers["cache-control"] == "no-store"
     assert "Requirement Center" in work.text
-    assert 'src="/assets/app-launcher.js?v=20261116"' in work.text
+    assert 'src="/assets/app-launcher.js?v=20261124"' in work.text
     assert 'src="/assets/work.js?v=20261110"' in work.text
     assert 'href="/assets/company-theme.css"' in work.text
     assert management.status_code == 200

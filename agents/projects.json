@@ -1,0 +1,74 @@
+{
+  "_comment": "Projektkatalog FLOWAGENTS mit Projektrechten (KI-Softwareentwicklung nach dem V-Modell, Teil 01 und 05). Je Projekt erzeugt scripts/generate_iam_demo.py zwei simulierte AD-Gruppen AD-GG-FLOW-PRJ-<KÜRZEL>-LESEN und -AENDERN mit den Realm-Rollen flow-prj-<kürzel>-lesen und -aendern. Der Orchestrator prüft: Aufträge einreichen und Arbeitspakete starten nur mit Änderungsrecht im Projekt, entscheiden nur als Projektmitglied, und nur Änderungsbereiche des Projekts. Änderung dieser Datei ist Klasse K.",
+  "projects": {
+    "FLOW-PLATFORM": {
+      "title": "FLOW-Plattform – Portal, ERP-Anbindung und Fachmodule",
+      "domain": "it",
+      "criticality": "K1",
+      "owner": "Teamleitung Business Applications",
+      "scopes": ["portal-*", "plattform-routen", "erp-anbindung", "mes-*", "hr-*", "finance-*", "desksharing-*",
+                 "work-*", "flowq-*", "doku-anwender", "prozess-einkauf-lager-qm", "agenten-doku"]
+    },
+    "FLOW-DMS": {
+      "title": "FLOWDOC – Dokumentenmanagement",
+      "domain": "it",
+      "criticality": "K1",
+      "owner": "Teamleitung Business Applications",
+      "scopes": ["dms-*"]
+    },
+    "TM-100": {
+      "title": "Testprodukt TM-100 – Gerätesoftware Messgerät",
+      "domain": "produkt",
+      "criticality": "K2",
+      "project_class": "L",
+      "owner": "Produktentwicklung Messtechnik",
+      "goal": "Das Messgerät TM-100 erhält eine neue Gerätesoftware mit Messwerterfassung, Kalibrierung und Serviceschnittstelle.",
+      "user_group": "Produktentwicklung und Service",
+      "scopes": ["tm100-doku"],
+      "packages": [
+        {"key": "AP-1", "title": "Lastenheft Gerätesoftware", "result": "Freigegebenes Lastenheft mit Messbereich, Genauigkeit und Serviceschnittstelle",
+         "v_level": "anforderungen", "acceptance": "Lastenheft ist vom Product Owner freigegeben, jede Anforderung hat ein Prüfkriterium",
+         "wave": 1, "effort": "3–5 PT, Annahme: Kundenvorgaben liegen vor", "depends_on": [], "scope": "tm100-doku", "owner_role": "Product Owner"},
+        {"key": "AP-2", "title": "Systemarchitektur Messkette", "result": "Architektur von Sensor, AD-Wandler, Firmware und Serviceschnittstelle",
+         "v_level": "systemarchitektur", "acceptance": "Architektur deckt alle Anforderungen aus AP-1 ab, Schnittstellen sind beschrieben",
+         "wave": 1, "effort": "4–6 PT, Annahme: Hardware-Plattform steht fest", "depends_on": ["AP-1"], "scope": "tm100-doku", "owner_role": "Tech Lead"},
+        {"key": "AP-3", "title": "Modul Messwerterfassung und Kalibrierung", "result": "Feinentwurf und Umsetzungsbeschreibung des Messmoduls",
+         "v_level": "feinentwurf", "acceptance": "Kalibrierkurve und Fehlerbehandlung sind spezifiziert und reviewt",
+         "wave": 2, "effort": "5–8 PT, Annahme: Referenzsensor verfügbar", "depends_on": ["AP-2"], "scope": "tm100-doku", "owner_role": "Tech Lead"},
+        {"key": "AP-4", "title": "Modul- und Integrationstests", "result": "Testspezifikation für Messmodul und Serviceschnittstelle",
+         "v_level": "software_verifikation", "acceptance": "Jede Anforderung aus AP-1 ist durch mindestens einen Testfall abgedeckt",
+         "wave": 2, "effort": "3–5 PT", "depends_on": ["AP-3"], "scope": "tm100-doku", "owner_role": "Tech Lead"},
+        {"key": "AP-5", "title": "Systemverifikation am Prüfstand", "result": "Verifikationsbericht der Gerätesoftware am Prüfstand PS-TM100",
+         "v_level": "systemverifikation", "acceptance": "Bericht ohne offene Major-Abweichung",
+         "wave": 3, "effort": "2–4 PT, Annahme: Prüfstand PS-TM100 ist abgenommen", "depends_on": ["AP-4"], "scope": "tm100-doku", "owner_role": "Key User"},
+        {"key": "AP-6", "title": "Abnahme und Serienfreigabe", "result": "Abnahmeprotokoll und Freigabe der Softwareversion 1.0",
+         "v_level": "abnahme", "acceptance": "Key User und Release-Verantwortung haben die Version 1.0 freigegeben",
+         "wave": 3, "effort": "1–2 PT", "depends_on": ["AP-5"], "scope": "tm100-doku", "owner_role": "Key User"}
+      ]
+    },
+    "PS-TM100": {
+      "title": "Prüfstand TM-100 – Endprüfsoftware Fertigung",
+      "domain": "pruefsoftware",
+      "criticality": "K2",
+      "project_class": "L",
+      "owner": "Fertigung und Qualität",
+      "goal": "Die Endprüfung des TM-100 in der Fertigung läuft automatisch mit rückverfolgbaren Prüfprotokollen.",
+      "user_group": "Fertigung und Qualitätssicherung",
+      "scopes": ["ps-tm100-doku"],
+      "packages": [
+        {"key": "AP-1", "title": "Prüfspezifikation Endprüfung", "result": "Prüfspezifikation mit Prüfschritten, Grenzwerten und Prüfmitteln",
+         "v_level": "anforderungen", "acceptance": "Qualität hat die Prüfspezifikation freigegeben",
+         "wave": 1, "effort": "2–4 PT", "depends_on": [], "scope": "ps-tm100-doku", "owner_role": "Product Owner"},
+        {"key": "AP-2", "title": "Prüfablauf und Protokollierung", "result": "Feinentwurf des Prüfablaufs mit Prüfprotokoll je Seriennummer",
+         "v_level": "feinentwurf", "acceptance": "Prüfprotokoll enthält Seriennummer, Messwerte, Grenzwerte und Ergebnis",
+         "wave": 1, "effort": "3–5 PT", "depends_on": ["AP-1"], "scope": "ps-tm100-doku", "owner_role": "Tech Lead"},
+        {"key": "AP-3", "title": "Validierung der Prüfsoftware", "result": "Validierungsbericht mit Goldenem Muster und Fehlermustern",
+         "v_level": "software_verifikation", "acceptance": "Gutteil besteht, jedes Fehlermuster wird erkannt",
+         "wave": 2, "effort": "2–3 PT, Annahme: Fehlermuster sind gefertigt", "depends_on": ["AP-2"], "scope": "ps-tm100-doku", "owner_role": "Key User"},
+        {"key": "AP-4", "title": "Abnahme durch die Fertigung", "result": "Abnahmeprotokoll Prüfstand und Freigabe für die Serie",
+         "v_level": "abnahme", "acceptance": "Fertigung und Qualität haben den Prüfstand abgenommen",
+         "wave": 2, "effort": "1 PT", "depends_on": ["AP-3"], "scope": "ps-tm100-doku", "owner_role": "Key User"}
+      ]
+    }
+  }
+}

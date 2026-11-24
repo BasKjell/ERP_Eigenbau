@@ -550,18 +550,19 @@ class AgentCenter {
     }
 
     async openRunDialog(draft = null) {
-      this.bindProjectField();
       const dialog = this.$("[data-run-dialog]");
       const select = this.$("[data-scopes]");
       const form = this.$("[data-run-form]");
       form.reset();
+      this.bindProjectField();
       form.draft_id.value = draft?.id || "";
       this.$("[data-run-msg]").className = "msg";
       try {
         const response = await fetch("/api/agents/registry", { headers: { Accept: "application/json" } });
         if (!response.ok) throw new Error("Orchestrator nicht erreichbar – Aufträge sind derzeit nicht möglich");
         const registry = await response.json();
-        select.innerHTML = Object.entries(registry.scopes || {}).map(([id, scope]) => `<option value="${esc(id)}">${esc(scope.label)}</option>`).join("");
+        this.allScopes = registry.scopes || {};
+        this.fillScopes();
       } catch (error) {
         select.innerHTML = '<option value="">nicht verfügbar</option>';
         this.$("[data-run-msg]").textContent = error.message;
@@ -574,21 +575,45 @@ class AgentCenter {
         // Vorschläge aus FLOWAI nennen eine Änderungsklasse; daraus eine Einstufung vorschlagen.
         form.elements.project_class.value = draft.change_class === "standard" ? "S" : "M";
         form.elements.criticality.value = draft.change_class === "kritisch" ? "K2" : "K1";
+        this.fillScopes();
         if (draft.scope && [...select.options].some((o) => o.value === draft.scope)) select.value = draft.scope;
         this.$("[data-run-msg]").textContent = `Vorschlag ${draft.id} aus FLOWAI${draft.note ? `: ${draft.note}` : ""}. Bitte prüfen, ergänzen und einreichen.`;
       }
       dialog.showModal();
     }
 
+    // Mit Projektkatalog: nur Projekte, in denen die Person Änderungsrecht hat, und nur deren Bereiche.
+    editableProjects() {
+      const catalog = this.data?.project_catalog || {};
+      const rights = this.data?.viewer?.projects || {};
+      return Object.keys(catalog).filter((code) => rights[code] === "aendern");
+    }
+
+    fillScopes() {
+      const select = this.$("[data-scopes]");
+      const catalog = this.data?.project_catalog || {};
+      const code = this.$("[data-run-form]").elements.project.value;
+      const allowed = Object.keys(catalog).length ? new Set(catalog[code]?.scopes || []) : null;
+      const entries = Object.entries(this.allScopes || {}).filter(([id]) => !allowed || allowed.has(id));
+      select.innerHTML = entries.length ? entries.map(([id, scope]) => `<option value="${esc(id)}">${esc(scope.label)}</option>`).join("")
+        : '<option value="">kein Bereich – dir fehlt das Änderungsrecht im Projekt</option>';
+    }
+
     bindProjectField() {
       const form = this.$("[data-run-form]");
+      const field = form.elements.project;
+      const editable = this.editableProjects();
+      if (Object.keys(this.data?.project_catalog || {}).length) {
+        this.$("#ac-projects").innerHTML = editable.map((p) => `<option value="${esc(p)}">${esc(this.data.project_catalog[p].title)}</option>`).join("");
+        if (!editable.includes(field.value)) field.value = editable[0] || "";
+      }
       if (form.dataset.projectBound) return;
       form.dataset.projectBound = "1";
-      const field = form.elements.project;
       field.addEventListener("input", () => { field.dataset.touched = "1"; });
-      field.addEventListener("blur", () => { field.value = normalizeProject(field.value); });
+      field.addEventListener("change", () => this.fillScopes());
+      field.addEventListener("blur", () => { field.value = normalizeProject(field.value); this.fillScopes(); });
       this.$("[data-scopes]").addEventListener("change", (event) => {
-        if (!field.dataset.touched) field.value = projectForScope(event.target.value);
+        if (!field.dataset.touched && !Object.keys(this.data?.project_catalog || {}).length) field.value = projectForScope(event.target.value);
       });
     }
 
@@ -623,6 +648,7 @@ class AgentCenter {
       const chosen = {};
       extra.querySelectorAll("[data-package] select").forEach((s) => { chosen[`${s.closest("[data-package]").dataset.project}/${s.closest("[data-package]").dataset.package}`] = s.value; });
       extra.innerHTML = `
+        ${catalogPanel(data)}
         ${projectsPanel(data, this.scopes)}
         <section class="ac-panel" style="margin-top:14px"><h3>Agentenregister <span>${esc(data.registry?.id || "")} · ${esc(data.registry?.policy_version || "")}</span></h3>
           <div class="agent-grid">${(data.agents || []).map((a) => `<article class="agent-card ${esc(a.state)}" data-card="${esc(a.role)}"><header><span class="code">${a.role === "geschaeftsfuehrung" ? "GF" : String(a.number).padStart(2, "0")}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip ${a.state === "arbeitet" ? "lime" : a.state === "wartet" ? "amber" : ""}">${esc(STATE_LABEL[a.state] || a.state)}</span></header><p>${esc(a.mission || a.scope || "")}</p><div class="chips"><span class="ac-chip">Stufe ${esc(a.autonomy)}</span><span class="ac-chip">${esc(a.model_profile || "")} ${a.family ? `/ ${esc(a.family)}` : ""}</span><span class="ac-chip">${esc(a.status)}</span></div></article>`).join("")}</div>
@@ -731,16 +757,33 @@ class AgentCenter {
   const PACKAGE_TONE = { bereit: "lime", in_arbeit: "amber", fertig: "", gestoppt: "red", geplant: "" };
 
   // Großprojekte (Projektklasse L): Arbeitspakete laufen nach EP1 einzeln durch das V.
+  const RIGHT_LABEL = { aendern: "Ändern", lesen: "Lesen", "": "Aufsicht" };
+
+  function catalogPanel(data) {
+    const catalog = Object.entries(data.project_catalog || {});
+    if (!catalog.length) return "";
+    const rights = data.viewer?.projects || {};
+    const runs = data.runs || [];
+    return `<section class="ac-panel" style="margin-top:14px"><h3>Projektkatalog <span>PROJEKTRECHTE AUS DEN AD-GRUPPEN</span></h3>
+      <div class="ac-hint">Du siehst nur Projekte, in denen du Mitglied bist (ISB und Geschäftsführung sehen alle). <b>Ändern</b> heißt Aufträge einreichen und Arbeitspakete starten, <b>Lesen</b> heißt sehen und als Projektmitglied entscheiden.${data.hidden_runs ? ` ${esc(data.hidden_runs)} Aufträge anderer Projekte sind ausgeblendet.` : ""}</div>
+      <table class="ac-table"><thead><tr><th>Projekt</th><th>Domäne / Kritikalität</th><th>Änderungsbereiche</th><th>AD-Gruppen</th><th>Aufträge</th><th>Dein Recht</th></tr></thead><tbody>
+      ${catalog.map(([code, p]) => `<tr><td><b>${esc(code)}</b><br><small>${esc(p.title)}</small></td><td>${esc(p.domain)} · ${esc(p.criticality)}</td><td><small>${esc((p.scopes || []).join(", "))}</small></td><td><small>${esc(p.groups?.aendern || "")}<br>${esc(p.groups?.lesen || "")}</small></td><td>${runs.filter((r) => r.project === code).length}</td><td><span class="ac-chip ${rights[code] === "aendern" ? "lime" : ""}">${esc(RIGHT_LABEL[rights[code] || ""])}</span></td></tr>`).join("")}
+      </tbody></table></section>`;
+  }
+
   function projectsPanel(data, scopes) {
     const projects = data.projects || [];
     if (!projects.length) return "";
     const roles = new Set(data.viewer?.roles || []);
-    const canStart = ["flow-po", "flow-techlead"].some((r) => roles.has(r)) || (data.demo_mode && roles.has("platform-admin"));
+    const rights = data.viewer?.projects || {};
+    const hasCatalog = Object.keys(data.project_catalog || {}).length > 0;
+    const functionOk = ["flow-po", "flow-techlead"].some((r) => roles.has(r)) || (data.demo_mode && roles.has("platform-admin"));
+    const canStartIn = (p) => functionOk && (!hasCatalog || !(p.code in (data.project_catalog || {})) || rights[p.code] === "aendern");
     const scopeSelect = (pkg) => pkg.scope ? `<code>${esc(pkg.scope)}</code>` : `<select aria-label="Änderungsbereich für ${esc(pkg.key)}"><option value="">Bereich wählen …</option>${Object.entries(scopes || {}).map(([id, s]) => `<option value="${esc(id)}">${esc(s.label)}</option>`).join("")}</select>`;
     return `<section class="ac-panel" style="margin-top:14px"><h3>Projekte <span>ARBEITSPAKETE NACH DEM V-MODELL</span></h3>
-      ${projects.map((p) => `<article style="margin-top:10px"><header><b>${esc(p.id)} · ${esc(p.title)}</b> <span class="ac-chip">${esc(p.project_class)}/${esc(p.criticality)}</span> <span class="ac-chip ${p.status === "abgeschlossen" ? "lime" : ""}">${esc(p.ep)}</span> <small>${esc(p.progress)} % fertig · Welle ${esc(p.current_wave)} · definiert von ${esc(p.defined_by)}</small></header>
+      ${projects.map((p) => `<article style="margin-top:10px"><header><b>${esc(p.id)} · ${esc(p.title)}</b> <span class="ac-chip">${esc(p.project_class)}/${esc(p.criticality)}</span> <span class="ac-chip ${p.status === "abgeschlossen" ? "lime" : ""}">${esc(p.ep)}</span>${p.code ? ` <span class="ac-chip">${esc(p.code)} · ${esc(RIGHT_LABEL[rights[p.code] || ""])}</span>` : ""} <small>${esc(p.progress)} % fertig · Welle ${esc(p.current_wave)} · definiert von ${esc(p.defined_by)}</small></header>
         <table class="ac-table"><thead><tr><th>Paket</th><th>Ebene im V</th><th>Ergebnis und Abnahmekriterium</th><th>Welle</th><th>Vorgänger</th><th>Bereich</th><th>Status</th><th></th></tr></thead><tbody>
-        ${p.packages.map((k) => `<tr data-package="${esc(k.key)}" data-project="${esc(p.id)}"><td><b>${esc(k.key)}</b><br><small>${esc(k.title)}</small></td><td>${esc((k.v_level || "").replace(/_/g, " "))}</td><td>${esc(k.result)}<br><small>${esc(k.acceptance)}</small></td><td>${esc(k.wave || 1)}</td><td>${esc((k.depends_on || []).join(", ") || "–")}</td><td>${k.status === "bereit" ? scopeSelect(k) : esc(k.scope || "–")}</td><td><span class="ac-chip ${PACKAGE_TONE[k.status] || ""}">${esc(PACKAGE_LABEL[k.status] || k.status)}</span>${k.auftrag_id ? `<br><small>${esc(k.auftrag_id)} · ${esc(k.run_status)}</small>` : ""}</td><td>${k.status === "bereit" && canStart ? '<button class="ac-btn small primary" type="button" data-start-package>Starten (EPi)</button>' : ""}<br><small data-package-msg></small></td></tr>`).join("")}
+        ${p.packages.map((k) => `<tr data-package="${esc(k.key)}" data-project="${esc(p.id)}"><td><b>${esc(k.key)}</b><br><small>${esc(k.title)}</small></td><td>${esc((k.v_level || "").replace(/_/g, " "))}</td><td>${esc(k.result)}<br><small>${esc(k.acceptance)}</small></td><td>${esc(k.wave || 1)}</td><td>${esc((k.depends_on || []).join(", ") || "–")}</td><td>${k.status === "bereit" ? scopeSelect(k) : esc(k.scope || "–")}</td><td><span class="ac-chip ${PACKAGE_TONE[k.status] || ""}">${esc(PACKAGE_LABEL[k.status] || k.status)}</span>${k.auftrag_id ? `<br><small>${esc(k.auftrag_id)} · ${esc(k.run_status)}</small>` : ""}</td><td>${k.status === "bereit" && canStartIn(p) ? '<button class="ac-btn small primary" type="button" data-start-package>Starten (EPi)</button>' : ""}<br><small data-package-msg></small></td></tr>`).join("")}
         </tbody></table></article>`).join("")}
     </section>`;
   }

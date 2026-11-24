@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REALM_FILE = ROOT / "deployment" / "keycloak" / "realm.json"
 GROUP_ASSIGNMENTS_FILE = ROOT / "deployment" / "keycloak" / "ad-group-assignments.csv"
 AD_PARTIAL_IMPORT_FILE = ROOT / "deployment" / "keycloak" / "ad-partial-import.json"
+PROJECTS_FILE = ROOT / "agents" / "projects.json"
 SCENARIO_FILE = ROOT / "services" / "platform_api" / "seed" / "scenario.json"
 REALM = "open-manufacturing"
 DEMO_USER_PASSWORD = "Demo-User-2026!"
@@ -87,6 +88,37 @@ REALM_ROLES = [
     ("flow-gf", "FLOWAGENTS Geschäftsführung: Rückfragen des Geschäftsführungs-Agenten"),
 ]
 
+# Projektrechte (agents/projects.json): je Projekt eine Lese- und eine Änderungsgruppe. Lesen heißt
+# Aufträge, Pakete und Entscheidungen des Projekts sehen und als Projektmitglied entscheiden; Ändern heißt
+# zusätzlich Aufträge einreichen und Arbeitspakete starten (zusammen mit flow-po oder flow-techlead).
+PROJECT_CATALOG: dict[str, dict[str, Any]] = json.loads(PROJECTS_FILE.read_text(encoding="utf-8"))["projects"]
+
+
+def project_role(code: str, right: str) -> str:
+    return f"flow-prj-{code.lower()}-{right}"
+
+
+PROJECT_ROLES = [
+    (project_role(code, right), f"Projekt {code} – {spec['title']}: "
+     + ("lesen und als Projektmitglied entscheiden" if right == "lesen" else "Aufträge einreichen und Pakete starten"))
+    for code, spec in PROJECT_CATALOG.items()
+    for right in ("lesen", "aendern")
+]
+REALM_ROLES.extend(PROJECT_ROLES)
+ALL_PROJECT_ROLES = [name for name, _ in PROJECT_ROLES]
+
+
+def rights(**projects: str) -> list[str]:
+    """Projektrechte je Demo-Person: aendern schließt lesen ein."""
+    roles: list[str] = []
+    for code, right in projects.items():
+        code = code.replace("_", "-")
+        roles.append(project_role(code, "lesen"))
+        if right == "aendern":
+            roles.append(project_role(code, "aendern"))
+    return roles
+
+
 # Freigaberollen der Agentenentwicklung (KI-EK Teil 05: Gruppen für PO, Tech Lead, Release, ISB und
 # Key User getrennt von Datengruppen). Sie sind bewusst NICHT Teil von platform-admin: Betrieb und
 # fachliche Freigabe bleiben getrennt (Funktionstrennung, ORP.1/ORP.4).
@@ -97,17 +129,46 @@ BASE_ROLE_USER = ["dms-user", "work-user", "requirements-user"]
 # allen Rechten. Sie stehen außerhalb des 50-Personen-Katalogs (kein Desksharing-Arbeitsplatz).
 ROLE_DEMO_USERS = [
     ("admin.demo", "Alex", "Vollzugriff", "IT",
-     ["platform-admin", *DECISION_ROLES, "it-user", "ai-user", "grafana-viewer", "management-user"]),
-    ("po.demo", "Petra", "Ohm", "Projekte & Engineering", [*BASE_ROLE_USER, "flow-po", "project-user"]),
-    ("techlead.demo", "Tarek", "Lindner", "IT", [*BASE_ROLE_USER, "flow-techlead", "it-user", "ai-user"]),
-    ("keyuser.demo", "Kira", "Unger", "Qualität", [*BASE_ROLE_USER, "flow-keyuser", "quality-user"]),
-    ("release.demo", "Rafael", "Rehm", "IT", [*BASE_ROLE_USER, "flow-release", "it-user"]),
+     ["platform-admin", *DECISION_ROLES, *ALL_PROJECT_ROLES, "it-user", "ai-user", "grafana-viewer",
+      "management-user"]),
+    ("po.demo", "Petra", "Ohm", "Projekte & Engineering",
+     [*BASE_ROLE_USER, "flow-po", "project-user",
+      *rights(FLOW_PLATFORM="lesen", FLOW_DMS="aendern", TM_100="aendern")]),
+    ("po2.demo", "Paula", "Brandt", "Qualität",
+     [*BASE_ROLE_USER, "flow-po", "quality-user", *rights(TM_100="lesen", PS_TM100="aendern")]),
+    ("techlead.demo", "Tarek", "Lindner", "IT",
+     [*BASE_ROLE_USER, "flow-techlead", "it-user", "ai-user",
+      *rights(FLOW_PLATFORM="aendern", FLOW_DMS="aendern", TM_100="aendern", PS_TM100="lesen")]),
+    ("keyuser.demo", "Kira", "Unger", "Qualität",
+     [*BASE_ROLE_USER, "flow-keyuser", "quality-user", *rights(FLOW_DMS="lesen", TM_100="lesen", PS_TM100="lesen")]),
+    ("release.demo", "Rafael", "Rehm", "IT",
+     [*BASE_ROLE_USER, "flow-release", "it-user",
+      *rights(FLOW_PLATFORM="lesen", FLOW_DMS="lesen", TM_100="lesen", PS_TM100="lesen")]),
+    ("dev.demo", "Dennis", "Engel", "Projekte & Engineering",
+     [*BASE_ROLE_USER, "project-user", "ai-user", *rights(TM_100="lesen", PS_TM100="lesen")]),
     ("isb.demo", "Ines", "Sommer", "Informationssicherheit", [*BASE_ROLE_USER, "flow-isb", "grafana-viewer"]),
     ("gf.demo", "Georg", "Falk", "Geschäftsführung", [*BASE_ROLE_USER, "flow-gf", "management-user"]),
 ]
 
 
+FUNCTION_LABELS = [
+    ("platform-admin", "Administration – alle Rechte"),
+    ("flow-po", "Product Owner"),
+    ("flow-techlead", "Tech Lead"),
+    ("flow-keyuser", "Key User (Fachabnahme)"),
+    ("flow-release", "Release-Verantwortung"),
+    ("flow-isb", "Informationssicherheit (Aufsicht)"),
+    ("flow-gf", "Geschäftsführung (Aufsicht)"),
+]
+
+
+def demo_function(role_names: list[str]) -> str:
+    return next((label for role, label in FUNCTION_LABELS if role in role_names), "Entwicklung (nur lesen)")
+
+
 def ad_group_name(role: str) -> str:
+    if role.startswith("flow-prj-"):
+        return f"AD-GG-FLOW-PRJ-{role.removeprefix('flow-prj-').upper()}"
     if role.startswith("flow-"):
         return f"AD-GG-FLOW-AGENTS-{role.removeprefix('flow-').upper()}"
     return f"AD-GG-FLOW-{role.upper()}"
@@ -373,7 +434,9 @@ def client(
 
 
 def build_realm(users: list[dict[str, Any]]) -> dict[str, Any]:
-    all_roles = [name for name, _ in REALM_ROLES if name != "platform-admin" and name not in DECISION_ROLES]
+    # Freigabe- und Projektrollen sind bewusst nicht Teil von platform-admin (Funktionstrennung).
+    all_roles = [name for name, _ in REALM_ROLES
+                 if name != "platform-admin" and name not in DECISION_ROLES and name not in ALL_PROJECT_ROLES]
     roles = [
         {"name": name, "description": description}
         for name, description in REALM_ROLES
@@ -525,6 +588,27 @@ def build_scenario_domains(
             "production_note": "Die Demo bildet die AD-Herkunft mit deterministischen Gruppen ab; im Livebetrieb ersetzt die LDAP-Föderation diesen Import.",
         },
         "users": users,
+        # Konten für den Benutzerwechsel in der Demo (Portal-Kopfzeile). Rollen kommen wie im
+        # Livebetrieb aus den AD-Gruppen; das Portal zeigt sie nur an und meldet über Keycloak neu an.
+        "demo_accounts": [
+            {
+                "username": username,
+                "name": f"{first_name} {last_name}",
+                "department": department,
+                "function": demo_function(role_names),
+                "groups": sorted(ad_group_name(role) for role in role_names),
+                "roles": sorted(role_names),
+                "projects": {
+                    code: ("aendern" if project_role(code, "aendern") in role_names
+                           else "lesen" if project_role(code, "lesen") in role_names else "")
+                    for code in PROJECT_CATALOG
+                },
+            }
+            for username, first_name, last_name, department, role_names in ROLE_DEMO_USERS
+        ],
+        "projects": {code: {"title": spec["title"], "domain": spec["domain"], "criticality": spec["criticality"],
+                            "groups": {right: ad_group_name(project_role(code, right)) for right in ("lesen", "aendern")}}
+                     for code, spec in PROJECT_CATALOG.items()},
     }
     desksharing = {
         "settings": {

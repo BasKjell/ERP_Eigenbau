@@ -460,6 +460,142 @@
           "AD-Simulation"
         ]
       }
+    },
+    {
+      "name": "AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+      "realmRoles": [
+        "flow-prj-flow-platform-lesen"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN",
+      "realmRoles": [
+        "flow-prj-flow-platform-aendern"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+      "realmRoles": [
+        "flow-prj-flow-dms-lesen"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRJ-FLOW-DMS-LESEN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN",
+      "realmRoles": [
+        "flow-prj-flow-dms-aendern"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PRJ-TM-100-LESEN",
+      "realmRoles": [
+        "flow-prj-tm-100-lesen"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRJ-TM-100-LESEN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PRJ-TM-100-AENDERN",
+      "realmRoles": [
+        "flow-prj-tm-100-aendern"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRJ-TM-100-AENDERN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+      "realmRoles": [
+        "flow-prj-ps-tm100-lesen"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRJ-PS-TM100-LESEN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
+    },
+    {
+      "name": "AD-GG-FLOW-PRJ-PS-TM100-AENDERN",
+      "realmRoles": [
+        "flow-prj-ps-tm100-aendern"
+      ],
+      "attributes": {
+        "source": [
+          "Active Directory (simuliert)"
+        ],
+        "ad_dn": [
+          "CN=AD-GG-FLOW-PRJ-PS-TM100-AENDERN,OU=FLOW-Groups,OU=Demo,DC=flowcorp,DC=example,DC=invalid"
+        ],
+        "managed_by": [
+          "AD-Simulation"
+        ]
+      }
     }
   ],
   "users": [
@@ -2207,6 +2343,14 @@
         "/AD-GG-FLOW-AGENTS-RELEASE",
         "/AD-GG-FLOW-AGENTS-ISB",
         "/AD-GG-FLOW-AGENTS-GF",
+        "/AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+        "/AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN",
+        "/AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+        "/AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN",
+        "/AD-GG-FLOW-PRJ-TM-100-LESEN",
+        "/AD-GG-FLOW-PRJ-TM-100-AENDERN",
+        "/AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+        "/AD-GG-FLOW-PRJ-PS-TM100-AENDERN",
         "/AD-GG-FLOW-IT-USER",
         "/AD-GG-FLOW-AI-USER",
         "/AD-GG-FLOW-GRAFANA-VIEWER",
@@ -2245,7 +2389,45 @@
         "/AD-GG-FLOW-WORK-USER",
         "/AD-GG-FLOW-REQUIREMENTS-USER",
         "/AD-GG-FLOW-AGENTS-PO",
-        "/AD-GG-FLOW-PROJECT-USER"
+        "/AD-GG-FLOW-PROJECT-USER",
+        "/AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+        "/AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+        "/AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN",
+        "/AD-GG-FLOW-PRJ-TM-100-LESEN",
+        "/AD-GG-FLOW-PRJ-TM-100-AENDERN"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "po2.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Paula",
+      "lastName": "Brandt",
+      "email": "po2.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "Qualität"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-AGENTS-PO",
+        "/AD-GG-FLOW-QUALITY-USER",
+        "/AD-GG-FLOW-PRJ-TM-100-LESEN",
+        "/AD-GG-FLOW-PRJ-PS-TM100-LESEN",
+        "/AD-GG-FLOW-PRJ-PS-TM100-AENDERN"
       ],
       "credentials": [
         {
@@ -2276,7 +2458,14 @@
         "/AD-GG-FLOW-REQUIREMENTS-USER",
         "/AD-GG-FLOW-AGENTS-TECHLEAD",
         "/AD-GG-FLOW-IT-USER",
-        "/AD-GG-FLOW-AI-USER"
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+        "/AD-GG-FLOW-PRJ-FLOW-PLATFORM-AENDERN",
+        "/AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+        "/AD-GG-FLOW-PRJ-FLOW-DMS-AENDERN",
+        "/AD-GG-FLOW-PRJ-TM-100-LESEN",
+        "/AD-GG-FLOW-PRJ-TM-100-AENDERN",
+        "/AD-GG-FLOW-PRJ-PS-TM100-LESEN"
       ],
       "credentials": [
         {
@@ -2306,7 +2495,10 @@
         "/AD-GG-FLOW-WORK-USER",
         "/AD-GG-FLOW-REQUIREMENTS-USER",
         "/AD-GG-FLOW-AGENTS-KEYUSER",
-        "/AD-GG-FLOW-QUALITY-USER"
+        "/AD-GG-FLOW-QUALITY-USER",
+        "/AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+        "/AD-GG-FLOW-PRJ-TM-100-LESEN",
+        "/AD-GG-FLOW-PRJ-PS-TM100-LESEN"
       ],
       "credentials": [
         {
@@ -2336,7 +2528,43 @@
         "/AD-GG-FLOW-WORK-USER",
         "/AD-GG-FLOW-REQUIREMENTS-USER",
         "/AD-GG-FLOW-AGENTS-RELEASE",
-        "/AD-GG-FLOW-IT-USER"
+        "/AD-GG-FLOW-IT-USER",
+        "/AD-GG-FLOW-PRJ-FLOW-PLATFORM-LESEN",
+        "/AD-GG-FLOW-PRJ-FLOW-DMS-LESEN",
+        "/AD-GG-FLOW-PRJ-TM-100-LESEN",
+        "/AD-GG-FLOW-PRJ-PS-TM100-LESEN"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Demo-User-2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "dev.demo",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Dennis",
+      "lastName": "Engel",
+      "email": "dev.demo@example.invalid",
+      "attributes": {
+        "department": [
+          "Projekte & Engineering"
+        ],
+        "demo_purpose": [
+          "Freigabeprozess FLOWAGENTS"
+        ]
+      },
+      "groups": [
+        "/AD-GG-FLOW-DMS-USER",
+        "/AD-GG-FLOW-WORK-USER",
+        "/AD-GG-FLOW-REQUIREMENTS-USER",
+        "/AD-GG-FLOW-PROJECT-USER",
+        "/AD-GG-FLOW-AI-USER",
+        "/AD-GG-FLOW-PRJ-TM-100-LESEN",
+        "/AD-GG-FLOW-PRJ-PS-TM100-LESEN"
       ],
       "credentials": [
         {
