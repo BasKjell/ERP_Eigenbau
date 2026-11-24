@@ -90,6 +90,7 @@ nav:
       - Betrieb: agents/betrieb.md
       - Klickprüfung mit lokaler KI: agents/klickpruefung.md
       - Fachagenten: agents/fachagenten.md
+      - "Orchestrierung: Eigenbau und fertige Werkzeuge": agents/plattformstrategie.md
       - Sicherheit und Nachweise: agents/sicherheit.md
       - Modellbewertung: agents/modellbewertung.md
   - Werkzeuge:

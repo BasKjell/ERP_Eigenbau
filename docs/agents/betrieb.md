@@ -9,9 +9,15 @@
 | FLOWGATE | Container `agentgateway`, LLM-Listener `127.0.0.1:4000` | je Rolle ein virtueller Schlüssel, nur das Modellprofil der Rolle |
 | Modelle | Ollama auf dem Host | `flow-builder`/`flow-assist` → qwen3:8b, `flow-coder` → qwen3-coder:30b, `flow-reviewer` → gemma3:12b |
 | Prüf-Sandbox | Image `flow-agents-sandbox:1` | Lint und Tests am exakten Stand, `--network none`, read-only, ohne Zugangsdaten |
+| Vorschau und Prüfbrowser | `flow-agents-preview` (Port 8098), Image `flow-agents-ui-runner:1`, Netz `flow-agents-ui` | Kandidat im Demo-Modus für G4, Klickprüfung |
+| OpenCode-Worker | Image `flow-agents-opencode@sha256:…`, Netz `flow-agents-opencode` | lokaler agentischer Worker, nur FLOWGATE erreichbar |
+| Abo-Worker | Image aus Trading_Ai, Netze `trading-dev-codex`/`-claude` mit Egress-Proxy | Codex (Entwicklung) und Claude (Codeprüfung) für komplexe Aufträge |
+| Projektkatalog | `agents/projects.json` | Projekte, Änderungsbereiche, Mindest-Kritikalität, Arbeitspakete; Rechte über AD-Gruppen `AD-GG-FLOW-PRJ-*` |
+| Zustand | `~/.flow-agents/flow-agents.sqlite` | Läufe, Projekte, Übersteuerungen der Agentenkonfiguration (`agent_settings`), Fachagenten (`business_agents`, `business_jobs`) |
 
 Der Orchestrator öffnet **keinen** aus den Containern erreichbaren Port. Er holt Aktionen
-(Fachauftrag, Entscheidung, Steuerung, Laufdetails) bei der Plattform-API ab und meldet alle zwei
+(Fachauftrag, Entscheidung, Steuerung, Laufdetails, Paketstart, Agentenkonfiguration, Fachagenten) bei der
+Plattform-API ab und meldet alle zwei
 Sekunden seinen Zustand. Sein lokaler API-Port `127.0.0.1:8095` dient nur Diagnose und Status.
 
 ## Starten und prüfen
@@ -34,12 +40,21 @@ Portal „Orchestrator meldet sich nicht“ und nimmt keine Aufträge an.
 
 - `providers`: Modellprofil → `gateway` (lokale Modelle), `simulated` (regelbasiert, für
   Vorführung ohne Modelle) oder `codex`/`claude` (Abo-Worker; Standardweg ist die Eskalation, siehe unten).
-- `scopes`: freigegebene Änderungsbereiche je Fachauftrag.
+- `scopes`: freigegebene Änderungsbereiche; welche ein Projekt nutzen darf, steht in `agents/projects.json`.
 - `sandbox`: Prüfimage, Prüfbefehl, erlaubte Pfadpräfixe.
+- `preview`, `ui_check`: Vorschau für G4 und Klickprüfung.
+- `opencode`: OpenCode-Worker (Image per Digest, internes Netz, Rollen, Rückfall).
+- `escalation`, `container`: Weiterleitung komplexer Aufträge an Codex/Claude und deren Isolation.
+- `budgets`, `adoption`: Laufbudget je Änderungsklasse, Übernahme als Branch nach G4.
 - `demo_mode: true` erlaubt Demo-Geheimnisse und `platform-admin`-Entscheidungen im Demo-Modus.
   **Vor jeder Netzwerknutzung `false` setzen** und Geheimnisse über die Umgebung setzen:
-  `FLOW_AGENT_RM_SECRET`, `FLOW_AGENTS_API_SECRET`, `FLOW_AGENT_GATEWAY_KEY_<ROLLE>` (gleiche Werte in
-  `.env` für Compose und in der Umgebung des Orchestrators).
+  `FLOW_AGENT_RM_SECRET`, `FLOW_AGENTS_API_SECRET`, `FLOW_AGENT_GATEWAY_KEY_<ROLLE>` für alle 14 Rollen
+  (einschließlich `PROJEKTPLANUNG` und `INTEGRATIONSTEST`) sowie `FLOW_AGENT_GATEWAY_KEY_FACHAGENTEN` (gleiche
+  Werte in `.env` für Compose und in der Umgebung des Orchestrators).
+- Plattform: `DEMO_USER_SWITCH=true` schaltet „Person wechseln“ ein (Standard in `compose.yaml` für die lokale
+  Demo); **vor jeder Netzwerknutzung auf `false`**.
+- Projektrechte und Demo-Konten erzeugt `python3 scripts/generate_iam_demo.py`; danach
+  `docker compose --profile iam run --rm keycloak-sync` und Plattform neu bauen.
 
 ## Steuerung und Störungen
 
@@ -50,7 +65,8 @@ Portal „Orchestrator meldet sich nicht“ und nimmt keine Aufträge an.
 | Modell lädt/Überlast | bis zu zwei Wiederholungen mit Pause | danach Blockade für den Tech Lead |
 | Ungültige Übergabe | eine Wiederholung mit Fehlerhinweis | danach Blockade; Tech Lead: erneut versuchen oder abbrechen |
 | Neustart während eines Schritts | Schritt „unterbrochen“, wird idempotent wiederholt | nichts |
-| Register/Prompts geändert | laufende Aufträge blockieren | Tech Lead stellt bewusst um oder bricht ab |
+| Register/Prompts oder Agentenkonfiguration geändert | laufende Aufträge blockieren | Tech Lead stellt bewusst um oder bricht ab |
+| Fachagent: Modell nicht erreichbar | Aufgabe endet mit „Fehler“ und Grund | FLOWGATE/Ollama prüfen, Aufgabe neu geben |
 | Budget erschöpft | Blockade ohne weiteren Modellaufruf | Tech Lead entscheidet |
 
 ## Token-Verbrauch (Grafana)
@@ -140,20 +156,22 @@ Trading_Ai-Pilot, `docker compose -f <pfad>/orchestrator-pilot-egress.yaml up -d
 - Die Abo-Anmeldung liegt in den Volumes `trading-dev-codex-auth` und `trading-dev-claude-auth`.
 - Komplex sind: Klasse „kritisch“, Änderungsbereiche „ERP-Anbindung“ und „Plattform-API – zentrale
   Routen“, Umsetzung „Codex/Claude (Abo)“ im Auftrag oder zwei gescheiterte lokale Versuche.
-- Im Auftragsformular steuert **Umsetzung** das je Auftrag: automatisch, nur lokal, Codex/Claude.
+- Im Auftragsformular steuert **Umsetzung** das je Auftrag: automatisch, nur lokal, OpenCode (lokal),
+  Codex/Claude.
 - Abschalten: `escalation.enabled: false` (nur Weiterleitung) oder `container.execution_enabled: false`
   (Worker komplett gesperrt), danach `scripts/flow_agents.sh restart`.
 
 ## FLOWDOC mit der lokalen KI weiterentwickeln
 
 1. Stack und Orchestrator laufen (`make sso-all`, `make agents-up`, Prüfung mit `make agents-smoke`).
-2. In FLOWPORTAL **＋ Fachauftrag starten**, Projekt `FLOW-DMS`, Änderungsbereich wählen:
+2. In FLOWPORTAL **＋ Fachauftrag starten**, Projekt `FLOW-DMS` (Änderungsrecht nötig, z. B. `po.demo`),
+   Einstufung (meist S/K1) und Änderungsbereich wählen:
    - `dms-doku` – nur die Benutzerhilfe,
    - `dms-ui` – Oberfläche (`dms.js`, `dms.css`),
    - `dms-backend` – Paperless-Anbindung (`dms.py`) mit Tests,
    - `dms-komplett` – Oberfläche, Backend, Tests und Hilfe zusammen.
 3. Die Agenten arbeiten mit den lokalen Modellen über FLOWGATE. Du entscheidest in der Inbox
-   (je nach Klasse G1, immer G4 und G5). Ablehnungen mit Begründung gehen als Befund zurück.
+   (je nach Einstufung EP1 und G1, bei K2/K3 alle Gates, immer G4 und G5). Ablehnungen mit Begründung gehen als Befund zurück.
 4. **Vor der Fachabnahme (G4)** startet der Kandidat als Vorschau unter `http://localhost:8098/dms`
    (Demo-Modus, Paperless mit dem technischen Demo-Konto). Der Link steht in der Entscheidung.
 5. **Nach angenommener Fachabnahme** liegt genau der abgenommene Stand als lokaler Branch

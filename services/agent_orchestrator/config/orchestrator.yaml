@@ -13,7 +13,8 @@ demo_mode: true
 poll_seconds: 3
 
 # Modellprofil -> Provider. gateway = lokale Modelle über FLOWGATE; simulated = regelbasiert
-# ohne Modell (Tests, Vorführung); codex/claude = isolierte Abo-CLIs (technisch gesperrt).
+# ohne Modell (Tests, Vorführung); codex/claude = isolierte Abo-CLIs (seit 2026-11-22 für Eskalation freigegeben);
+# opencode = lokaler agentischer Worker (je Auftrag wählbar, Abschnitt opencode).
 providers:
   builder: gateway
   coder: gateway
@@ -242,8 +243,8 @@ preview:
     DEMO_DATA_FILE: /data/scenario.json
     AGENT_REGISTRY_DIR: /app/agents
 
-# Abo-CLIs (aus Trading_Ai übernommen). Gesperrt, bis Isolation unabhängig geprüft und durch
-# Bas freigegeben ist (AGENTS.md §5). Image nur per Digest.
+# Abo-CLIs (aus Trading_Ai übernommen). Freigabe nach AGENTS.md §5 durch Bas; ohne
+# execution_enabled bleiben sie technisch gesperrt. Image nur per Digest.
 container:
   # Freigegeben am 2026-11-22 durch Bas: Umgebung aus Trading_Ai (Worker-Image, interne Netze,
   # Egress-Proxys nur zum jeweiligen Anbieter, Abo-Anmeldung in schreibgeschützten Volumes).

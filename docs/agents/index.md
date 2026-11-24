@@ -1,6 +1,7 @@
 # FLOWAGENTS – Agentenplattform
 
-**Stand:** 2026-11-22 · implementiert und getestet · Betriebsfreigabe durch Bas offen
+**Stand:** 2026-11-24 · implementiert und getestet · Betriebsfreigabe durch Bas offen ·
+Weiterentwicklung der Plattform: [Orchestrierung: Eigenbau und fertige Werkzeuge](plattformstrategie.md)
 
 FLOWAGENTS entwickelt Fachsoftware in getrennten Rollen. Ein Fachbereich beschreibt im
 FLOWPORTAL, welche Arbeit leichter werden soll; Agenten leiten Anforderungen ab, prüfen sie,
@@ -14,9 +15,10 @@ sowie das [Unternehmenskonzept KI-U-00 bis KI-U-12](../konzepte/ki-unternehmensk
 
 | Ort | Inhalt |
 |---|---|
-| FLOWPORTAL Startseite | Agentenzentrale: wer gerade arbeitet, Live-Karte der Zusammenarbeit, Entscheidungs-Inbox, offene Aufträge |
-| `/agents` | Vollansicht mit Agentenregister, Laufdetails (Verlauf, Ergebnisse, Diff, Nachweise), Stopp-Schalter, FLOWWORK-Audit |
+| FLOWPORTAL Startseite | Agentenzentrale kompakt: wer gerade arbeitet, Live-Karte, Entscheidungs-Inbox, „Wo es gerade hängt“, Meine Fachagenten |
+| `/agents` | Vollansicht: Umschalter **Meine Sicht / Alle**, Projektkatalog mit deinen Rechten, Projekte mit Arbeitspaketen, Agentenregister mit Konfiguration je Agent, Rechtematrix, Laufdetails (Verlauf, Ergebnisse, Diff, Nachweise), Stopp-Schalter, FLOWWORK-Audit; für Admins **⚙ Fachagenten verwalten** |
 | FLOWWORK `/work` | Anforderungen (Agenten-Entwürfe und Plattformkatalog), Baselines, Testfälle, Nachverfolgung |
+| Unten rechts auf jeder Seite | **Person wechseln** (nur Demo): zwischen den Demo-Konten mit ihren AD-Rechten wechseln |
 
 Die Karte zeigt **Übergaben** (türkis), **Rückläufe** nach Prüfbefund (rot), **Fragen an Menschen**
 (gelb), **Entscheidungen** (lime) und **Werkzeugaufrufe in FLOWWORK** (blau). Neue Ereignisse
@@ -139,27 +141,36 @@ Nach zwei erfolglosen Korrekturrunden entscheidet der Tech Lead. Ein neuer Ände
 Codeprüfung, Integrationsprüfung und Abnahme ungültig (Digest-Bindung). Der Orchestrator prüft das
 Nachweispaket selbst; eine Lücke sperrt G4/G5.
 
-## Entscheidungsrollen (vorläufige FLOWID-Zuordnung)
+## Entscheidungsrollen
 
-| Rolle | FLOWID-Rollen | Beispiel-Testperson |
-|---|---|---|
-| Product Owner | `requirements-user`, `work-admin` | Clara Schröder (demo11) |
-| Tech Lead | `work-admin`, `it-user` | Maja Roth (demo49) |
-| Key User (Fachabnahme) | `requirements-user`, `work-user` | Tobias Neumann (demo12) |
-| Release-Verantwortung | `it-user` | Christian Beck (demo50) |
-| Geschäftsführung | `management-user` | Anna Schneider (demo01) |
+Die Freigaberollen kommen aus eigenen AD-Gruppen (`AD-GG-FLOW-AGENTS-*` → Realm-Rollen `flow-*`). Sie sind
+bewusst nicht Teil von `platform-admin`: Betrieb und fachliche Freigabe sind getrennt. Dazu kommen die
+Projektrechte je Projekt (siehe oben).
 
-Eigene Realm-Rollen (`flow-po`, `flow-techlead`, `flow-release`, `flow-isb`) sind vor dem Pilot
-anzulegen [FIRMENANGABE U-07]. Im lokalen Demo-Modus ohne Anmeldung darf `platform-admin`
-entscheiden; das ist im Portal sichtbar.
+| Rolle | Realm-Rolle (AD-Gruppe) | Entscheidet | Demo-Konto |
+|---|---|---|---|
+| Product Owner | `flow-po` (`AD-GG-FLOW-AGENTS-PO`) | Fachaufträge, EP1, G1, Rückfragen der Agenten | `po.demo`, `po2.demo` |
+| Tech Lead | `flow-techlead` | G2/G3 bei Hoher Schutzbedarf, Blockaden, Korrekturlimit, Laufbudget, Arbeitspakete starten | `techlead.demo` |
+| Key User | `flow-keyuser` | G4 Fachabnahme in der Vorschau | `keyuser.demo` |
+| Release-Verantwortung | `flow-release` | G5 Produktionsfreigabe | `release.demo` |
+| Informationssicherheit | `flow-isb` | Sicherheitsrückfragen, Audit; sieht alle Projekte, keine Gate-Freigabe | `isb.demo` |
+| Geschäftsführung | `flow-gf` | Bedenken des Geschäftsführungs-Agenten; sieht alle Projekte | `gf.demo` |
+| Administration | `platform-admin` plus alle Freigabe- und Projektrollen | alles; ändert Agentenkonfiguration und legt Fachagenten an | `admin.demo` |
+
+Für die echte Besetzung trägt das Unternehmen Personen und Vertretungen ein [FIRMENANGABE U-07]. Im lokalen
+Demo-Modus darf `platform-admin` zusätzlich entscheiden; das ist im Portal sichtbar.
 
 ## Einen Auftrag starten
 
 1. In FLOWPORTAL **＋ Fachauftrag starten** wählen.
 2. Zweck, Nutzergruppe, gewünschtes Verhalten und ein Erfolgsbeispiel beschreiben.
-3. Änderungsklasse, Datenklasse und den **freigegebenen Änderungsbereich** wählen. Nur Dateien
-   dieses Bereichs darf der Entwicklungs-Agent ändern; die Bereiche stehen in
-   `services/agent_orchestrator/config/orchestrator.yaml` (Erweiterung ist Klasse K).
-4. Den Lauf auf der Karte verfolgen; Entscheidungen erscheinen in „Deine Entscheidungen“.
+3. **Projekt** wählen. Angeboten werden nur Projekte, in denen du Änderungsrecht hast; danach nur deren
+   **Änderungsbereiche**. Nur Dateien dieses Bereichs darf der Entwicklungs-Agent ändern (Bereiche in
+   `services/agent_orchestrator/config/orchestrator.yaml`, Projekte in `agents/projects.json`; Erweiterung ist
+   Klasse K).
+4. **Projektklasse** (S/M/L), **Kritikalität** (K1–K3, mindestens die des Projekts), **Domäne**,
+   **Datenklasse** und **Umsetzung** (automatisch, nur lokal, OpenCode lokal, Codex/Claude) wählen.
+5. Den Lauf auf der Karte und in „Wo es gerade hängt“ verfolgen; Entscheidungen erscheinen in
+   „Deine Entscheidungen“.
 
 Weiter: [Betrieb](betrieb.md) · [Sicherheit und Nachweise](sicherheit.md)

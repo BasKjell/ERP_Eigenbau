@@ -200,9 +200,13 @@ die reale Maschinenanbindung zu validieren.
 
 ## Agentenplattform FLOWAGENTS und FLOWDOC
 
-- **Agentenzentrale** auf der FLOWPORTAL-Startseite und unter `/agents`: elf Entwicklungsrollen und
-  ein Geschäftsführungs-Agent arbeiten nach `agents/registry.yaml` und `agents/workflow.yaml`;
-  Menschen entscheiden in der Entscheidungs-Inbox (Gates G1–G5).
+- **Agentenzentrale** auf der FLOWPORTAL-Startseite und unter `/agents`: dreizehn Entwicklungsrollen und
+  ein Geschäftsführungs-Agent arbeiten nach `agents/registry.yaml` und `agents/workflow.yaml` (V-Modell mit
+  Einstufung S/M/L und K1–K3, EP1, Gates G1–G5); Menschen entscheiden in der Entscheidungs-Inbox.
+- **Projekte und Rechte** aus `agents/projects.json` über AD-Gruppen; in der Demo wechselt **Person wechseln**
+  zwischen den Demo-Konten.
+- **Agentenregister** mit Konfiguration je Agent (Admins ändern), **Fachagenten** für Aufgaben außerhalb des
+  V-Modells (z. B. Einkaufsmails), Worker lokal (FLOWGATE, OpenCode) und für komplexe Aufträge Codex/Claude.
 - **Anforderungen** liegen in FLOWWORK; Plattformanforderungen in `requirements/catalog.yaml`
   (`make requirements-check`, `make requirements-sync`).
 - **FLOWDOC** unter `/dms`: eigene DMS-Oberfläche über die Paperless-API im Namen der Person.

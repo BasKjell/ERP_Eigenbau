@@ -98,13 +98,16 @@ OIDC-Token-Weitergabe statt Header).
 
 ## ADR-008: Rollengetrennte Agentenplattform FLOWAGENTS
 
-**Status:** implementiert und getestet, Betriebsfreigabe durch Bas offen (2026-11-22)
+**Status:** implementiert und getestet, Betriebsfreigabe durch Bas offen (Stand 2026-11-24)
 
 **Entscheidung:** Die Entwicklung eigener Fachsoftware läuft über einen deterministischen
-Orchestrator (`services/agent_orchestrator`) mit elf Entwicklungsrollen und einem
+Orchestrator (`services/agent_orchestrator`) mit dreizehn Entwicklungsrollen (Nr. 00–11 und 13) und einem
 Geschäftsführungs-Agenten aus dem versionierten Register `agents/registry.yaml`. Der Ablauf
-(`agents/workflow.yaml`) führt vom Fachauftrag über die Gates G1–G5; Menschen entscheiden in der
-Entscheidungs-Inbox des FLOWPORTAL. Anforderungen, Baselines und Testfälle liegen in FLOWWORK.
+(`agents/workflow.yaml`) folgt dem V-Modell: Einstufung nach Projektklasse S/M/L und Kritikalität K1–K3,
+bei M/L Projektplanung mit EP1, danach die Gates G1–G5; Großprojekte laufen als Arbeitspakete. Menschen
+entscheiden in der Entscheidungs-Inbox des FLOWPORTAL. Anforderungen, Baselines und Testfälle liegen in
+FLOWWORK. Projekte und Projektrechte stehen im Projektkatalog `agents/projects.json` und kommen über
+AD-Gruppen.
 
 **Wesentliche Eigenschaften:**
 
@@ -114,13 +117,35 @@ Entscheidungs-Inbox des FLOWPORTAL. Anforderungen, Baselines und Testfälle lieg
 - Ersteller und Prüfer gehören zu verschiedenen Modellfamilien; Review, Integrationsprüfung und
   Abnahme binden sich an den Digest des Änderungsstands.
 - Lokale Modelle über FLOWGATE mit einem virtuellen Schlüssel je Rolle, der nur das Modellprofil
-  der Rolle erlaubt. Die Codex-/Claude-Abo-Worker aus `Trading_Ai` sind übernommen, aber technisch
-  gesperrt, bis Isolation und Betrieb freigegeben sind.
+  der Rolle erlaubt. Die Codex-/Claude-Abo-Worker aus `Trading_Ai` sind seit 2026-11-22 für komplexe
+  Aufträge freigegeben (nicht für vertrauliche Daten); OpenCode ist als lokaler Worker je Auftrag wählbar.
+- Administratoren können Agenteneigenschaften übersteuern und Fachagenten für Aufgaben außerhalb des
+  V-Modells anlegen; beides läuft durch dieselben Prüfregeln und wird protokolliert.
 - Der Orchestrator läuft als Host-Dienst (Sandbox-Prüfungen brauchen Docker), öffnet aber keinen
   aus dem Plattformnetz erreichbaren Port: Er holt Aufträge und Entscheidungen bei der Plattform-API
   ab und meldet dorthin seinen Zustand (Pull-Modell).
 
 **Abweichung zum Trading-Orchestrator:** Dort arbeitet ein Autor-Reviewer-Paar auf GitHub-Issues
 und -PRs. Hier steuert der Orchestrator den vollständigen Fachprozess mit FLOWWORK als Register und
-Entscheidungen im Portal. Ein GitHub-PR-Weg für echte Code-Änderungen folgt nach Freigabe der
-Abo-Worker (siehe `docs/agents/betrieb.md`).
+Entscheidungen im Portal. Ergebnisse werden nach G4 als lokaler Branch übernommen; ein automatischer
+GitHub-PR-Weg ist nicht aktiv (siehe `docs/agents/betrieb.md`).
+
+## ADR-009: Orchestrierung – Regelschicht im Eigenbau, Mechanik und Fachagenten mit etablierten Werkzeugen
+
+**Status:** vorgeschlagen (2026-11-24), Entscheidung vor dem Produktivbetrieb
+
+**Kontext:** FLOWAGENTS ist vollständig selbst gebaut. Die fachlichen Regeln (V-Modell-Gates,
+Unabhängigkeit der Prüfer, Digest-Bindung, Projektrechte, Nachweise) bietet kein Produkt; Zustand,
+Wiederaufnahme, Anbindungen und Hochverfügbarkeit dagegen sind im Eigenbau teuer und riskant.
+
+**Vorschlag:**
+
+- **Regelschicht bleibt Eigenbau** (Register, Ablauf, Gates, Rechte, Nachweise).
+- **Ablaufmechanik** auf Temporal (bevorzugt) oder LangGraph als Bibliothek; die Regeln laufen als
+  Aktivitäten bzw. Knoten.
+- **Fachagenten** mit fertigen Anbindungen in n8n oder Dify, nach Bewertung am Referenzfall
+  Einkaufs-Mail-Agent; Lizenzen beachten (n8n source-available, SSO nur in bezahlten Plänen; Dify mit
+  Zusatzbedingungen; LangGraph-Server und Camunda 8 lizenzpflichtig in Produktion).
+- **Austauschbar bleiben** über FLOWGATE (Modelle), Keycloak/AD (Identität) und MCP/RM-Adapter (Werkzeuge).
+
+**Begründung und Bewertungsplan:** [Orchestrierung: Eigenbau und fertige Werkzeuge](../agents/plattformstrategie.md).

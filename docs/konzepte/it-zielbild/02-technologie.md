@@ -26,6 +26,7 @@ Für Eigenentwicklungen stellt die IT eine gepflegte Projektvorlage bereit. Stan
 | Beobachtung und Sicherung | Bestehendes Monitoring wie Checkmk einbinden. Zentraler Ereignisspeicher, Schlüsselverwaltung, anwendungskonsistente Backups. | Prometheus, Grafana, Loki oder vorhandenes SIEM nur für konkrete Lücken ergänzen. Bei Kubernetes Cluster- und Datenbanksicherung getrennt planen. |
 | Integration und Analyse | Python-Adapter, versionierte Verträge, eigene Berichtsdatenbank | RabbitMQ für entkoppelte Ereignisse, Superset als BI-Kandidat. Bestehende SSRS- oder Power-BI-Berichte nach fachlicher Gleichwertigkeit ablösen. |
 | Code und CI | Bestehende Git-Plattform samt installierter Edition prüfen | GitLab mit benötigter Edition oder Forgejo nach lokalem Nachweis der Rechte und Integrationssperren. |
+| KI-Agenten und Automatisierung | FLOWAGENTS (Eigenbau) als Regelschicht mit lokalen Modellen über FLOWGATE | Ablaufmechanik auf Temporal oder LangGraph; Fachagenten mit Anbindungen in n8n oder Dify nach Bewertung und geklärter Lizenz ([Orchestrierung](../../agents/plattformstrategie.md)). |
 
 ## Lizenzen und unabhängige Freigaben
 

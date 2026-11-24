@@ -22,6 +22,7 @@ Die ersten 90 Tage sollen eine belastbare Entscheidung über den Plattformbetrie
 |---|---|---|
 | Tag 30 | Leitung Business Applications mit Fachbereich und Betrieb | Anwendungsliste mit Eigentümer, Datenbank, Identität, Integrationen, Lizenzende und Ausfallfolgen. Einen kleinen Fachprozess und je einen kritischen DMS- und ERP-Testfall benennen. Pilot-RPO/RTO, Messverfahren und Kostensätze vereinbaren. |
 | Tag 60 | Plattformbetrieb, IAM und Entwickler | Identischen Pilotdienst auf Compose und bei realistischem Kubernetes-Bedarf auf RKE2 bereitstellen. Keycloak mit lesender AD-Anbindung, MFA, Portal- und Fachanwendungsclient einrichten. Monitoring, signiertes Artefakt und Backup anbinden. Zeiten für Installation, Patchen, Entzug und Restore protokollieren. |
+| Tag 75 | Service Owner, Einkauf, ISB | Referenzfall Einkaufs-Mail-Agent in FLOWAGENTS, n8n und Dify mit Testpostfach vergleichen; Temporal-Spike für einen Lauf bis G1. Lizenz, SSO über Keycloak, Nachweise, Restore und Bedienung bewerten ([Orchestrierung](../../agents/plattformstrategie.md)). |
 | Tag 90 | Service Owner, Fachbereich, ISB und Controlling | Datenverlust und tatsächliche Wiederanlaufzeit messen. Zweite Person wiederholt den Restore. IAM prüft SSO beim Wechsel vom Portal zur Fachanwendung, Entzug einer AD-Gruppe bei aktiver Sitzung und die Ablehnung eines Tokens aus dem KI-Entwicklungsrealm. Betriebsvarianten samt Fünfjahreskosten bewerten. Ergebnis kann auch „Bestand beibehalten“ oder „Pilot nachbessern“ lauten. |
 
 ## Fünfjahreskosten als Entscheidungsgrundlage

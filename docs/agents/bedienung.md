@@ -1,10 +1,12 @@
-# Bedienungsanleitung: Agentenzentrale, Fachaufträge und FLOWDOC
+# Bedienungsanleitung: Agentenzentrale, Fachaufträge, Fachagenten und FLOWDOC
 
-**Stand:** 2026-11-22 · für Product Owner, Tech Lead, Key User, Release-Verantwortung und Plattformbetrieb
+**Stand:** 2026-11-24 · für Product Owner, Tech Lead, Key User, Release-Verantwortung, Administration und
+Plattformbetrieb
 
-Diese Anleitung beschreibt Schritt für Schritt, wie du mit FLOWAGENTS (dem KI-Entwicklungsteam) und
-FLOWDOC (der eigenen DMS-Oberfläche) arbeitest. Hintergrund und Regeln:
-[FLOWAGENTS](index.md), [Sicherheitskonzept](sicherheitskonzept.md), [Betrieb](betrieb.md).
+Diese Anleitung beschreibt Schritt für Schritt, wie du mit FLOWAGENTS (dem KI-Entwicklungsteam), den
+Fachagenten und FLOWDOC (der eigenen DMS-Oberfläche) arbeitest. Hintergrund und Regeln:
+[FLOWAGENTS](index.md), [Sicherheitskonzept](sicherheitskonzept.md), [Betrieb](betrieb.md),
+[Fachagenten](fachagenten.md), [Demo-Projekte und Projektrechte](../demo/projekte/index.md).
 
 ## 1. Starten und prüfen (einmal pro Arbeitstag)
 
@@ -15,6 +17,7 @@ FLOWDOC (der eigenen DMS-Oberfläche) arbeitest. Hintergrund und Regeln:
 | Orchestrator starten | `make agents-up` | „FLOWAGENTS gestartet“ |
 | Wissen für FLOWAI | `make mcp` | Wiki-, DMS- und ERP-Werkzeuge für Open WebUI |
 | Gesamtprüfung | `make agents-smoke` | acht Zeilen „OK“ |
+| Prüfbrowser und OpenCode (nur einmal) | `docker build -t flow-agents-ui-runner:1 deployment/ui-runner`, `make agents-opencode-image` | Images vorhanden |
 | Anforderungen abgleichen | `make requirements-sync` | Katalog liegt in FLOWWORK |
 
 Ollama muss laufen (Ollama-App auf dem Mac). Die Modelle werden beim ersten Aufruf geladen; der erste
@@ -26,22 +29,29 @@ Anmeldung über FLOWID (Keycloak) im Portal. Was du entscheiden darfst, hängt a
 
 | Du bist … | FLOWID-Rolle (AD-Gruppe) | Du entscheidest | Demo-Konto |
 |---|---|---|---|
-| Product Owner | `flow-po` (`AD-GG-FLOW-AGENTS-PO`) | Fachaufträge einreichen, G1 (Anforderungen fachlich freigeben), Rückfragen der Agenten | `po.demo` |
-| Tech Lead | `flow-techlead` (`AD-GG-FLOW-AGENTS-TECHLEAD`) | G2/G3 bei kritischen Änderungen, Blockaden, Korrekturlimit, Laufbudget, Läufe pausieren/abbrechen | `techlead.demo` |
+| Product Owner | `flow-po` (`AD-GG-FLOW-AGENTS-PO`) | Fachaufträge einreichen, EP1 (Projekt definiert), G1 (Anforderungen fachlich freigeben), Arbeitspakete starten, Rückfragen der Agenten | `po.demo`, `po2.demo` |
+| Tech Lead | `flow-techlead` (`AD-GG-FLOW-AGENTS-TECHLEAD`) | G2/G3 bei Hoher Schutzbedarf, Blockaden, Korrekturlimit, Laufbudget, Arbeitspakete starten, Läufe pausieren/abbrechen | `techlead.demo` |
 | Key User | `flow-keyuser` (`AD-GG-FLOW-AGENTS-KEYUSER`) | G4 Fachabnahme in der Vorschau | `keyuser.demo` |
 | Release | `flow-release` (`AD-GG-FLOW-AGENTS-RELEASE`) | G5 Produktionsfreigabe | `release.demo` |
 | Informationssicherheit | `flow-isb` (`AD-GG-FLOW-AGENTS-ISB`) | Sicherheitsrückfragen der Agenten, Audit einsehen; keine Gate-Freigabe | `isb.demo` |
 | Geschäftsführung | `flow-gf` (`AD-GG-FLOW-AGENTS-GF`) | Grundsatzfragen des Geschäftsführungs-Agenten | `gf.demo` |
 
-`admin.demo` hat alle Freigaberollen zusätzlich zum Plattform-Vollzugriff – für Einzelvorführungen.
-Die Plattform-Administration (`platform-admin`) enthält die Freigaberollen **nicht**: Betrieb und
-fachliche Freigabe sind getrennt. Alle Demo-Konten nutzen das Demo-Passwort aus
-`scripts/generate_iam_demo.py`.
+`admin.demo` hat alle Freigabe- und Projektrollen zusätzlich zum Plattform-Vollzugriff und darf als Einziger
+Agenten konfigurieren und Fachagenten anlegen. Die Plattform-Administration (`platform-admin`) enthält die
+Freigabe- und Projektrollen **nicht**: Betrieb und fachliche Freigabe sind getrennt. `dev.demo` hat keine
+Freigaberolle und sieht nur. Alle Demo-Konten nutzen das Demo-Passwort `Demo-User-2026!` (nur lokal).
 
-**Freigabeprozess vorführen:** In getrennten Browserfenstern (oder privaten Fenstern) als
+**Projektrechte:** Zusätzlich zur Funktion brauchst du Rechte im Projekt: *Ändern* (Aufträge einreichen,
+Arbeitspakete starten) oder *Lesen* (sehen und als Mitglied entscheiden). Welche Person wo welche Rechte hat,
+steht unter [Demo-Projekte und Projektrechte](../demo/projekte/index.md) und in der Agentenzentrale im
+**Projektkatalog**. ISB und Geschäftsführung sehen alle Projekte.
+
+**Freigabeprozess vorführen:** Unten rechts **Person wechseln** wählen. Die Liste zeigt jedes Demo-Konto mit
+Funktion und Projektrechten; **Wechseln** meldet bei FLOWID ab und mit dem gewählten Konto neu an. Als
 `po.demo` einen Fachauftrag einreichen und G1 freigeben, als `techlead.demo` G2/G3 und Blockaden
 entscheiden, als `keyuser.demo` die Vorschau abnehmen (G4) und als `release.demo` G5 freigeben.
-Jede andere Person erhält bei fremden Entscheidungen „Keine Befugnis“.
+Jede andere Person erhält bei fremden Entscheidungen „Keine Befugnis“, ohne Projektrecht „Keine Befugnis
+im Projekt …“.
 
 ## 3. Die Agentenzentrale lesen
 
@@ -49,15 +59,17 @@ Auf der Startseite (kompakt) und unter **`/agents`** (vollständig):
 
 - **Kennzahlen:** Agenten im Register, wer gerade arbeitet, offene Aufträge, *Warten auf dich*,
   Rückläufe.
-- **Zusammenarbeit live:** Kreise = Agenten (Nummer 01–11, GF = Geschäftsführungs-Agent),
-  Rauten = Gates G1–G5, unten die Menschen. Ein leuchtender Ring heißt „arbeitet“, gelb heißt
+- **Zusammenarbeit live:** Kreise = Agenten (Nummer 00–13, GF = Geschäftsführungs-Agent),
+  Rauten = Entscheidungspunkte EP1 und G1–G5, unten die Menschen. Ein leuchtender Ring heißt „arbeitet“, gelb heißt
   „wartet auf einen Menschen“. Linien: türkis Übergabe, rot Rücklauf nach Prüfbefund, gelb Frage an
   einen Menschen, lime Entscheidung, blau Schreibzugriff in FLOWWORK. Klick auf einen Knoten zeigt
   Auftrag, Stufe, Werkzeuge und letzte Aktion.
 - **Live-Protokoll:** jedes Ereignis mit Uhrzeit.
 - **Aufträge:** Fortschritt, aktueller Schritt, wartende Rolle, übernommener Branch. Klick öffnet
   die Laufdetails (Verlauf, Entscheidungen, alle Ergebnisse inkl. Diff und Nachweise).
-- **Rechte der Agenten** (Seite *Agenten*): Matrix, welcher Agent über welche technische Rolle
+- **Projektkatalog und Projekte** (nur `/agents`): deine Projekte mit deinem Recht, darunter Großprojekte mit
+  Arbeitspaketen und dem Knopf **Starten (EPi)**.
+- **Rechte der Agenten** (nur `/agents`): Matrix, welcher Agent über welche technische Rolle
   welche Werkzeuge hat, welches Modell er nutzt (und ob komplexe Aufträge an Codex/Claude gehen),
   welche Datenklassen er verarbeiten darf und welche menschliche Rolle sein Ergebnis freigibt –
   mit der zugehörigen Keycloak-Rolle. Klick auf einen Agenten zeigt die Einzelheiten: wer jedes
@@ -114,21 +126,28 @@ vollständige Rollenanweisung (Prompt) und das Änderungsprotokoll.
 4. **Erfolgsbeispiel**: ein beobachtbares Beispiel („Bei Beta und Alpha erscheint Alpha zuerst“).
    Daraus werden Akzeptanzkriterien.
 5. **Ausgeschlossen**: was sich nicht ändern darf (z. B. Rechte, Status).
-6. **Änderungsklasse**:
-   - *Standardänderung* – Text, Sortierung, Anzeige ohne neue Daten; du entscheidest nur G4 und G5.
-   - *Neue Funktion* – neues Verhalten; zusätzlich G1.
-   - *Hoher Schutzbedarf* – Rechte, Löschung, Migration, Export; alle Gates.
-7. **Änderungsbereich** (nur diese Dateien darf der Entwicklungs-Agent ändern):
+6. **Projekt**: Angeboten werden nur Projekte, in denen du Änderungsrecht hast (z. B. `FLOW-DMS`, `TM-100`).
+7. **Einstufung** – daraus leitet der Orchestrator ab, welche Schritte gelten und wer an welchem Gate entscheidet:
+   - *Projektklasse:* **S** kleine Änderung (Kurzweg), **M** Release oder Teilsystem (mit Projektplanung,
+     EP1 und Integrationstests), **L** Großprojekt (plant nur Arbeitspakete, die einzeln als Aufträge laufen).
+   - *Kritikalität:* **K1** normal (bei S entscheidest du nur G4 und G5, bei M/L zusätzlich EP1 und G1),
+     **K2** erhöht (alle Gates menschlich), **K3** funktionale Sicherheit (wie K2, Agenten liefern nur
+     gekennzeichnete Entwürfe). Das Projekt gibt eine Mindest-Kritikalität vor (`TM-100`, `PS-TM100`: K2).
+   - *Domäne:* IT-Anwendung, Produktsoftware, Prüf- und Fertigungssoftware, Engineering-Werkzeug.
+8. **Datenklasse** (öffentlich, intern, vertraulich) und **Umsetzung**: *automatisch* (komplex → Codex/Claude),
+   *nur lokale Modelle*, *OpenCode (lokal, agentisch)* oder *Codex/Claude (Abo)*. Vertrauliche Aufträge bleiben
+   immer lokal.
+9. **Änderungsbereich**: Es erscheinen nur die Bereiche des gewählten Projekts. Nur diese Dateien darf der
+   Entwicklungs-Agent ändern, zum Beispiel:
 
-| Bereich | Inhalt |
+| Projekt | Bereiche |
 |---|---|
-| `dms-doku` | Benutzerhilfe zu Dokumenten |
-| `dms-ui` | FLOWDOC-Oberfläche (`dms.js`, `dms.css`) |
-| `dms-backend` | Paperless-Anbindung (`dms.py`) mit Tests |
-| `dms-komplett` | Oberfläche, Backend, Tests und Hilfe zusammen |
-| `portal-hilfe` | Portal- und Agentenhilfe |
+| `FLOW-DMS` | `dms-doku` (Benutzerhilfe), `dms-ui` (Oberfläche), `dms-backend` (Paperless-Anbindung mit Tests), `dms-komplett` |
+| `FLOW-PLATFORM` | Portal, Fachmodule, Plattform-Routen, Anwender- und Agentenhilfe, Prozessdoku |
+| `TM-100` | `tm100-doku` (Lastenheft, Architektur, Verifikation) |
+| `PS-TM100` | `ps-tm100-doku` (Prüfspezifikation, Validierung) |
 
-8. **Auftrag einreichen.** Zuerst bewertet der Geschäftsführungs-Agent den Auftrag (Nutzen, Aufwand,
+10. **Auftrag einreichen.** Zuerst bewertet der Geschäftsführungs-Agent den Auftrag (Nutzen, Aufwand,
    Abläufe, Risiko). Hat er erhebliche Bedenken, fragt er dich.
 
 **Tipp:** Kleine, klar abgegrenzte Aufträge gelingen mit lokalen Modellen deutlich besser als große.
@@ -142,6 +161,7 @@ G3–G5 – den Digest, an den deine Entscheidung gebunden ist.
 | Entscheidung | Annehmen bedeutet | Ablehnen bedeutet |
 |---|---|---|
 | **Rückfrage** eines Agenten | Deine Antwort (Kommentarfeld) fließt in den nächsten Versuch ein | Lauf wird abgebrochen |
+| **EP1 Projekt definiert** (Projektklasse M/L) | Arbeitspakete sind gesetzt; bei M geht es mit den Anforderungen weiter, bei L entsteht ein Projekt `PRJ-…` | Begründung geht an den Projektplanungs-Agenten, er plant neu |
 | **G1 Anforderungen** | Arbeitsbaseline ist fachlich freigegeben | Begründung geht als Befund an den Anforderungs-Agenten |
 | **G2/G3** | Architektur bzw. Integrationsstand bestätigt | zurück an Architektur bzw. Entwicklung |
 | **G4 Fachabnahme** | Kandidat ist fachlich richtig; er wird als Branch übernommen | Begründung geht an die Entwicklung, neuer Kandidat folgt |
@@ -149,6 +169,10 @@ G3–G5 – den Digest, an den deine Entscheidung gebunden ist.
 | **Eskalation** (Bedenken der Geschäftsführung) | trotzdem fortfahren | Lauf abbrechen |
 | **Korrekturlimit / Blockade** | weitere Runde bzw. denselben Schritt erneut versuchen | Lauf abbrechen |
 | **Laufbudget erschöpft** | 20 weitere Modellaufrufe freigeben | Lauf abbrechen |
+
+**Arbeitspakete starten (EPi):** In `/agents` unter **Projekte** startet **Starten (EPi)** ein bereites
+Paket als eigenen Auftrag. Dürfen: Product Owner oder Tech Lead mit Änderungsrecht im Projekt; Vorgänger
+müssen fertig sein.
 
 **Ablehnungen immer konkret begründen** („Punkt 3 ist falsch: …, bitte so formulieren: …“). Die
 Begründung ist das Einzige, was der Agent von deiner Prüfung erfährt.
@@ -184,13 +208,22 @@ zusätzlich gepusht (öffentliches Repository beachten).
 | „FLOWGATE nicht erreichbar“ | Gateway oder Ollama aus | Ollama-App starten, `make ai-gateway` |
 | „Ergebnisvertrag verletzt“ zweimal | Modell liefert unvollständige Antwort | Tech Lead: *Annehmen* = erneut versuchen |
 | „Korrekturlimit erreicht“ | Prüfer und Ersteller einigen sich nicht | Befunde in den Laufdetails lesen; weitere Runde oder abbrechen und Auftrag präziser neu stellen |
-| „Agentenregister geändert“ | Register oder Rollenanweisungen geändert | Tech Lead stellt den Lauf bewusst um oder bricht ab |
+| „Agentenregister geändert“ | Register, Rollenanweisungen oder Agentenkonfiguration (Admin) geändert | Tech Lead stellt den Lauf bewusst um oder bricht ab |
+| „Keine Befugnis im Projekt … (AD-Gruppe …)“ | dir fehlt das Projektrecht | Zuständige Stelle nimmt dich in die genannte AD-Gruppe auf |
+| Projekt fehlt im Auftragsformular | kein Änderungsrecht im Projekt | wie oben; bis dahin nur lesen |
 | Agent „pausiert“ | Stopp-Schalter aktiv | in `/agents` → Agent anklicken → fortsetzen (Plattformbetrieb) |
 | Vorschau fehlt | Plattform-Image fehlt oder Port 8098 belegt | `docker ps`, Fehlertext in der G4-Karte |
 
 Laufenden Zustand im Terminal: `make agents-status`; Log: `make agents-logs`.
 
-## 9. FLOWDOC bedienen
+## 9. Fachagenten nutzen
+
+Bist du einem Fachagenten zugewiesen (z. B. dem Einkaufs-Mail-Agenten), siehst du in der Agentenzentrale
+**Meine Fachagenten**: **Aufgabe geben** (z. B. eine Lieferantenmail einfügen), den Entwurf der lokalen KI
+prüfen und bearbeiten, Rückfragen klären, dann **Freigeben** oder **Verwerfen**. Administratoren legen
+Fachagenten über **⚙ Fachagenten verwalten** an. Einzelheiten: [Fachagenten](fachagenten.md).
+
+## 10. FLOWDOC bedienen
 
 FLOWDOC ist die eigene Dokumentenoberfläche unter **`/dms`** (Details: [FLOWDOC](../user-guides/flowdoc.md)):
 
@@ -202,7 +235,7 @@ FLOWDOC ist die eigene Dokumentenoberfläche unter **`/dms`** (Details: [FLOWDOC
 - **↑ Dokument ablegen:** Datei ziehen, optional Typ und Projekt, neue Dokumente starten als Entwurf.
 - FLOWDOC zeigt nur, was du in Paperless lesen darfst – auch Titel und Trefferzahlen.
 
-## 10. FLOWAI fragen
+## 11. FLOWAI fragen
 
 In FLOWAI (Open WebUI, `http://localhost:3001`) ist diese Anleitung als Unternehmenswissen
 hinterlegt (Werkzeug „Unternehmenswissen“). Beispiele:
@@ -212,7 +245,7 @@ hinterlegt (Werkzeug „Unternehmenswissen“). Beispiele:
 - „Welche Sicherheitsregeln gelten für die Agenten?“
 - „Was tue ich bei ‚Korrekturlimit erreicht‘?“
 
-## 11. FLOWAI mit Zugriff auf das Repository
+## 12. FLOWAI mit Zugriff auf das Repository
 
 Im Chat (Open WebUI, `http://localhost:3001`) unter **＋ → Werkzeuge** „Entwicklung & Repository“
 einschalten (zusätzlich gern „Unternehmenswissen“). Am besten mit `qwen3-coder:30b`.

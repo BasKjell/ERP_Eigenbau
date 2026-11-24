@@ -54,6 +54,15 @@ Beispiel aus der Vorführung: Auf die Mail „Rückfrage Prüfzeugnis Gehäuse�
 in 7 Sekunden einen höflichen Zwischenbescheid, sagte nichts zu und nannte als Rückfrage vor dem Versand,
 ob ein Prüfzeugnis 3.1 oder 2.2 benötigt wird.
 
+## Zielbild: n8n oder Dify
+
+Für den Unternehmensbetrieb sollen Fachagenten mit fertigen Anbindungen arbeiten (Postfach, ERP, DMS),
+statt jede Anbindung selbst zu bauen. Kandidaten sind **n8n** und **Dify**
+([Orchestrierung: Eigenbau und fertige Werkzeuge](plattformstrategie.md)). Unverändert bleiben dabei:
+Modelle nur über FLOWGATE, Anmeldung über Keycloak mit AD-Gruppen, nur Entwürfe mit menschlicher Freigabe
+und Nachweise im gemeinsamen Nachweisspeicher. Der Einkaufs-Mail-Agent dient als Referenzfall für den
+Vergleich (FLOWAGENTS, n8n, Dify).
+
 ## Grenzen und nächste Schritte
 
 - Kein automatischer Posteingang und kein Versand; dafür braucht es eine Postfach-Anbindung (IMAP/Graph) mit

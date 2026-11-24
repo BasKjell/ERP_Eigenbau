@@ -16,6 +16,10 @@ Unternehmens steht aus [FIRMENANGABE U-12].
 | A.8.8, A.8.13, A.8.15, A.8.16 | OPS.1.1.3, CON.3, OPS.1.1.5 | Audit ohne Inhalte (FLOWWORK `rm_audit`, Orchestrator-Ereignisse), Wiederanlauf mit idempotenten Schritten | REQ-AGT-012/-013, REQ-REQ-001 | teilweise; SBOM-Agent (11) und Restore-Probe offen |
 | A.5.19–A.5.22 | – | Lokale Modelle als Standard, keine Cloud-Fallbacks im Gateway; Eskalation zu Codex/Claude-Abo-Workern nur für interne Daten, mit Egress-Proxy, getrenntem Login je Anbieter und Familienprüfung | REQ-AGT-014, REQ-AGT-021, `deployment/agentgateway/config.yaml`, `config/orchestrator.yaml` | implementiert; Modelllizenzen und Herkunft offen; Worker teilen Login und Netze mit Trading_Ai |
 | A.8.3, A.5.10 | APP.3.1, CON.6 | DMS: Abfrage im Namen der Person, kein technischer Rückfall im OIDC-Modus | REQ-DOC-002 | getestet |
+| A.5.15, A.5.18, A.8.3 | ORP.4 | Projektrechte aus AD-Gruppen `AD-GG-FLOW-PRJ-*-LESEN/-AENDERN`: Einreichen und Paketstart nur mit Änderungsrecht, Entscheiden nur als Mitglied, Übersicht filtert fremde Projekte; Aufsicht (ISB, GF) sieht alles | `agents/projects.json`, `test_project_rights.py`, `test_project_rights_demo.py` | getestet; Rezertifizierung der Gruppen offen |
+| A.8.9, A.8.32 | OPS.1.1.6, ORP.4 | Agentenkonfiguration nur durch `platform-admin`, mit Begründung, Prüfung wie das Register (Unabhängigkeit, Werkzeuge, Datenklassen, Stufe), Protokoll, Registerstand ändert sich | `test_agent_config.py` | getestet; Übersteuerungen nicht im versionierten Register |
+| A.8.22, A.8.31 | SYS.1.6, NET.1.1 | OpenCode-Worker: internes Netz nur zu FLOWGATE, read-only, keine Werkzeuge, Schlüssel nicht in der Befehlszeile; Prüfbrowser im internen Netz ohne Internet, Schreibzugriffe gesperrt | `test_opencode.py`, `deployment/ui-runner` | getestet; Netztest von außen offen |
+| A.5.15, A.8.11, A.8.12 | ORP.4, APP.3.1 | Fachagenten: anlegen nur Admins, nutzen nur zugewiesene AD-Gruppen/Personen, Hintergrunddaten nur bei eigener Rolle der anfragenden Person, nur lokale Modelle, nur Entwürfe mit menschlicher Freigabe | `test_fachagenten.py`, `test_project_rights_demo.py` | getestet; kein Postfach angebunden |
 
 ## Abnahmeplan (KI-EK Teil 10) – Abdeckung
 
@@ -60,17 +64,22 @@ Ist, Beleg-ID und Urteil.
 
 ## Bekannte Lücken (vor einem Pilot mit Echtdaten zu schließen)
 
-1. Lokaler Betrieb ohne TLS; Demo-Geheimnisse mit `change-before-network-use`.
+1. Lokaler Betrieb ohne TLS; Demo-Geheimnisse mit `change-before-network-use`; Demo-Kennwörter und
+   „Person wechseln“ (`DEMO_USER_SWITCH`) nur für die lokale Demo.
 2. HS256-Geheimnisse zwischen Orchestrator und Plattform; Ziel: asymmetrische Schlüssel oder
    Keycloak-Dienstkonten je Rolle (Token Exchange, KI-EK Teil 09).
 3. Paperless-Remote-User-Header ist im internen Netz fälschbar; Ziel: OIDC-Token-Weitergabe oder
    strikte Netzsegmentierung (nur Plattform-API → Paperless).
-4. Entscheidungsrollen haben eigene Realm-Rollen `flow-*` (seit 2026-11-22); offen sind MFA-Pflicht
-   für diese Gruppen und benannte Vertretungen.
+4. Entscheidungs- und Projektrollen kommen aus eigenen AD-Gruppen (`flow-*`, `flow-prj-*`); offen sind
+   MFA-Pflicht für diese Gruppen, benannte Vertretungen und die echte LDAP-Föderation statt der Simulation.
 5. Kein Paketspiegel, keine SBOM-Erzeugung; Schwachstellen-Agent inaktiv.
-8. Abo-Worker (Codex/Claude) teilen Anmeldung, Netze und Egress-Proxys mit Trading_Ai; Ziel: eigene
-   Login-Volumes und Netze für FLOW.
 6. Modell-Evaluation (Referenzfälle je Rolle) fehlt; die Live-Läufe zeigen, dass lokale Prüfer
    unpräzise Kriterien durchlassen können – deshalb bleibt G1 bei neuen Funktionen menschlich.
 7. Integration in `main` per GitHub-PR durch Agenten ist nicht aktiv; Änderungen entstehen nur in der
    Sandbox und werden von Menschen übernommen.
+8. Abo-Worker (Codex/Claude) teilen Anmeldung, Netze und Egress-Proxys mit Trading_Ai; Ziel: eigene
+   Login-Volumes und Netze für FLOW.
+9. Agentenkonfiguration (Übersteuerungen) und Fachagenten liegen in der Orchestrator-Datenbank, nicht im
+   versionierten Register; dauerhafte Änderungen gehören per Review in `agents/registry.yaml`.
+10. Zustand in SQLite mit einer eigenen Ablaufschleife; Hochverfügbarkeit und Wiederaufnahme sind nicht für
+    den Unternehmensbetrieb ausgelegt (Zielbild: [Orchestrierung](plattformstrategie.md)).

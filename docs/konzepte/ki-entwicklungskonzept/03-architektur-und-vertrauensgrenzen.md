@@ -32,6 +32,8 @@ Die Zielsystemkonten liegen im Tresor und sind nur für den jeweiligen Adapter a
 | Kompromittierte Identität | Operator sperrt den Lauf im Gateway, stoppt Worker und entzieht Tickets oder Zertifikate. Ausstehende Jobs werden vor Ausführung erneut autorisiert. | Zeit bis zur letzten zulässigen Aktion, betroffene Objekte und Wiederanlaufentscheidung. |
 | Verlust von Plattformdaten | Betrieb stellt RM, Git, Register, Zustandsdaten, Signaturprüfung und Nachweisindex in einer isolierten Umgebung wieder her. | Restore-Protokoll und Prüfung, ob sich ein vergangener Release eindeutig rekonstruieren lässt. |
 
+Umsetzung in der Referenzumgebung: FLOWAGENTS hält Zustand und Ereignisse in SQLite und wiederholt unterbrochene Schritte idempotent. Für den Unternehmensbetrieb ist vorgesehen, diese Mechanik auf eine erprobte Workflow-Engine (Temporal oder LangGraph) zu stellen und die Regeln unverändert zu übernehmen ([Orchestrierung](../../agents/plattformstrategie.md), ADR-009).
+
 ## Eigentümer und Kapazität
 
 Der Plattformbetrieb verantwortet Patchstand, Rotation und Netzrichtlinien. Der Service Owner vereinbart Wiederanlaufzeit und tolerierbaren Datenverlust je Dienst. Die Pilotmessung umfasst parallele Läufe, GPU-Speicher je Modell, Antwortzeiten, Warteschlange und Abbruchverhalten. Kritische Prüfläufe erhalten ein festes Budget. Neue Modelle oder Quantisierungen durchlaufen dieselbe Evaluation wie Promptänderungen.

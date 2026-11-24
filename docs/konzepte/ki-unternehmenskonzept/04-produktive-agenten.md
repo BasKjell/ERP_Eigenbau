@@ -33,7 +33,7 @@ GPU-Aufträge für interaktive Auskunft und lang laufende Entwicklungsjobs werde
 
 ## Stand in der Referenzumgebung
 
-Die Referenzumgebung läuft als Docker Compose auf einem Rechner. Schreibwerkzeuge lassen sich nur global über den Schalter `MCP_WRITE_ENABLED` abschalten; sie schreiben ausschließlich Testdaten und protokollieren jede Charge mit `batch_id`. Für den Produktivbetrieb fehlen ein Stopp-Schalter je Agent und Werkzeug, Laufbudgets, Warteschlange mit Ablaufzeit, Klärwarteschlange, TLS zwischen den Diensten, Mengenbegrenzung, Sicherung und Rufbereitschaft. Die Produktivplattform folgt dem IT-Zielbild (Teil 3 dort).
+Die Referenzumgebung läuft als Docker Compose auf einem Rechner. Schreibwerkzeuge der MCP-Server lassen sich global über `MCP_WRITE_ENABLED` abschalten; sie schreiben ausschließlich Testdaten und protokollieren jede Charge mit `batch_id`. FLOWAGENTS bringt inzwischen einen Stopp-Schalter je Agent und global, Laufbudgets je Änderungsklasse, eine Aktionswarteschlange mit Ablaufzeit und Fachagenten mit menschlicher Freigabe (nur Entwürfe, kein Versand). Für den Produktivbetrieb fehlen weiterhin Stopp je Werkzeug, Klärwarteschlange, TLS zwischen den Diensten, Mengenbegrenzung, Sicherung, Hochverfügbarkeit und Rufbereitschaft. Für Fachagenten mit Postfach- und Fachsystem-Anbindungen werden n8n und Dify bewertet, für die Ablaufmechanik Temporal oder LangGraph ([Orchestrierung](../../agents/plattformstrategie.md)). Die Produktivplattform folgt dem IT-Zielbild (Teil 3 dort).
 
 ## Unternehmensspezifische Nacharbeit
 

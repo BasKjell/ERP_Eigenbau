@@ -1,6 +1,6 @@
 # Sicherheitskonzept für die KI-Agenten (FLOWAGENTS)
 
-**Arbeitsreferenz:** SEC-AGT-001 · **Stand:** 2026-11-22 · **Status:** Arbeitsentwurf, in der
+**Arbeitsreferenz:** SEC-AGT-001 · **Stand:** 2026-11-24 · **Status:** Arbeitsentwurf, in der
 Referenzumgebung implementiert und getestet; Freigabe durch Informationssicherheit und Bas offen.
 
 **Grundlagen:** [KI-Softwareentwicklung nach dem V-Modell](../konzepte/ki-softwareentwicklung/00-hauptdokument.md),
@@ -15,7 +15,8 @@ Anhang A, IAM-Sicherheitskonzept SEC-IAM-001. Kontrollzuordnung und Abnahmefäll
 KI-Agenten dürfen Anforderungen, Architektur, Code, Tests, Dokumentation und Nachweise für interne
 Software vorbereiten. Sie dürfen nichts freigeben, nichts mergen, nichts löschen, nichts ausliefern
 und keine Rechte verändern. Das Konzept gilt für alle Rollen in `agents/registry.yaml`, den
-Orchestrator, FLOWGATE, den RM-Adapter in FLOWWORK, die Sandbox und FLOWDOC.
+Orchestrator, FLOWGATE, den RM-Adapter in FLOWWORK, die Sandbox, die Worker (Codex, Claude, OpenCode), den
+Prüfbrowser, die Fachagenten und FLOWDOC.
 
 ## 2. Zehn Grundsätze
 
@@ -51,6 +52,9 @@ flowchart LR
   O -->|Rollen-Token je Lauf| RM[RM-Adapter FLOWWORK]
   O -->|git archive, offline| SB[Sandbox ohne Netz]
   O -->|nach G4: Branch| R[(Repository)]
+  O -->|internes Netz, nur FLOWGATE| OC[OpenCode-Worker]
+  OC --> GW
+  O -->|internes Netz ohne Internet| UI[Prüfbrowser] --> V[Vorschau]
   API -->|im Namen der Person| PL[Paperless-ngx]
 ```
 
@@ -63,12 +67,17 @@ flowchart LR
 | Orchestrator → Sandbox | exakter Commit, keine `.env`, nur freigegebene Pfade, Prüfcontainer `--network none`, read-only | REQ-AGT-009 |
 | Sandbox → Repository | Übernahme nur nach G4, Integritätsprüfung je Datei, eigener Worktree, Merge durch Menschen | REQ-AGT-015 |
 | Plattform-API → Paperless | Remote-User aus der Sitzung, kein technischer Rückfall im OIDC-Modus | REQ-DOC-002 |
+| Orchestrator → OpenCode-Worker | eigenes internes Netz, nur FLOWGATE erreichbar, read-only, keine Werkzeuge, Rollenschlüssel nur über die Prozessumgebung | `test_opencode.py` |
+| Orchestrator → Prüfbrowser | internes Netz `flow-agents-ui` nur mit der Vorschau, keine fremden Adressen, Schreibzugriffe gesperrt | `uicheck.py`, `deployment/ui-runner` |
+| Plattform-API → Übersicht im Browser | Projektrechte filtern Aufträge, Entscheidungen, Projekte und Fachagenten-Aufgaben je Person | `test_project_rights_demo.py` |
 
 ## 4. Identitäten
 
 | Identität | Wofür | Wo festgelegt |
 |---|---|---|
-| Person (FLOWID) | Aufträge, Entscheidungen | Keycloak-Realm, vorläufige Rollenzuordnung in `agents/registry.yaml` (`human_roles`) |
+| Person (FLOWID) | Aufträge, Entscheidungen | Keycloak-Realm; Freigaberollen `flow-*` und Projektrollen `flow-prj-*` aus AD-Gruppen, Zuordnung zu Entscheidungsrollen in `agents/registry.yaml` (`human_roles`), Projekte in `agents/projects.json` |
+| Administrator (`platform-admin`) | Agentenkonfiguration übersteuern, Fachagenten anlegen | Orchestrator prüft die Rolle bei jeder Änderung; Begründung und Protokoll Pflicht |
+| Fachagenten (Schlüssel `fachagenten`) | Entwürfe für Fachaufgaben mit lokalen Modellen | eigener FLOWGATE-Schlüssel nur für lokale Aliasse; Nutzung nur durch zugewiesene Gruppen/Personen |
 | Agentenrolle (z. B. AG-ENG-06) | Werkzeugaufrufe in FLOWWORK, Modellaufrufe | Register; Token- und Schlüsselbindung |
 | Orchestrator (FLOW-ORCHESTRATOR) | Arbeitsbaseline fixieren, Abgleich mit dem Portal | einzige Rolle mit `rm.freeze_baseline` |
 | Übernahme-Dienst | Branch nach G4 anlegen | `adoption.py`, Commit-Autor „FLOWAGENTS“ |
@@ -80,8 +89,13 @@ Sitzung (Portal) bzw. der Warteschlange der Plattform-API.
 
 - **Autonomiestufen:** Entwicklungsrollen A0 (Prüfen) oder A1 (Vorbereiten). A2/A3 nur nach
   eigener Entscheidung; A4 ist keine Agentenstufe.
-- **Änderungsklassen:** Standard (Mensch an G4/G5), Neue Funktion (+G1), Hoher Schutzbedarf (G1–G5).
-  Eine neue Vertrauensgrenze in der Architektur macht G2 immer menschlich.
+- **Einstufung:** Projektklasse S/M/L und Kritikalität K1–K3 ergeben die Änderungsklasse: Standard (Mensch an
+  G4/G5), Neue Funktion (+EP1 bei M/L, +G1), Hoher Schutzbedarf (alle Gates, ab K2). Das Projekt gibt eine
+  Mindest-Kritikalität vor. Eine neue Vertrauensgrenze in der Architektur macht G2 immer menschlich.
+- **Projektrechte:** Einreichen und Arbeitspakete starten nur mit Änderungsrecht im Projekt; entscheiden nur
+  als Projektmitglied; nur Änderungsbereiche des Projekts.
+- **Agentenkonfiguration:** Übersteuerungen durch Administratoren laufen durch dieselbe Prüfung wie das
+  Register und ändern den Registerstand; offene Läufe halten bis zur Umstellung durch einen Menschen.
 - **Rücklauf:** Nach zwei erfolglosen Korrekturrunden entscheidet der Tech Lead.
 - **Budget:** je Klasse; Nachschlag nur durch bewusste Entscheidung des Tech Leads.
 
@@ -92,6 +106,8 @@ Sitzung (Portal) bzw. der Warteschlange der Plattform-API.
 - Agenten lesen nur die Artefaktarten ihres Registereintrags (Teil 04, Tabelle „Inhalte“).
 - Die Vorschau (G4) läuft im Demo-Modus mit Testdaten, nur auf Loopback.
 - Zustand des Orchestrators privat in `~/.flow-agents` (0700).
+- Fachagenten erhalten Hintergrunddaten nur, wenn die anfragende Person selbst eine berechtigte Rolle hat;
+  sie arbeiten nur mit lokalen Modellen und liefern nur Entwürfe.
 
 ## 6a. FLOWAI (Open WebUI) und das Repository
 
@@ -118,7 +134,7 @@ eigenem Volume, frisches Home im tmpfs, read-only, `--cap-drop ALL`, kein Reposi
 | Änderungsbereich mit `complexity: hoch` (ERP-Anbindung, Plattform-Routen) | wie oben; Bereich darf bis 200 000 Zeichen groß sein |
 | Umsetzung „Codex/Claude (Abo)“ im Auftrag | wie oben |
 | zwei gescheiterte lokale Versuche desselben Schritts | dieser Schritt → Abo-Worker |
-| Datenklasse „vertraulich“ oder Umsetzung „nur lokal“ | **nie extern** |
+| Datenklasse „vertraulich“, Umsetzung „nur lokal“ oder „OpenCode (lokal)“ | **nie extern** |
 
 - Die Unabhängigkeit bleibt technisch erzwungen: Ersteller und Prüfer eines Artefakts dürfen auch
   eskaliert nicht dieselbe Modellfamilie nutzen (qwen/gemma/openai/anthropic); der Orchestrator
@@ -136,7 +152,8 @@ eigenem Volume, frisches Home im tmpfs, read-only, `--cap-drop ALL`, kein Reposi
 |---|---|
 | Verdacht auf Fehlverhalten eines Agenten | Stopp-Schalter für den Agenten, Lauf abbrechen, Audit `/agents` → FLOWWORK-Audit prüfen |
 | Kompromittiertes Geheimnis | `FLOW_AGENT_RM_SECRET`, `FLOW_AGENTS_API_SECRET`, FLOWGATE-Schlüssel tauschen; Dienste neu starten |
-| Register oder Prompts geändert | laufende Aufträge blockieren automatisch bis zur Umstellung durch den Tech Lead |
+| Register, Prompts oder Agentenkonfiguration geändert | laufende Aufträge blockieren automatisch bis zur Umstellung durch den Tech Lead |
+| Fachagent liefert unpassenden Entwurf | Entwurf verwerfen; Admin pausiert den Fachagenten oder passt die Rollenanweisung an |
 | Neustart während eines Schritts | Schritt wird als unterbrochen markiert und idempotent wiederholt |
 
 ## 9. Bekannte Lücken (vor Echtdaten zu schließen)
@@ -144,4 +161,5 @@ eigenem Volume, frisches Home im tmpfs, read-only, `--cap-drop ALL`, kein Reposi
 Kein TLS lokal; Demo-Geheimnisse; Abo-Worker teilen Anmeldung und Netze mit Trading_Ai; symmetrische Tokens statt Keycloak-Dienstkonten mit Token
 Exchange; fälschbarer Remote-User-Header im internen Netz; keine
 Modell-Evaluation je Rolle; kein Paketspiegel und keine SBOM; Vorschau nutzt das technische
-Paperless-Konto. Details und Abnahmestatus: [Sicherheit und Nachweise](sicherheit.md).
+Paperless-Konto; „Person wechseln“ nur für die Demo; Übersteuerungen und Fachagenten nicht im versionierten
+Register; Zustand in SQLite ohne Hochverfügbarkeit (Zielbild: [Orchestrierung](plattformstrategie.md)). Details und Abnahmestatus: [Sicherheit und Nachweise](sicherheit.md).
