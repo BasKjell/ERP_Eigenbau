@@ -214,3 +214,19 @@
 .ac-link { border:0; background:none; color:#0d756c; font-size:10px; font-weight:700; cursor:pointer; padding:0 2px; }
 .ac-form input:disabled, .ac-form textarea:disabled, .ac-form select:disabled { background:#f5f4ef; color:#3b4a4e; }
 .ac-form fieldset.wide { grid-column:1/-1; }
+
+/* Ansicht „Meine Sicht / Alle“ und „Wo es hängt“ */
+.ac-view { display:inline-flex; padding:3px; border:1px solid rgba(255,255,255,.18); border-radius:999px; background:rgba(255,255,255,.05); }
+.ac-view button { border:0; border-radius:999px; padding:7px 13px; background:none; color:rgba(255,255,255,.7); font:inherit; font-size:11px; font-weight:700; cursor:pointer; }
+.ac-view button.on { background:var(--ac-lime, #c8f04a); color:#102126; }
+.ac-map .node.dim { opacity:.22; transition:opacity .2s; }
+.ac-stuck { position:relative; z-index:1; margin-top:14px; }
+.ac-stuck h3 { display:flex; justify-content:space-between; margin:0 0 8px; color:#fff; font-size:13px; }
+.ac-stuck h3 span { color:rgba(255,255,255,.5); font-size:9px; letter-spacing:.08em; }
+.ac-stuck-list { display:grid; gap:6px; }
+.ac-stuck-row { display:grid; grid-template-columns:70px minmax(0,1.3fr) minmax(0,1fr) 80px; gap:12px; align-items:center; padding:9px 12px; border:1px solid rgba(255,255,255,.1); border-radius:10px; background:rgba(255,255,255,.035); color:#fff; font:inherit; font-size:11px; text-align:left; cursor:pointer; }
+.ac-stuck-row .key { color:var(--ac-lime, #c8f04a); font-weight:850; font-size:10px; }
+.ac-stuck-row b { font-size:12px; }
+.ac-stuck-row small { display:block; color:rgba(255,255,255,.55); font-size:9.5px; }
+.ac-stuck-row .since { color:rgba(255,255,255,.55); font-size:10px; text-align:right; }
+@media (max-width:760px) { .ac-stuck-row { grid-template-columns:1fr; } .ac-stuck-row .since { text-align:left; } }

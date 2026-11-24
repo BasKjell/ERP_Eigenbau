@@ -1575,7 +1575,24 @@ class Engine:
             "waiting_for": waiting["decider"] if waiting else None,
             "preview_url": (waiting or {}).get("context", {}).get("preview_url"),
             "branch": ((self.store.latest_artifact(run["id"], "uebernahme") or {}).get("content") or {}).get("branch"),
+            **self._participation(run),
         }
+
+    def _participation(self, run: dict[str, Any]) -> dict[str, Any]:
+        """Wer an einem Auftrag beteiligt ist: Personen (Auftrag, Entscheidungen) und Agenten (bisherige Schritte).
+
+        Damit zeigt die Agentenzentrale „Meine Sicht“: Aufträge, an denen ich beteiligt bin, und bei wem sie hängen.
+        """
+        people: dict[str, str] = {}
+        requester = run["requested_by"] or {}
+        if requester.get("username"):
+            people[str(requester["username"])] = str(requester.get("name") or requester["username"])
+        for decision in self.store.decisions(run_id=run["id"]):
+            person = decision.get("decided_by") or {}
+            if person.get("username"):
+                people[str(person["username"])] = str(person.get("name") or person["username"])
+        roles = list(dict.fromkeys(step["role"] for step in self.store.steps(run["id"]) if step.get("role")))
+        return {"participants": [{"username": u, "name": n} for u, n in people.items()], "agents_involved": roles}
 
     def _decision_summary(self, decision: dict[str, Any], runs: dict[str, dict[str, Any]]) -> dict[str, Any]:
         """Entscheidung mit Bezug zum Fachauftrag, damit die Person sofort sieht, worum es geht."""

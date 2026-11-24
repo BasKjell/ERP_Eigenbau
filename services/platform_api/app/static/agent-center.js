@@ -173,6 +173,9 @@ class AgentCenter {
       this.lastEvent = 0;
       this.selected = null;
       this.timer = null;
+      // Ansicht: „mine“ = nur Aufträge, an denen ich beteiligt bin, mit meinen Agenten und mir; „all“ = alles.
+      this.view = "mine";
+      try { this.view = window.localStorage.getItem("flowagents-view") === "all" ? "all" : "mine"; } catch { /* ohne Speicher */ }
       this.render();
       this.poll();
       document.addEventListener("visibilitychange", () => { if (!document.hidden) this.poll(); });
@@ -188,6 +191,7 @@ class AgentCenter {
             <p>Jede Rolle arbeitet getrennt: Agenten erstellen und prüfen sich gegenseitig, der Orchestrator erzwingt den Ablauf, und an den Gates entscheiden Menschen. Freigaben erteilt nie ein Agent.</p>
           </div>
           <div class="ac-actions">
+            <div class="ac-view" role="group" aria-label="Ansicht wählen"><button type="button" data-view="mine" title="Nur Aufträge, an denen du beteiligt bist, mit deinen Agenten und Entscheidungsrollen">Meine Sicht</button><button type="button" data-view="all" title="Alle Aufträge, Agenten und Entscheidungen">Alle</button></div>
             <button class="ac-btn primary" type="button" data-new-run>＋ Fachauftrag starten</button>
             ${this.full ? "" : '<a class="ac-btn" href="/agents">Vollansicht →</a>'}
           </div>
@@ -206,12 +210,15 @@ class AgentCenter {
             <section class="ac-panel"><h3>Live-Protokoll <span>NEUESTE ZUERST</span></h3><div class="ac-feed" data-feed></div></section>
           </aside>
         </div>
+        <section class="ac-stuck" data-stuck></section>
         <div class="ac-runs" data-runs></div>
         <div data-offline></div>
         ${this.full ? '<div data-full-extra></div>' : ""}
         ${this.dialogMarkup()}`;
       this.$ = (selector) => this.root.querySelector(selector);
       this.$("[data-new-run]").addEventListener("click", () => this.openRunDialog());
+      this.root.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => this.setView(button.dataset.view)));
+      this.markView();
       this.bindDialog();
     }
 
@@ -230,9 +237,95 @@ class AgentCenter {
       if (!document.hidden) this.timer = setTimeout(() => this.poll(), POLL_MS);
     }
 
+    setView(view) {
+      this.view = view === "all" ? "all" : "mine";
+      try { window.localStorage.setItem("flowagents-view", this.view); } catch { /* ohne Speicher */ }
+      this.markView();
+      this.inboxSignature = this.runsSignature = this.stuckSignature = "";
+      this.feedNewest = 0;
+      if (this.data) this.update(this.data);
+    }
+
+    markView() {
+      this.root.querySelectorAll("[data-view]").forEach((button) => {
+        button.classList.toggle("on", button.dataset.view === this.view);
+        button.setAttribute("aria-pressed", String(button.dataset.view === this.view));
+      });
+    }
+
+    // Wer bin ich in diesem Lauf? Beteiligt = beauftragt oder entschieden, oder er wartet auf meine Rolle.
+    involvement(data) {
+      const me = data.viewer?.username || "";
+      const roles = new Set(data.viewer?.roles || []);
+      const deciders = new Set(Object.entries(data.human_roles || {})
+        .filter(([, spec]) => (spec.keycloak_roles || []).some((r) => roles.has(r))).map(([name]) => name));
+      const involved = (run) => (run.participants || []).some((p) => p.username === me) || (!!run.waiting_for && deciders.has(run.waiting_for));
+      return { me, deciders, involved };
+    }
+
+    viewData(data) {
+      if (this.view !== "mine") return data;
+      const { deciders, involved } = this.involvement(data);
+      const runs = (data.runs || []).filter(involved);
+      const ids = new Set(runs.map((r) => r.id));
+      return { ...data, runs,
+        decisions: (data.decisions || []).filter((d) => ids.has(d.run_id) || deciders.has(d.decider)),
+        events: (data.events || []).filter((e) => e.run_id && ids.has(e.run_id)) };
+    }
+
+    // Karte in „Meine Sicht“: nur meine Agenten, meine Entscheidungsrollen und die Gates meiner Aufträge hervorheben.
+    applyFocus(data, view) {
+      const map = this.$("[data-map]");
+      if (!map) return;
+      const focus = new Set();
+      if (this.view === "mine") {
+        const { deciders } = this.involvement(data);
+        deciders.forEach((name) => focus.add(`mensch:${name}`));
+        for (const run of view.runs || []) {
+          (run.agents_involved || []).forEach((role) => focus.add(role));
+          if (run.role) focus.add(run.role);
+          if (run.step) focus.add(run.step);
+          if (run.waiting_for) focus.add(`mensch:${run.waiting_for}`);
+        }
+      }
+      map.classList.toggle("ac-mine", this.view === "mine");
+      map.querySelectorAll("[data-node]").forEach((node) => node.classList.toggle("dim", this.view === "mine" && !focus.has(node.dataset.node)));
+    }
+
+    // Wo hängt jeder offene Auftrag gerade: bei einem Agenten, bei einer Person (Rolle) oder blockiert.
+    renderStuck(data, view) {
+      const box = this.$("[data-stuck]");
+      const open = (view.runs || []).filter((r) => ["aktiv", "wartet", "blockiert", "pausiert"].includes(r.status));
+      const { deciders, involved } = this.involvement(data);
+      const agents = Object.fromEntries((data.agents || []).map((a) => [a.role, a]));
+      const signature = JSON.stringify([this.view, open.map((r) => [r.id, r.status, r.step, r.waiting_for, r.updated_at]), (data.agents || []).map((a) => a.state)]);
+      if (signature === this.stuckSignature) return;
+      this.stuckSignature = signature;
+      const since = (value) => { const minutes = Math.max(0, Math.round((Date.now() - Date.parse(value)) / 60000)); return minutes < 60 ? `seit ${minutes} min` : `seit ${Math.round(minutes / 60)} h`; };
+      const holder = (run) => {
+        if (run.status === "wartet" && run.waiting_for) {
+          const label = data.human_roles?.[run.waiting_for]?.label || run.waiting_for;
+          return `<span class="ac-chip amber">Mensch</span> <b>${esc(label)}</b>${deciders.has(run.waiting_for) ? ' <span class="ac-chip lime">du</span>' : ""}`;
+        }
+        if (run.status === "blockiert") return `<span class="ac-chip red">blockiert</span> ${esc(run.reason || "")}${run.waiting_for ? ` · wartet auf <b>${esc(data.human_roles?.[run.waiting_for]?.label || run.waiting_for)}</b>${deciders.has(run.waiting_for) ? ' <span class="ac-chip lime">du</span>' : ""}` : ""}`;
+        if (run.status === "pausiert") return `<span class="ac-chip red">pausiert</span> ${esc(run.reason || "")}`;
+        const agent = agents[run.role];
+        return agent ? `<span class="ac-chip">Agent</span> <b>${esc(agent.name)}</b> <small>${esc(STATE_LABEL[agent.state] || agent.state)}</small>` : `<span class="ac-chip">Orchestrator</span> ${esc(run.step_label)}`;
+      };
+      const title = this.view === "mine" ? "Wo meine Aufträge gerade hängen" : "Wo alle offenen Aufträge gerade hängen";
+      box.innerHTML = `<h3>${title} <span>${open.length} OFFEN</span></h3>${open.length ? `<div class="ac-stuck-list">${open.map((run) => `
+        <button class="ac-stuck-row" type="button" data-run="${esc(run.id)}"><span class="key">${esc(run.auftrag_id)}</span><span><b>${esc(run.title)}</b><small>${esc(run.step_label)}${run.project ? ` · ${esc(run.project)}` : ""} · beauftragt von ${esc(run.requested_by || "–")}${this.view === "all" && involved(run) ? " · du bist beteiligt" : ""}</small></span><span>${holder(run)}</span><span class="since">${esc(since(run.updated_at))}</span></button>`).join("")}</div>`
+        : `<div class="ac-empty">${this.view === "mine" ? "Du bist an keinem offenen Auftrag beteiligt. „Alle“ zeigt die übrigen." : "Kein offener Auftrag."}</div>`}`;
+      box.querySelectorAll("[data-run]").forEach((element) => element.addEventListener("click", () => {
+        if (this.full) this.openRun(element.dataset.run);
+        else window.location.href = `/agents?run=${encodeURIComponent(element.dataset.run)}`;
+      }));
+    }
+
     update(data) {
       const previous = this.lastEvent;
       this.data = data;
+      const view = this.viewData(data);
       const online = data.available !== false;
       this.$("[data-live]").classList.toggle("off", !online || data.control === "pausiert");
       const providers = Object.values(data.providers || {});
@@ -243,9 +336,11 @@ class AgentCenter {
       this.$("[data-offline]").innerHTML = online ? "" : `<div class="ac-offline">${esc(data.reason || "Orchestrator nicht erreichbar")}. Angezeigt wird nur das Agentenregister. Start: <code>make agents-up</code></div>`;
       this.renderMetrics(data);
       this.renderMap(data, previous);
-      this.renderInbox(data);
-      this.renderFeed(data, previous);
-      this.renderRuns(data);
+      this.applyFocus(data, view);
+      this.renderInbox(view);
+      this.renderFeed(view, previous);
+      this.renderStuck(data, view);
+      this.renderRuns(view);
       if (this.selected) this.showDetail(this.selected);
       if (this.full) this.renderFull(data);
       const newest = Math.max(0, ...(data.events || []).map((e) => e.id));
@@ -334,7 +429,7 @@ class AgentCenter {
       }
       svg.innerHTML = parts.join("");
       svg.querySelectorAll("[data-node]").forEach((element) => {
-        const select = () => { this.selected = element.dataset.node; this.renderMap(this.data, Infinity); this.showDetail(this.selected); };
+        const select = () => { this.selected = element.dataset.node; this.renderMap(this.data, Infinity); this.applyFocus(this.data, this.viewData(this.data)); this.showDetail(this.selected); };
         element.addEventListener("click", select);
         element.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); } });
       });
@@ -718,7 +813,7 @@ class AgentCenter {
       if (!this.scopes && (data.projects || []).some((p) => p.packages.some((k) => k.status === "bereit" && !k.scope))) this.loadScopes();
       extra.querySelector("[data-global]")?.addEventListener("click", (event) => this.control(event.currentTarget.dataset.global));
       extra.querySelector("[data-audit]")?.addEventListener("click", (event) => { event.preventDefault(); this.loadAudit(); });
-      extra.querySelectorAll("[data-card]").forEach((card) => card.addEventListener("click", () => { this.selected = card.dataset.card; this.renderMap(this.data, Infinity); this.showDetail(this.selected); this.root.scrollIntoView({ behavior: "smooth" }); }));
+      extra.querySelectorAll("[data-card]").forEach((card) => card.addEventListener("click", () => { this.selected = card.dataset.card; this.renderMap(this.data, Infinity); this.applyFocus(this.data, this.viewData(this.data)); this.showDetail(this.selected); this.root.scrollIntoView({ behavior: "smooth" }); }));
     }
 
     async loadAudit() {

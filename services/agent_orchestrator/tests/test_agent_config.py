@@ -102,3 +102,17 @@ def test_configuration_through_the_platform_sync(make_engine) -> None:  # noqa: 
     assert done["status"] == 200 and done["body"]["overridden"] == ["owner"]
     missing = sync.execute({"kind": "agent_config", "payload": {"role": "gibt_es_nicht"}})
     assert missing["status"] == 404
+
+
+def test_run_summary_names_participants_and_involved_agents(make_engine) -> None:  # noqa: ANN001
+    from .conftest import KEY_USER, open_decision
+
+    engine = make_engine()
+    run = engine.submit(auftrag(), PO, "cfg-0002-test")
+    drive(engine)
+    engine.decide(open_decision(engine, run["id"])["id"], KEY_USER, "annehmen", "geprüft")
+    drive(engine)
+    summary = next(r for r in engine.overview()["runs"] if r["id"] == run["id"])
+    assert {p["username"] for p in summary["participants"]} == {PO["username"], KEY_USER["username"]}
+    assert {"anforderungen", "entwicklung", "codepruefung"} <= set(summary["agents_involved"])
+    assert summary["waiting_for"] == "release"

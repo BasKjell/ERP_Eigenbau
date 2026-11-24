@@ -64,6 +64,20 @@ Auf der Startseite (kompakt) und unter **`/agents`** (vollständig):
   Werkzeug prüft (FLOWWORK RM-Adapter, Orchestrator-Sandbox), was er liest, seine Grenzen und was er
   nie darf.
 
+### Meine Sicht und Alle
+
+Oben rechts in der Agentenzentrale wechselt man zwischen zwei Ansichten (die Wahl bleibt im Browser
+gespeichert):
+
+| Ansicht | Zeigt |
+|---|---|
+| **Meine Sicht** | nur Aufträge, an denen du beteiligt bist (selbst beauftragt, selbst entschieden oder sie warten auf eine deiner Entscheidungsrollen); auf der Karte sind nur die Agenten dieser Aufträge, deine Entscheidungsrollen und die betroffenen Gates hervorgehoben |
+| **Alle** | alle Aufträge, Entscheidungen und Agenten; Aufträge mit deiner Beteiligung tragen den Hinweis „du bist beteiligt“ |
+
+Die Liste **„Wo es gerade hängt“** nennt je offenem Auftrag, bei wem er liegt: bei einem **Agenten**
+(mit Zustand, z. B. „arbeitet“), bei einer **Person** in einer Entscheidungsrolle (mit „du“, wenn du sie
+hast), oder **blockiert**/**pausiert** mit Grund, jeweils mit „seit …“. Ein Klick öffnet den Auftrag.
+
 ### Konfiguration eines Agenten ansehen und ändern
 
 Auf der Karte einen Agenten anklicken und **Konfiguration ansehen** wählen. Das Fenster zeigt alles, was
