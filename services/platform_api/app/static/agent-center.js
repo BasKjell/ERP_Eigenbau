@@ -802,8 +802,8 @@ class AgentCenter {
       extra.innerHTML = `
         ${catalogPanel(data)}
         ${projectsPanel(data, this.scopes)}
-        <section class="ac-panel" style="margin-top:14px"><h3>Agentenregister <span>${esc(data.registry?.id || "")} · ${esc(data.registry?.policy_version || "")}</span></h3>
-          <div class="agent-grid">${(data.agents || []).map((a) => `<article class="agent-card ${esc(a.state)}" data-card="${esc(a.role)}"><header><span class="code">${a.role === "geschaeftsfuehrung" ? "GF" : String(a.number).padStart(2, "0")}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip ${a.state === "arbeitet" ? "lime" : a.state === "wartet" ? "amber" : ""}">${esc(STATE_LABEL[a.state] || a.state)}</span></header><p>${esc(a.mission || a.scope || "")}</p><div class="chips"><span class="ac-chip">Stufe ${esc(a.autonomy)}</span><span class="ac-chip">${esc(a.model_profile || "")} ${a.family ? `/ ${esc(a.family)}` : ""}</span><span class="ac-chip">${esc(a.status)}</span></div></article>`).join("")}</div>
+        <section class="ac-panel" style="margin-top:14px"><h3>Agentenregister <span>${esc(data.registry?.id || "")} · ${esc(data.registry?.policy_version || "")} · STAND ${esc(data.registry?.digest || "")}</span></h3>
+          ${registerPanel(data)}
           ${(data.productive_agents || []).length ? `<h3 style="margin-top:14px">Produktive Fachagenten <span>STARTBESTAND KI-U-02</span></h3><div class="agent-grid">${data.productive_agents.map((a) => `<article class="agent-card"><header><span class="code">${esc(a.autonomy)}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip">${esc(a.status)}</span></header><p>${esc(a.scope)}</p></article>`).join("")}</div>` : ""}
         </section>
         ${rightsMatrix(data)}
@@ -813,7 +813,10 @@ class AgentCenter {
       if (!this.scopes && (data.projects || []).some((p) => p.packages.some((k) => k.status === "bereit" && !k.scope))) this.loadScopes();
       extra.querySelector("[data-global]")?.addEventListener("click", (event) => this.control(event.currentTarget.dataset.global));
       extra.querySelector("[data-audit]")?.addEventListener("click", (event) => { event.preventDefault(); this.loadAudit(); });
-      extra.querySelectorAll("[data-card]").forEach((card) => card.addEventListener("click", () => { this.selected = card.dataset.card; this.renderMap(this.data, Infinity); this.applyFocus(this.data, this.viewData(this.data)); this.showDetail(this.selected); this.root.scrollIntoView({ behavior: "smooth" }); }));
+      const showOnMap = (role) => { this.selected = role; this.renderMap(this.data, Infinity); this.applyFocus(this.data, this.viewData(this.data)); this.showDetail(this.selected); this.root.scrollIntoView({ behavior: "smooth" }); };
+      extra.querySelectorAll("[data-card]").forEach((card) => card.addEventListener("click", () => showOnMap(card.dataset.card)));
+      extra.querySelectorAll("[data-register-config]").forEach((button) => button.addEventListener("click", () => this.openAgentConfig(button.dataset.registerConfig)));
+      extra.querySelectorAll("[data-register-map]").forEach((button) => button.addEventListener("click", () => showOnMap(button.dataset.registerMap)));
     }
 
     async loadAudit() {
@@ -883,6 +886,47 @@ class AgentCenter {
 
   function deciderChips(rights) {
     return (rights.decided_by || []).map((d) => `<span class="ac-chip amber" title="${esc(d.why)} · Keycloak: ${esc((d.keycloak_roles || []).join(", "))}">${esc(d.gate)} · ${esc(d.label)}</span>`).join(" ") || '<span class="ac-chip">kein Gate</span>';
+  }
+
+  // Agentenregister: je Agent Rolle, Aufgaben im Ablauf, Prüfung, Modell, Werkzeuge und Daten.
+  function registerPanel(data) {
+    const agents = data.agents || [];
+    const byRole = Object.fromEntries(agents.map((a) => [a.role, a]));
+    const canEdit = (data.viewer?.roles || []).includes("platform-admin");
+    const providerLabel = { gateway: "lokal über FLOWGATE", simulated: "Simulator", opencode: "OpenCode (lokal)", codex: "Codex (Abo)", claude: "Claude (Abo)" };
+    const tasks = (agent) => (data.pipeline || []).filter((step) => step.role === agent.role).map((step) => {
+      const what = step.kind === "review" ? `prüft <i>${esc(step.subject || "")}</i>` : step.produces ? `erstellt <i>${esc(step.produces)}</i>` : "";
+      const only = step.when?.project_class ? ` <span class="ac-chip">nur ${esc(step.when.project_class.join("/"))}</span>` : "";
+      return `<li><b>${esc(step.label)}</b>${what ? ` – ${what}` : ""}${only}</li>`;
+    }).join("");
+    const reviews = (agent) => agents.filter((a) => a.reviewed_by === agent.role).map((a) => esc(a.name)).join(", ");
+    return `<div class="ac-hint">Jeder Agent handelt nur über seine technische Rolle. Aufgaben sind die Schritte im Ablauf (agents/workflow.yaml); Eigenschaften aus agents/registry.yaml${agents.some((a) => (a.overridden || []).length) ? ", mit Übersteuerungen aus der Agentenzentrale (gelb markiert)" : ""}.</div>
+      <div class="ac-register">${agents.map((a) => {
+        const r = a.rights || {};
+        const limits = Object.entries(a.limits || r.limits || {}).map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(" · ");
+        const reviewer = a.reviewed_by ? byRole[a.reviewed_by] : null;
+        const changed = (a.overridden || []).length;
+        return `<article class="ac-register-card ${esc(a.state)}">
+          <header><span class="code">${a.role === "geschaeftsfuehrung" ? "GF" : String(a.number).padStart(2, "0")}</span>
+            <div><b>${esc(a.name)}</b><small>${esc(a.id)} · Rolle <code>${esc(a.role)}</code></small></div>
+            <span class="ac-chip ${a.state === "arbeitet" ? "lime" : a.state === "wartet" ? "amber" : a.state === "pausiert" ? "red" : ""}">${esc(STATE_LABEL[a.state] || a.state)}</span></header>
+          <div class="chips"><span class="ac-chip">${a.kind === "review" ? "Prüfer" : "Ersteller"}</span><span class="ac-chip">Stufe ${esc(a.autonomy)}</span><span class="ac-chip">${esc(a.status)}</span>${changed ? `<span class="ac-chip amber" title="${esc((a.overridden || []).join(", "))}">${changed} Feld${changed > 1 ? "er" : ""} geändert</span>` : ""}</div>
+          <p>${esc(a.mission || "")}</p>
+          <dl>
+            <dt>Verantwortlich</dt><dd>${esc(a.owner)}${a.deputy && a.deputy !== "offen" ? ` · Vertretung ${esc(a.deputy)}` : ""}</dd>
+            <dt>Aufgaben</dt><dd>${tasks(a) ? `<ul>${tasks(a)}</ul>` : "–"}</dd>
+            <dt>Geprüft von</dt><dd>${reviewer ? esc(reviewer.name) : a.kind === "review" ? "– (ist selbst Prüfer)" : "Mensch am nächsten Gate"}${reviews(a) ? `<br><small>prüft selbst: ${reviews(a)}</small>` : ""}</dd>
+            <dt>Freigabe durch</dt><dd>${deciderChips(r) || "–"}</dd>
+            <dt>Modell</dt><dd>${esc(a.model_profile || "")} → ${esc(r.model?.alias || "")} (${esc(a.family || "")}) · ${esc(providerLabel[data.providers?.[a.model_profile]] || data.providers?.[a.model_profile] || "")}${r.model?.escalation ? ` · komplex: ${esc(ESCALATION_LABEL[r.model.escalation] || r.model.escalation)}` : ""}</dd>
+            <dt>Werkzeuge</dt><dd>${(a.tools || []).map((t) => `<span class="ac-chip" title="${esc((r.tools || []).find((x) => x.name === t)?.label || "")}">${esc(t)}</span>`).join(" ") || "–"}</dd>
+            <dt>Liest</dt><dd>${(a.reads || []).map((k) => `<span class="ac-chip">${esc(k)}</span>`).join(" ") || "–"}</dd>
+            <dt>Daten</dt><dd>${(a.data_classes || []).map((c) => esc(DATA_LABEL[c] || c)).join(", ") || "–"}${limits ? `<br><small>${limits}</small>` : ""}</dd>
+            <dt>Eskalation</dt><dd>${esc(a.escalation || "–")}</dd>
+            <dt>Freigegeben bis</dt><dd>${esc(a.approved_until || "")}</dd>
+          </dl>
+          <div class="chips"><button class="ac-btn small primary" type="button" data-register-config="${esc(a.role)}">${canEdit ? "Konfiguration ändern" : "Konfiguration und Prompt ansehen"}</button><button class="ac-btn small" type="button" data-register-map="${esc(a.role)}">Auf der Karte zeigen</button></div>
+        </article>`;
+      }).join("")}</div>`;
   }
 
   function rightsBlock(agent) {

@@ -1509,6 +1509,7 @@ class Engine:
                 state = "pausiert"
             last = next((e for e in reversed(events) if e["actor"] == agent.role), None)
             agents.append({**agent.public(), "rights": self._agent_rights(agent), "state": state, "current": current,
+                           "overridden": sorted((self.registry.overrides.get(agent.role) or {}).keys()),
                            "last": {"message": last["message"], "at": last["at"]} if last else None})
         edges: Counter[tuple[str, str, str]] = Counter()
         last_seen: dict[tuple[str, str, str], str] = {}
@@ -1534,7 +1535,8 @@ class Engine:
                                    "open": sum(1 for d in open_decisions if d["decider"] == name)}
                             for name, spec in self.registry.human_roles.items()},
             "pipeline": [{"id": s.id, "label": s.label, "kind": s.kind, "role": s.role, "decider": s.decider,
-                          "ep": s.ep, "when": {k: list(v) for k, v in s.when.items()}} for s in steps],
+                          "ep": s.ep, "when": {k: list(v) for k, v in s.when.items()}, "produces": s.produces,
+                          "subject": s.subject} for s in steps],
             "runs": [self._run_summary(run, open_decisions) for run in runs],
             "projects": [self.project_summary(project) for project in self.store.projects(limit=20)],
             "project_catalog": self.project_catalog(),

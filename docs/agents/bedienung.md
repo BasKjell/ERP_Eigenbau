@@ -80,7 +80,14 @@ hast), oder **blockiert**/**pausiert** mit Grund, jeweils mit „seit …“. Ei
 
 ### Konfiguration eines Agenten ansehen und ändern
 
-Auf der Karte einen Agenten anklicken und **Konfiguration ansehen** wählen. Das Fenster zeigt alles, was
+In der Vollansicht `/agents` steht unten das **Agentenregister**: je Agent eine Karte mit technischer
+Rolle, Ersteller oder Prüfer, Stufe, Status, Verantwortlichen, **Aufgaben** (die Schritte im Ablauf und
+was dabei entsteht, z. B. „Akzeptanztests aus der Baseline ableiten – erstellt akzeptanztests“), wer
+prüft und freigibt, Modell und Ausführung, Werkzeuge, lesbare Ergebnisse, Datenklassen, Grenzen,
+Eskalation und Freigabedatum. Geänderte Agenten tragen den Hinweis „… Felder geändert“.
+
+Von dort, oder auf der Karte über einen Agenten, öffnet **Konfiguration und Prompt ansehen** bzw.
+**Konfiguration ändern** das Konfigurationsfenster. Das Fenster zeigt alles, was
 den Agenten ausmacht: Ausführung (lokal über FLOWGATE, OpenCode, Codex/Claude), Modell und Modellfamilie,
 Status, Stufe, Verantwortliche, Auftrag, Werkzeuge, lesbare Ergebnisse, Datenklassen, Grenzen, die
 vollständige Rollenanweisung (Prompt) und das Änderungsprotokoll.

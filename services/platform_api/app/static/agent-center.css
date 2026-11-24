@@ -230,3 +230,23 @@
 .ac-stuck-row small { display:block; color:rgba(255,255,255,.55); font-size:9.5px; }
 .ac-stuck-row .since { color:rgba(255,255,255,.55); font-size:10px; text-align:right; }
 @media (max-width:760px) { .ac-stuck-row { grid-template-columns:1fr; } .ac-stuck-row .since { text-align:left; } }
+
+/* Agentenregister mit Rolle, Aufgaben und Konfiguration */
+.ac-register { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:10px; }
+.ac-register-card { padding:13px; border:1px solid rgba(255,255,255,.1); border-radius:12px; background:rgba(255,255,255,.035); }
+.ac-register-card.arbeitet { border-color:rgba(200,240,74,.55); }
+.ac-register-card.wartet { border-color:rgba(255,196,107,.5); }
+.ac-register-card header { display:grid; grid-template-columns:34px 1fr auto; gap:9px; align-items:center; }
+.ac-register-card .code { width:34px; height:34px; display:grid; place-items:center; border-radius:9px; background:rgba(200,240,74,.14); color:var(--ac-lime); font-size:10px; font-weight:900; }
+.ac-register-card b { display:block; font-size:12px; }
+.ac-register-card small { color:rgba(255,255,255,.5); font-size:9.5px; }
+.ac-register-card code { color:rgba(255,255,255,.8); font-size:9.5px; }
+.ac-register-card p { margin:8px 0; color:rgba(255,255,255,.75); font-size:10.5px; line-height:1.45; }
+.ac-register-card dl { display:grid; grid-template-columns:96px 1fr; gap:5px 10px; margin:8px 0 10px; font-size:10.5px; }
+.ac-register-card dt { color:rgba(255,255,255,.5); font-size:9px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding-top:2px; }
+.ac-register-card dd { margin:0; color:rgba(255,255,255,.85); }
+.ac-register-card ul { margin:0; padding-left:15px; }
+.ac-register-card li { margin:0 0 2px; }
+.ac-register-card i { color:var(--ac-lime); font-style:normal; }
+.ac-register-card .chips { gap:5px; }
+@media (max-width:760px) { .ac-register { grid-template-columns:1fr; } .ac-register-card dl { grid-template-columns:1fr; } }
