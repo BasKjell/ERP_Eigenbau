@@ -150,6 +150,7 @@ nav:
       - Entscheidungen: architecture/decisions.md
       - Sicherheit: architecture/security.md
       - IAM-Sicherheitskonzept (BSI): architecture/iam-security-concept.md
+      - KI-Gateway-Konzept (FLOWGATE): architecture/ai-gateway-concept.md
   - Konzepte:
       - "Übersicht": konzepte/index.md
       - "KI-Softwareentwicklung (V-Modell)":

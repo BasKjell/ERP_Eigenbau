@@ -1,6 +1,6 @@
 # 09 Regeln für Gateway und lokale Modellserver
 
-Dieser Teil spezifiziert das erwartete Verhalten. Die frühere YAML-Skizze mit unverschlüsselten Backend-Adressen, nicht nachgewiesenen Produktfeldern und vollständigen Werkzeugargumenten im Log wird durch prüfbare Regeln ersetzt. Der Plattformbetrieb erstellt die ausführbare Konfiguration für die tatsächlich installierte Version und validiert sie gegen deren Schema.
+Dieser Teil spezifiziert das erwartete Verhalten. Die frühere YAML-Skizze mit unverschlüsselten Backend-Adressen, nicht nachgewiesenen Produktfeldern und vollständigen Werkzeugargumenten im Log wird durch prüfbare Regeln ersetzt. Der Plattformbetrieb erstellt die ausführbare Konfiguration für die tatsächlich installierte Version und validiert sie gegen deren Schema. Umsetzung in der Referenzumgebung: [KI-Gateway-Konzept SEC-AI-001](../../architecture/ai-gateway-concept.md).
 
 ## Reihenfolge der Autorisierung
 

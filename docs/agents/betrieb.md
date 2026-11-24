@@ -6,7 +6,7 @@
 |---|---|---|
 | Orchestrator | Host-Dienst, `scripts/flow_agents.sh`, Zustand in `~/.flow-agents` (0700) | Ablauf, Gates, Budgets, Ereignisse; SQLite mit WAL |
 | Plattform-API | Container `platform-api` | Agentenzentrale (BFF), RM-Adapter `/api/rm/v1`, Abgleich `/api/agents/sync` |
-| FLOWGATE | Container `agentgateway`, LLM-Listener `127.0.0.1:4000` | je Rolle ein virtueller Schlüssel, nur das Modellprofil der Rolle |
+| FLOWGATE | Container `agentgateway`, LLM-Listener `127.0.0.1:4000` | je Rolle ein virtueller Schlüssel, nur das Modellprofil der Rolle ([SEC-AI-001](../architecture/ai-gateway-concept.md)) |
 | Modelle | Ollama auf dem Host | `flow-builder`/`flow-assist` → qwen3:8b, `flow-coder` → qwen3-coder:30b, `flow-reviewer` → gemma3:12b |
 | Prüf-Sandbox | Image `flow-agents-sandbox:1` | Lint und Tests am exakten Stand, `--network none`, read-only, ohne Zugangsdaten |
 | Vorschau und Prüfbrowser | `flow-agents-preview` (Port 8098), Image `flow-agents-ui-runner:1`, Netz `flow-agents-ui` | Kandidat im Demo-Modus für G4, Klickprüfung |

@@ -1,7 +1,7 @@
 # FLOWGATE / Agentgateway administrieren
 
-FLOWGATE ist die zentrale Modellschicht zwischen FLOWAI und dem lokalen
-Ollama. Eingesetzt wird Agentgateway 1.7 unter Apache-2.0-Lizenz. Die
+FLOWGATE ist die zentrale Modellschicht zwischen FLOWAI, den FLOWAGENTS-Agenten und dem
+lokalen Ollama. Regeln und Zielbild: [KI-Gateway-Konzept SEC-AI-001](../../architecture/ai-gateway-concept.md). Eingesetzt wird Agentgateway 1.7 unter Apache-2.0-Lizenz. Die
 Benutzeroberfläche ist unter <http://localhost:4001/ui/> erreichbar und wird
 mit Keycloak geschützt.
 
@@ -11,16 +11,21 @@ mit Keycloak geschützt.
 flowchart LR
   U[Benutzer] -->|Keycloak-SSO| UI[FLOWAI / Open WebUI]
   UI -->|virtueller Dienstschlüssel| GW[FLOWGATE / Agentgateway]
+  AG[FLOWAGENTS Orchestrator] -->|Schlüssel je Agentenrolle| GW
   A[platform-admin] -->|Keycloak OIDC + Rollen-Claim| ADMIN[FLOWGATE Admin-UI]
   GW -->|OpenAI-kompatibel| O[Ollama auf dem Mac]
   O --> Q1[qwen3:8b]
   O --> Q2[qwen3-coder:30b]
+  O --> Q3[gemma3:12b]
 ```
 
 FLOWAI besitzt keinen direkten Ollama-Zugang. Es ruft intern
 `http://agentgateway:4000/v1` auf. FLOWGATE prüft den virtuellen Schlüssel und
 erlaubt diesem Dienstkonto ausschließlich die beiden deklarierten Qwen-
-Modelle. Der Modellendpunkt wird nicht auf dem Host veröffentlicht.
+Modelle. Die FLOWAGENTS-Rollen und Fachagenten haben je einen eigenen Schlüssel, der nur
+ihren Modellalias erlaubt (`flow-builder`, `flow-assist`, `flow-coder`, `flow-reviewer`;
+Übersicht in SEC-AI-001). Der Modellendpunkt ist auf dem Host nur über Loopback
+(`127.0.0.1:4000`) erreichbar, weil der Orchestrator als Host-Dienst läuft.
 
 Die Admin-Oberfläche läuft getrennt auf Port 4001. Agentgateway führt dort den
 OIDC-Code-Flow selbst aus. Nur ein ID-Token mit der Realm-Rolle
@@ -40,7 +45,8 @@ Danach prüfen:
 1. <http://localhost:4001/ui/> öffnen. Keycloak muss die Anmeldung übernehmen.
 2. Mit `demo01` anmelden. Das Konto erbt `platform-admin` aus der simulierten
    AD-Gruppe und darf FLOWGATE öffnen.
-3. Unter **LLM > Models** müssen `qwen3:8b` und `qwen3-coder:30b` erscheinen.
+3. Unter **LLM > Models** müssen `qwen3:8b`, `qwen3-coder:30b` und die Aliasse `flow-builder`,
+   `flow-assist`, `flow-coder` und `flow-reviewer` erscheinen.
 4. FLOWAI unter <http://localhost:3001> öffnen, `qwen3:8b` wählen und eine
    Testfrage stellen.
 5. Ein Aufruf ohne gültigen virtuellen Schlüssel muss am Modellendpunkt mit
@@ -53,6 +59,7 @@ Danach prüfen:
 | `deployment/agentgateway/config.yaml` | Modelle, strikte Schlüsselprüfung, OIDC und Admin-Rolle |
 | `AGENTGATEWAY_OLLAMA_BASE_URL` | Ollama-Endpunkt, lokal standardmäßig `host.docker.internal:11434/v1` |
 | `AGENTGATEWAY_OPENWEBUI_KEY` | virtueller, auf FLOWAI begrenzter Dienstschlüssel |
+| `FLOW_AGENT_GATEWAY_KEY_<ROLLE>`, `FLOW_AGENT_GATEWAY_KEY_FACHAGENTEN` | Schlüssel je Agentenrolle bzw. für Fachagenten (gleiche Werte in `.env` und in der Umgebung des Orchestrators) |
 | `AGENTGATEWAY_OIDC_CLIENT_SECRET` | Geheimnis des Keycloak-Clients `agentgateway-ui` |
 | `AGENTGATEWAY_OIDC_COOKIE_SECRET` | 32 zufällige Bytes als 64 Hex-Zeichen für Sitzungs-Cookies |
 | `AGENTGATEWAY_SESSION_KEY` | separater Schlüssel für verschlüsselte Gateway-Sitzungs-IDs |

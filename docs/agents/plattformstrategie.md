@@ -87,7 +87,7 @@ flowchart TB
 
 ### Regeln, die für jedes Werkzeug gelten
 
-- **Modelle nur über FLOWGATE**, mit eigenem Schlüssel je Dienst bzw. Agent und nur den freigegebenen
+- **Modelle nur über FLOWGATE** ([KI-Gateway-Konzept SEC-AI-001](../architecture/ai-gateway-concept.md)), mit eigenem Schlüssel je Dienst bzw. Agent und nur den freigegebenen
   Aliassen. Kein direkter Anbieterzugang aus n8n oder Dify.
 - **Anmeldung nur über Keycloak**; Rechte aus AD-Gruppen. Bei n8n ist dafür die passende bezahlte Edition
   nötig; ohne SSO kein Produktivbetrieb.
