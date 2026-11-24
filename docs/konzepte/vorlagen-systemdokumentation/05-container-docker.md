@@ -1,6 +1,6 @@
 # V05 Container: Images und Docker/Compose
 
-Vorlagen-ID V05 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V05 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -25,12 +25,9 @@ Vorlagen-ID V05 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur intern
 
 ### Schritt A2: Regeln für Images
 
-- ☐ Images kommen nur aus der freigegebenen internen Registry [FIRMENANGABE V-05].
-- ☐ Images werden über den Digest referenziert, nicht über veränderliche Tags wie „latest“.
-- ☐ Container laufen nicht als root, außer mit dokumentierter Begründung.
-- ☐ Images enthalten keine Geheimnisse, Schlüssel oder Zugangsdaten.
-- ☐ Images werden nach Vorgabe neu gebaut bzw. aktualisiert, auch ohne eigene Codeänderung (siehe V11).
-- ☐ Für jedes Image liegt eine SBOM vor.
+[HINWEIS: Beschreiben, wie das im System umgesetzt bzw. erledigt ist; Abweichungen mit Begründung. Typische Punkte: Images kommen nur aus der freigegebenen internen Registry [FIRMENANGABE V-05]; Images werden über den Digest referenziert, nicht über veränderliche Tags wie „latest“; Container laufen nicht als root, außer mit dokumentierter Begründung; Images enthalten keine Geheimnisse, Schlüssel oder Zugangsdaten; Images werden nach Vorgabe neu gebaut bzw. aktualisiert, auch ohne eigene Codeänderung (siehe V11); Für jedes Image liegt eine SBOM vor.]
+
+{{Beschreibung}}
 
 ### Schritt A3: Offene Befunde und Ausnahmen
 
@@ -100,14 +97,6 @@ Veröffentlichte Ports stehen in V03 Schritt 2. [HINWEIS: Docker gibt veröffent
 | Images mit Digest | `docker image ls --digests`, `docker compose images` |
 | Sicherheitseinstellungen eines Containers | `docker inspect <container>` (Felder Config.User, HostConfig.Privileged, HostConfig.CapAdd, HostConfig.CapDrop, HostConfig.ReadonlyRootfs, HostConfig.SecurityOpt) |
 | Schwachstellenscan und SBOM | zum Beispiel `trivy image <image>`, `syft <image>` |
-
-## Prüfpunkte
-
-- ☐ Jedes laufende Image steht in Schritt A1 mit Digest.
-- ☐ Kein Container läuft privilegiert ohne genehmigte Begründung.
-- ☐ Keine offenen kritischen Befunde ohne genehmigte Ausnahme.
-- ☐ Compose-Dateien liegen versioniert im Git; im Git stehen keine Geheimnisse.
-- ☐ Interne Dienste wie Datenbanken sind nicht nach außen veröffentlicht.
 
 ## Unternehmensweite Festlegungen
 

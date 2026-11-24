@@ -1,6 +1,6 @@
-# V01 Systemsteckbrief, Schutzbedarf und Modellierung
+# V01 Systemsteckbrief und Schutzbedarf
 
-Vorlagen-ID V01 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V01 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -13,7 +13,7 @@ Vorlagen-ID V01 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur intern
 | Ausfüllen | Systemverantwortliche Person gemeinsam mit dem IT-Betrieb |
 | Prüfen | ISB; bei personenbezogenen Daten zusätzlich Datenschutz |
 | Zeitpunkt | Vor Beschaffung oder Installation; Aktualisierung bei jeder wesentlichen Änderung |
-| Normbezug | BSI-Standard 200-2 (Strukturanalyse, Schutzbedarfsfeststellung, Modellierung), BSI-Standard 200-3 (Risikoanalyse); ISO/IEC 27001:2022 Anhang A 5.9, 5.12, 5.31, 5.34 |
+| Normbezug | Orientierung: BSI-Standard 200-2 (Strukturanalyse, Schutzbedarfsfeststellung); ISO/IEC 27001:2022 Anhang A 5.9, 5.12, 5.31, 5.34 |
 
 ## Schritt 1: System identifizieren
 
@@ -82,53 +82,22 @@ Abhängigkeiten:
 | Maximal tolerierbare Ausfallzeit (wird RTO in V10) | {{Stunden oder Tage}} |
 | Maximal tolerierbarer Datenverlust (wird RPO in V10) | {{Stunden}} |
 
-## Schritt 6: Grundschutz-Bausteine modellieren
+## Schritt 6: Verweis auf das Anforderungssystem
 
-[HINWEIS: Für jeden Baustein festhalten, ob er zutrifft. „Nein“ braucht eine Begründung. Fehlt ein Baustein in der Liste, ergänzen.]
+[HINWEIS: Welche Anforderungen aus IT-Grundschutz oder ISO/IEC 27001 dieses System betreffen und welche davon die Systemdokumentation erfüllt, ordnet der ISB im Anforderungs- bzw. ISMS-System zu. Hier steht nur der Verweis; eine Prüfliste je Anforderung gehört nicht in die Systemdokumentation.]
 
-| Baustein | Trifft zu | Begründung bei „nein“ | Dokumentiert in |
-| --- | --- | --- | --- |
-| SYS.1.1 Allgemeiner Server | {{ja/nein}} | | V02 |
-| SYS.1.3 Server unter Linux und Unix bzw. SYS.1.2.x Windows Server | {{ja/nein}} | | V02 |
-| SYS.1.5 Virtualisierung | {{ja/nein}} | | Plattformdokumentation |
-| SYS.1.6 Containerisierung | {{ja/nein}} | | V05 |
-| APP.4.4 Kubernetes | {{ja/nein}} | | V06 |
-| APP.6 Allgemeine Software | {{ja/nein}} | | V07 |
-| APP.3.1 Webanwendungen und Webservices | {{ja/nein}} | | V07 |
-| APP.3.2 Webserver | {{ja/nein}} | | V07 |
-| APP.4.3 Relationale Datenbanken | {{ja/nein}} | | V08 |
-| NET.1.1 Netzarchitektur und -design, NET.3.2 Firewall | {{ja/nein}} | | V03 |
-| ORP.4 Identitäts- und Berechtigungsmanagement | ja | | V04 |
-| OPS.1.2.5 Fernwartung | {{ja/nein}} | | V04 |
-| OPS.1.1.5 Protokollierung, DER.1 Detektion | ja | | V09 |
-| CON.3 Datensicherungskonzept | ja | | V10 |
-| OPS.1.1.3 Patch- und Änderungsmanagement | ja | | V11 |
-| OPS.1.1.2 Ordnungsgemäße IT-Administration, DER.4 Notfallmanagement | ja | | V12 |
-| CON.6 Löschen und Vernichten | ja | | V14 |
+| Feld | Eintrag |
+| --- | --- |
+| Objekt im Anforderungs- bzw. ISMS-System | {{ID oder Name}} |
+| Risikoregister-ID, falls geführt | {{ID oder „keine“}} |
 
-## Schritt 7: Prüfen, ob eine Risikoanalyse nötig ist
-
-- ☐ Mindestens ein Grundwert hat den Schutzbedarf hoch oder sehr hoch.
-- ☐ Für einen Teil des Systems gibt es keinen passenden Baustein.
-- ☐ Das System wird in einem Umfeld eingesetzt, das im IT-Grundschutz nicht vorgesehen ist.
-
-Trifft ein Punkt zu, ist eine Risikoanalyse nach BSI-Standard 200-3 bzw. nach der Risikomethode des ISMS nötig. Risikoregister-ID: {{ID oder „nicht erforderlich“}}.
-
-## Schritt 8: Vorlagen auswählen
+## Schritt 7: Vorlagen auswählen
 
 [HINWEIS: Auswahl nach der Matrix in V00. Bei „Verweis Plattform“ die Dokument-ID der Plattformdokumentation eintragen.]
 
 | Vorlage | Entscheidung | Begründung | Dokument-ID |
 | --- | --- | --- | --- |
 | V02 bis V14 je Zeile | {{Auswahl: Pflicht; entfällt; Verweis Plattform; später}} | {{Begründung}} | {{Dokument-ID}} |
-
-## Prüfpunkte
-
-- ☐ System-ID ist im Inventar bzw. in der CMDB angelegt.
-- ☐ Systemverantwortliche Person und Vertretung sind benannt und haben zugestimmt.
-- ☐ Jeder Schutzbedarf ist begründet.
-- ☐ Jeder nicht zutreffende Baustein ist begründet.
-- ☐ Bei personenbezogenen Daten ist der Datenschutz beteiligt.
 
 ## Unternehmensweite Festlegungen
 
@@ -185,6 +154,4 @@ Trifft ein Punkt zu, ist eine Risikoanalyse nach BSI-Standard 200-3 bzw. nach de
 
     Maximal tolerierbare Ausfallzeit: 8 Stunden. Maximal tolerierbarer Datenverlust: 24 Stunden.
 
-    Modellierung (Auszug): SYS.1.1 ja; SYS.1.3 ja; SYS.1.5 ja, über Plattform PLT-0003; SYS.1.6 ja; APP.4.4 nein, kein Kubernetes; APP.6, APP.3.1, APP.3.2 ja; APP.4.3 ja; OPS.1.2.5 nein, keine Fernwartung durch Dritte.
-
-    Risikoanalyse: erforderlich, weil Vertraulichkeit und Integrität hoch sind. Risikoregister-ID RISK-2026-077.
+    Anforderungssystem: Objekt SYS-0042 im ISMS-Werkzeug; die Zuordnung zu den Anforderungen führt der ISB. Risikoregister-ID RISK-2026-077.

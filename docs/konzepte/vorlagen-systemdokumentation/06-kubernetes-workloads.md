@@ -1,6 +1,6 @@
 # V06 Kubernetes-Workloads
 
-Vorlagen-ID V06 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V06 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -96,15 +96,6 @@ Netzwerkregeln (NetworkPolicy):
 | Pod Security Standard | `kubectl get ns <ns> --show-labels` |
 | Rechte eines ServiceAccounts | `kubectl auth can-i --list --as=system:serviceaccount:<ns>:<sa> -n <ns>` |
 | Wirksame Manifeste | `kubectl get deploy,statefulset -n <ns> -o yaml` |
-
-## Prüfpunkte
-
-- ☐ Namespace läuft mindestens mit Pod Security Standard „baseline“, Ziel „restricted“.
-- ☐ Kein Workload nutzt hostNetwork, hostPID oder hostPath ohne genehmigte Begründung.
-- ☐ Eine Regel „alles sperren“ ist aktiv; jede Freigabe steht in Schritt 4.
-- ☐ ServiceAccounts haben nur die nötigen Rechte; Token werden nur eingebunden, wo nötig.
-- ☐ Keine Geheimnisse im Klartext im Git.
-- ☐ Alle Manifeste kommen aus Git; manuelle Änderungen im Cluster sind ausgeschlossen bzw. werden überschrieben.
 
 ## Unternehmensweite Festlegungen
 

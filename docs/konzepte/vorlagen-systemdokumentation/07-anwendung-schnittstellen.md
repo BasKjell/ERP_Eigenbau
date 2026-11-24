@@ -1,6 +1,6 @@
 # V07 Anwendung, Webdienst und Schnittstellen
 
-Vorlagen-ID V07 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V07 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -41,14 +41,11 @@ Architekturskizze als Anlage: {{Dateiname}}
 | Ablage der Konfiguration | {{Git-Pfad bzw. Konfigurationsmanagement}} |
 | Konfigurationsparameter mit Sicherheitsbezug | {{Liste mit Werten, ohne Geheimnisse}} |
 
-Prüfpunkte:
+Sicherheitsrelevante Einstellungen:
 
-- ☐ Debug- bzw. Entwicklungsmodus ist aus.
-- ☐ Standardkonten und Standardpasswörter sind entfernt bzw. geändert (siehe V04).
-- ☐ Beispielinhalte und nicht benötigte Module bzw. Plugins sind entfernt.
-- ☐ Verwaltungsoberflächen sind nur aus der Management-Zone oder für Administrationsrollen erreichbar.
-- ☐ Grenzen für Uploads und Anfragen sind gesetzt.
-- ☐ Sicherheitsrelevante HTTP-Header sind gesetzt (zum Beispiel Strict-Transport-Security, Content-Security-Policy, X-Content-Type-Options, frame-ancestors).
+[HINWEIS: Beschreiben, wie das im System umgesetzt bzw. erledigt ist; Abweichungen mit Begründung. Typische Punkte: Debug- bzw. Entwicklungsmodus ist aus; Standardkonten und Standardpasswörter sind entfernt bzw. geändert (siehe V04); Beispielinhalte und nicht benötigte Module bzw. Plugins sind entfernt; Verwaltungsoberflächen sind nur aus der Management-Zone oder für Administrationsrollen erreichbar; Grenzen für Uploads und Anfragen sind gesetzt; Sicherheitsrelevante HTTP-Header sind gesetzt (zum Beispiel Strict-Transport-Security, Content-Security-Policy, X-Content-Type-Options, frame-ancestors).]
+
+{{Beschreibung}}
 
 ## Schritt 4: Anmeldung und Rechte in der Anwendung
 
@@ -84,14 +81,15 @@ Prüfpunkte:
 | Ratenbegrenzung und Schutz vor Missbrauch | {{Einstellungen}} |
 | Versionsangaben in Antworten unterdrückt | {{ja/nein}} |
 
-## Schritt 8: Tests und Abnahme
+## Schritt 8: Abnahme
 
-| Test | Datum | Ergebnis | Nachweis |
-| --- | --- | --- | --- |
-| Funktionstest durch Fachbereich | {{Datum}} | {{Ergebnis}} | {{Anlage}} |
-| Anmeldung und Rechte, inkl. Negativtest mit fremder Rolle | {{Datum}} | {{Ergebnis}} | {{Anlage}} |
-| Schwachstellenscan der Webanwendung | {{Datum}} | {{Ergebnis}} | {{Anlage}} |
-| Penetrationstest (ab Schwelle nach [FIRMENANGABE V-07]) | {{Datum oder „nicht erforderlich“}} | {{Ergebnis}} | {{Anlage}} |
+[HINWEIS: Nur die Abnahme des Systems als Ganzes festhalten, keine Tests je Anforderung.]
+
+| Feld | Eintrag |
+| --- | --- |
+| Fachliche Abnahme durch, am | {{Name}}, {{Datum}} |
+| Ablage des Abnahmeprotokolls | {{Verweis}} |
+| Sicherheitsprüfung (zum Beispiel Schwachstellenscan oder Penetrationstest), falls durchgeführt | {{Art, Datum, Verweis auf den Bericht oder „keine“}} |
 
 ## Ist-Stand erheben
 
@@ -134,7 +132,7 @@ Prüfpunkte:
     | broker | Aufgabenpuffer | Container broker | 6379 intern | Valkey 8.1 |
     | proxy | TLS, Reverse Proxy | Container proxy | 443, 80 | nginx 1.28 |
 
-    Konfiguration in apps/flowdoc/flowdoc.env und compose.yaml. Sicherheitsrelevant: PAPERLESS_DEBUG=false, PAPERLESS_URL=<https://flowdoc.flowcorp.example>, PAPERLESS_ALLOWED_HOSTS=flowdoc.flowcorp.example, Anmeldung nur über OIDC, lokale Anmeldung nach Einrichtung abgeschaltet, Uploadgrenze 100 MB in nginx. Alle Prüfpunkte erfüllt; Content-Security-Policy im Bericht-Modus bis 31.12.2026, weil die Oberfläche noch Anpassungen braucht.
+    Konfiguration in apps/flowdoc/flowdoc.env und compose.yaml. Sicherheitsrelevant: PAPERLESS_DEBUG=false, PAPERLESS_URL=<https://flowdoc.flowcorp.example>, PAPERLESS_ALLOWED_HOSTS=flowdoc.flowcorp.example, Anmeldung nur über OIDC, lokale Anmeldung nach Einrichtung abgeschaltet, Uploadgrenze 100 MB in nginx. Die Einstellungen sind wie beschrieben gesetzt; Content-Security-Policy im Bericht-Modus bis 31.12.2026, weil die Oberfläche noch Anpassungen braucht.
 
     Anmeldung: OIDC über Keycloak, Client flowdoc; Rollen aus AD-Gruppen (V04); Sitzungsdauer 8 Stunden; Abmeldung über alle Anwendungen über Keycloak; keine lokalen Konten außer dem gesperrten Einrichtungskonto.
 
@@ -151,9 +149,8 @@ Prüfpunkte:
     | Volume flowdoc_data | Suchindex | ja | ja (Datenträger) | wird neu aufgebaut | ja |
     | Protokolle | Zugriffe, Fehler | ja | – | 90 Tage zentral | über zentrale Protokollierung |
 
-    | Test | Datum | Ergebnis | Nachweis |
-    | --- | --- | --- | --- |
-    | Funktionstest Rechnungswesen | 17.11.2026 | bestanden | TEST-2026-0442 |
-    | Rechte, Negativtest mit Rolle flowdoc-lesen auf Rechnungen | 17.11.2026 | Zugriff korrekt verweigert | TEST-2026-0443 |
-    | Schwachstellenscan der Webanwendung | 19.11.2026 | 0 hoch, 2 mittel (behoben am 20.11.) | SCAN-2026-0711 |
-    | Penetrationstest | – | nicht erforderlich, nur intern erreichbar | Entscheidung ISB vom 12.11.2026 |
+    | Feld | Eintrag |
+    | --- | --- |
+    | Fachliche Abnahme durch, am | Julia Neumann, Leitung Rechnungswesen, 17.11.2026 |
+    | Ablage des Abnahmeprotokolls | DMS, Akte SYS-0042, Dokument TEST-2026-0442 |
+    | Sicherheitsprüfung | Schwachstellenscan der Weboberfläche am 18.11.2026, Bericht VS-2026-0310; Penetrationstest nicht erforderlich, nur intern erreichbar (Entscheidung ISB vom 12.11.2026) |

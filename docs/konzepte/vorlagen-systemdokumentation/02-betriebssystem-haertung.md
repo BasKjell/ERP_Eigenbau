@@ -1,6 +1,6 @@
 # V02 Grundinstallation und Härtung des Betriebssystems
 
-Vorlagen-ID V02 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V02 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -74,25 +74,17 @@ Abweichungen von der Härtungsvorgabe:
 | --- | --- | --- | --- |
 | {{Regel-ID}} | {{Abweichung}} | {{Begründung}} | {{Name, Datum}} |
 
-Prüfpunkte Linux:
+Härtung unter Linux:
 
-- ☐ Anmeldung als root über SSH ist abgeschaltet.
-- ☐ SSH-Anmeldung nur mit Schlüssel oder Zertifikat; Passwortanmeldung ist abgeschaltet.
-- ☐ Administrative Rechte nur über sudo mit persönlichen Konten; sudo wird protokolliert.
-- ☐ SELinux oder AppArmor ist aktiv und erzwingend.
-- ☐ Host-Firewall ist aktiv, eingehend standardmäßig gesperrt (Regeln in V03).
-- ☐ auditd bzw. gleichwertige Protokollierung ist aktiv (siehe V09).
-- ☐ Kernelparameter nach Härtungsvorgabe gesetzt.
-- ☐ Nicht benötigte Dienste und Pakete sind entfernt.
+[HINWEIS: Beschreiben, wie das im System umgesetzt bzw. erledigt ist; Abweichungen mit Begründung. Typische Punkte: Anmeldung als root über SSH ist abgeschaltet; SSH-Anmeldung nur mit Schlüssel oder Zertifikat; Passwortanmeldung ist abgeschaltet; Administrative Rechte nur über sudo mit persönlichen Konten; sudo wird protokolliert; SELinux oder AppArmor ist aktiv und erzwingend; Host-Firewall ist aktiv, eingehend standardmäßig gesperrt (Regeln in V03); auditd bzw. gleichwertige Protokollierung ist aktiv (siehe V09); Kernelparameter nach Härtungsvorgabe gesetzt; Nicht benötigte Dienste und Pakete sind entfernt.]
 
-Prüfpunkte Windows Server:
+{{Beschreibung}}
 
-- ☐ Installation als Server Core, wo die Anwendung das zulässt.
-- ☐ SMBv1 ist deaktiviert.
-- ☐ Remotedesktop nur über Jump-Host bzw. Gateway und mit Authentifizierung auf Netzwerkebene.
-- ☐ Lokales Administratorkennwort wird über Windows LAPS verwaltet.
-- ☐ Windows-Firewall ist in allen Profilen aktiv.
-- ☐ Erweiterte Überwachungsrichtlinie ist nach Vorgabe gesetzt (siehe V09).
+Härtung unter Windows Server:
+
+[HINWEIS: Beschreiben, wie das im System umgesetzt bzw. erledigt ist; Abweichungen mit Begründung. Typische Punkte: Installation als Server Core, wo die Anwendung das zulässt; SMBv1 ist deaktiviert; Remotedesktop nur über Jump-Host bzw. Gateway und mit Authentifizierung auf Netzwerkebene; Lokales Administratorkennwort wird über Windows LAPS verwaltet; Windows-Firewall ist in allen Profilen aktiv; Erweiterte Überwachungsrichtlinie ist nach Vorgabe gesetzt (siehe V09).]
+
+{{Beschreibung}}
 
 ## Schritt 6: Zeit, Namensauflösung und Basisdienste
 

@@ -1,12 +1,12 @@
 # V00 Wegweiser: Vorlagen für die Systemdokumentation nach IT-Grundschutz und ISO 27001
 
-Vorlagen-ID V00 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V00 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 ## Wozu dieser Vorlagensatz dient
 
 Jedes System, das neu eingeführt oder wesentlich geändert wird, wird nach denselben Vorlagen dokumentiert. So ist für jedes System nachvollziehbar, was installiert ist, wie es abgesichert ist, wer Zugriff hat und wie es betrieben, gesichert, überwacht und wieder außer Betrieb genommen wird.
 
-Zertifiziert wird nicht das einzelne System, sondern das Informationssicherheitsmanagementsystem (ISMS) mit seinem Geltungsbereich, nach ISO/IEC 27001 oder nach ISO 27001 auf Basis von IT-Grundschutz. Die Vorlagen liefern für jedes System die Nachweise, die dafür nötig sind: Strukturanalyse, Schutzbedarf, Modellierung, Umsetzung der Anforderungen und Freigabe. Sie ersetzen nicht die Dokumente auf ISMS-Ebene wie Sicherheitsleitlinie, Risikomethodik und Erklärung zur Anwendbarkeit (SoA), sondern speisen sie.
+Zertifiziert wird nicht das einzelne System, sondern das Informationssicherheitsmanagementsystem (ISMS) mit seinem Geltungsbereich, nach ISO/IEC 27001 oder nach ISO 27001 auf Basis von IT-Grundschutz. Die Vorlagen liefern für jedes System dieselbe grundlegende Systemdokumentation: was installiert ist, wie es abgesichert, betrieben, gesichert und überwacht wird, und wer es freigegeben hat. Sie enthalten bewusst keine Prüflisten und keine Tests je Anforderung. Welche Anforderungen aus IT-Grundschutz oder ISO/IEC 27001 mit der Dokumentation erfüllt sind, ordnet der ISB im Anforderungs- bzw. ISMS-System zu; die Systemdokumentation ist dort der Nachweis. Sie ersetzt nicht die Dokumente auf ISMS-Ebene wie Sicherheitsleitlinie, Risikomethodik und Erklärung zur Anwendbarkeit (SoA), sondern speisen sie.
 
 Der Satz ist ein Baukasten. Acht Vorlagen gelten für jedes System, fünf kommen je nach Aufbau hinzu, eine gilt bei der Stilllegung. Wer ein System einführt, stellt sich die passende Dokumentation aus diesen Bausteinen zusammen.
 
@@ -18,19 +18,19 @@ Der Satz ist ein Baukasten. Acht Vorlagen gelten für jedes System, fünf kommen
 
 | Nr. | Vorlage | Wann nötig | Kerninhalt |
 | --- | --- | --- | --- |
-| V01 | Systemsteckbrief, Schutzbedarf und Modellierung | Immer, als Erstes | System-ID, Verantwortliche, Abhängigkeiten, Daten, Schutzbedarf, zutreffende Bausteine, Auswahl der übrigen Vorlagen |
+| V01 | Systemsteckbrief und Schutzbedarf | Immer, als Erstes | System-ID, Verantwortliche, Abhängigkeiten, Daten, Schutzbedarf, Verweis auf das Anforderungssystem, Auswahl der übrigen Vorlagen |
 | V02 | Grundinstallation und Härtung des Betriebssystems | Jeder eigene Server und jede eigene VM | Betriebssystem, Speicher, installierte Software, Dienste, Härtung, Verschlüsselung, Fernadministration |
 | V03 | Netz, Ports und Firewall | Immer | Adressen, Netzzone, offene Ports, Host-Firewall, Firewall-Freigaben, ausgehende Verbindungen, Zertifikate |
 | V04 | Konten, Service-User und Berechtigungen | Immer | Anmeldeverfahren, Admin-Konten, Service-User, Rollen, Notfallkonto, Fernwartung, Tokens |
 | V05 | Container: Images und Docker/Compose | Bei Containern | Teil A Images (immer bei Containern), Teil B Docker-Host und Compose |
 | V06 | Kubernetes-Workloads | Bei Betrieb auf Kubernetes | Namespace, Workloads, Sicherheitskontext, Netzwerkregeln, RBAC, Secrets, Speicher |
-| V07 | Anwendung, Webdienst und Schnittstellen | Wenn eine Anwendung läuft | Software und Lizenz, Komponenten, Konfiguration, Anmeldung, Schnittstellen, Datenablage, Tests |
+| V07 | Anwendung, Webdienst und Schnittstellen | Wenn eine Anwendung läuft | Software und Lizenz, Komponenten, Konfiguration, Anmeldung, Schnittstellen, Datenablage, Abnahme |
 | V08 | Datenbank | Wenn eine Datenbank dazugehört | Datenbanksystem, Datenbanken, Datenbankkonten, Zugriffssteuerung, Sicherheitseinstellungen |
 | V09 | Protokollierung und Überwachung | Immer | Protokollquellen, Mindestumfang, Weiterleitung, Aufbewahrung, Monitoring, Alarme |
 | V10 | Datensicherung und Wiederherstellung | Immer | RPO und RTO, Sicherungsobjekte, 3-2-1-1-0, Wiederherstellungstest |
 | V11 | Patch-, Änderungs- und Schwachstellenmanagement | Immer | Update-Quellen, Patchfristen, Wartungsfenster, Changes, Schwachstellenscan, Supportende |
 | V12 | Betriebs- und Notfallhandbuch | Immer | Kontakte, Routinen, Start und Stopp, Störungen, Wiederanlauf, Sicherheitsvorfall, Notfallkarte |
-| V13 | Grundschutz-Check, Freigabe und Inbetriebnahme | Immer, als Letztes | Vollständigkeit, Umsetzungsstatus je Anforderung, Restrisiken, Abnahmetests, Freigaben |
+| V13 | Freigabe und Inbetriebnahme | Immer, als Letztes | Übersicht der Dokumente, bekannte Abweichungen, Datenschutz, Freigaben, Inbetriebnahme |
 | V14 | Außerbetriebnahme | Bei Stilllegung | Aufbewahrung, Löschung mit Nachweis, Zugänge entfernen, Inventar bereinigen |
 
 ## Welche Vorlagen für welches System
@@ -58,7 +58,7 @@ Systemtypen:
 | V10 Datensicherung | ● | ● | ● | ● | ● | ● |
 | V11 Patch und Change | ● | ● | ● | ● | ● | ● |
 | V12 Betriebshandbuch | ● | ● | ● | ● | ● | ● |
-| V13 Check und Freigabe | ● | ● | ● | ● | ● | ● |
+| V13 Freigabe | ● | ● | ● | ● | ● | ● |
 | V14 Außerbetriebnahme | bei Stilllegung | bei Stilllegung | bei Stilllegung | bei Stilllegung | bei Stilllegung | bei Stilllegung |
 
 Legende: ● Pflicht · ○ wenn zutreffend · Verweis: steht in der Dokumentation der Plattform · – entfällt.
@@ -71,12 +71,12 @@ Mischformen werden kombiniert. Läuft zum Beispiel eine Anwendung in Docker und 
 
 | Schritt | Zeitpunkt | Vorlagen | Ergebnis |
 | --- | --- | --- | --- |
-| 1 Steckbrief anlegen | Vor Beschaffung oder Installation | V01 Schritte 1–5 | System-ID, Verantwortliche, Daten, Schutzbedarf |
-| 2 Vorlagen und Bausteine auswählen | Vor Installation | Matrix oben, V01 Schritte 6–8 | Liste der Pflichtdokumente und zutreffenden Grundschutz-Bausteine |
+| 1 Steckbrief anlegen | Vor Beschaffung oder Installation | V01 Schritte 1–6 | System-ID, Verantwortliche, Daten, Schutzbedarf, Verweis auf das Anforderungssystem |
+| 2 Vorlagen auswählen | Vor Installation | Matrix oben, V01 Schritt 7 | Liste der Pflichtdokumente |
 | 3 Netz und Konten beantragen | Vor Installation | V03, V04 | Genehmigte Firewall-Anträge, angelegte Konten |
 | 4 Installieren und dabei dokumentieren | Während der Installation | V02, V05, V06, V07, V08 | Dokumentierter Ist-Stand mit Anlagen |
 | 5 Betrieb einrichten | Vor Inbetriebnahme | V09, V10, V11, V12 | Protokollierung angebunden, Sicherung mit bestandenem Wiederherstellungstest, Patchweg, Betriebshandbuch |
-| 6 Prüfen und freigeben | Vor Inbetriebnahme | V13 | Grundschutz-Check, Restrisiken, Abnahmetests, Freigabe |
+| 6 Freigeben | Vor Inbetriebnahme | V13 | Übersicht der Dokumente, bekannte Abweichungen, Freigabe |
 | 7 Aktuell halten | Laufend | Alle | Aktualisierung bei jeder Änderung, Überprüfung im festgelegten Intervall |
 | 8 Außer Betrieb nehmen | Bei Stilllegung | V14 | Löschnachweise, entfernte Zugänge, bereinigtes Inventar |
 
@@ -87,9 +87,9 @@ Grundregel: Die Dokumentation entsteht während der Installation, nicht danach. 
 - `{{Feld}}` wird je System ausgefüllt. `{{Auswahl: a; b; c}}` bietet feste Werte an.
 - `[FIRMENANGABE V-xx]` wird einmal für das ganze Unternehmen festgelegt, bevor die Vorlage freigegeben wird. Im ausgefüllten Systemdokument steht dort bereits der Unternehmenswert.
 - `[HINWEIS: …]` ist eine Ausfüllhilfe. Sie wird vor der Freigabe des Systemdokuments entfernt.
-- `☐` ist ein Prüfpunkt zum Abhaken. Ein nicht erfüllter Prüfpunkt wird in V13 als Abweichung geführt.
+- Die Vorlagen beschreiben den Ist-Stand. Sie enthalten keine Prüfpunkte zum Abhaken und keine Tests je Anforderung; die Zuordnung zu Anforderungen geschieht im Anforderungs- bzw. ISMS-System.
 - Jede Vorlage endet mit einem Ausfüllbeispiel zwischen den Marken `[[BEISPIEL-ANFANG]]` und `[[BEISPIEL-ENDE]]`. Alle Beispiele beschreiben dasselbe fiktive System, damit man sieht, wie die Dokumente zusammenspielen. Im ausgefüllten Systemdokument wird das Beispiel gelöscht.
-- „Entfällt“ ist nur mit Begründung zulässig. Das gilt für ganze Vorlagen, Abschnitte und Grundschutz-Anforderungen.
+- „Entfällt“ ist nur mit Begründung zulässig. Das gilt für ganze Vorlagen und Abschnitte.
 - **Keine Geheimnisse:** Passwörter, private Schlüssel, Tokens und Wiederherstellungsschlüssel stehen nie in der Dokumentation, sondern nur ein Verweis auf ihren Ablageort im Secret-Manager.
 - Die ausgefüllte Systemdokumentation enthält Ports, Konten und Firewall-Regeln. Sie ist deshalb mindestens „vertraulich“ und nur für Betrieb, Systemverantwortliche, ISB und Prüfer zugänglich [FIRMENANGABE V-00].
 - Jede Änderung am System läuft über das Änderungsverfahren (V11). Ein Change ist erst abgeschlossen, wenn die betroffenen Vorlagen aktualisiert sind.
@@ -111,15 +111,15 @@ Jede Vorlage V01 bis V14 beginnt mit diesem Kopf. Die Marke `[[DOKUMENTKOPF]]` i
 | Nächste Überprüfung | {{Datum}} |
 | Klassifizierung | [FIRMENANGABE V-00] |
 | Verweis auf Plattformdokumentation | {{Dokument-ID der Plattform oder „keine“}} |
-| Vorlagenversion | {{Vorlagen-ID}} Version 1.0 |
+| Vorlagenversion | {{Vorlagen-ID}} Version 1.1 |
 
 ## Normbezug im Überblick
 
-Die Zuordnung verwendet die Bausteine des IT-Grundschutz-Kompendiums Edition 2023 und die Maßnahmen aus Anhang A der ISO/IEC 27001:2022. Das BSI stellt den IT-Grundschutz auf ein digitales Regelwerk um (Grundschutz++); der bisherige IT-Grundschutz bleibt in einer mehrjährigen Übergangszeit anwendbar. Welche Grundlage gilt, legt der ISB fest [FIRMENANGABE V-00]. Bei einem Wechsel wird diese Tabelle nachgezogen; die Inhalte der Vorlagen bleiben gültig.
+Die Tabelle dient nur der Orientierung, welche Themen eine Vorlage berührt; die verbindliche Zuordnung zu Anforderungen führt der ISB im Anforderungs- bzw. ISMS-System. Sie verwendet die Bausteine des IT-Grundschutz-Kompendiums Edition 2023 und die Maßnahmen aus Anhang A der ISO/IEC 27001:2022. Das BSI stellt den IT-Grundschutz auf ein digitales Regelwerk um (Grundschutz++); der bisherige IT-Grundschutz bleibt in einer mehrjährigen Übergangszeit anwendbar. Welche Grundlage gilt, legt der ISB fest [FIRMENANGABE V-00]. Bei einem Wechsel wird diese Tabelle nachgezogen; die Inhalte der Vorlagen bleiben gültig.
 
 | Vorlage | IT-Grundschutz-Bausteine | ISO/IEC 27001:2022 Anhang A |
 | --- | --- | --- |
-| V01 | Methodik nach BSI-Standard 200-2 (Strukturanalyse, Schutzbedarf, Modellierung), 200-3 (Risikoanalyse) | 5.9, 5.12, 5.31, 5.34 |
+| V01 | Methodik nach BSI-Standard 200-2 (Strukturanalyse, Schutzbedarf) | 5.9, 5.12, 5.31, 5.34 |
 | V02 | SYS.1.1, SYS.1.3 bzw. passender Windows-Server-Baustein SYS.1.2.x, SYS.1.5 (bei VM), OPS.1.1.4, CON.1 | 8.5, 8.7, 8.9, 8.17, 8.19, 8.24 |
 | V03 | NET.1.1, NET.1.2, NET.3.2, CON.1 | 8.20, 8.21, 8.22, 8.24 |
 | V04 | ORP.4, OPS.1.1.2, OPS.1.2.5 | 5.15, 5.16, 5.17, 5.18, 8.2, 8.5, 8.18 |
@@ -131,7 +131,7 @@ Die Zuordnung verwendet die Bausteine des IT-Grundschutz-Kompendiums Edition 202
 | V10 | CON.3, DER.4 | 5.29, 5.30, 8.13, 8.14 |
 | V11 | OPS.1.1.3, OPS.1.1.6 | 8.8, 8.9, 8.19, 8.32 |
 | V12 | OPS.1.1.2, DER.2.1, DER.4 | 5.24, 5.25, 5.26, 5.29, 5.30, 5.37 |
-| V13 | IT-Grundschutz-Check und Risikoanalyse nach BSI-Standard 200-2 und 200-3 | 5.36, 8.29, 8.32; ISO 27001 Abschnitt 6.1.3 |
+| V13 | Freigabe vor Inbetriebnahme | 5.36, 8.32 |
 | V14 | CON.6, OPS.1.2.2, ORP.4 | 5.11, 5.33, 7.14, 8.10 |
 
 Nicht abgedeckt sind Cloud- und SaaS-Dienste (OPS.2.2), Arbeitsplatzrechner (SYS.2.x), Router und Switches (NET.3.1), industrielle Steuerungen (IND) sowie Räume und Rechenzentrum (INF). Dafür sind eigene Vorlagen nötig.
@@ -176,4 +176,4 @@ Alle Ausfüllbeispiele beschreiben dasselbe fiktive System. Namen, Adressen und 
 | Namenskonvention der System-ID und Anbindung an Inventar bzw. CMDB | offen | IT-Betrieb |
 | Überprüfungsintervall der Systemdokumentation (Vorschlag: jährlich und bei wesentlicher Änderung) | offen | ISB |
 | Freigabeberechtigte je Schutzbedarf | offen | Geschäftsführung |
-| Werkzeug für IT-Grundschutz-Check und Risikoregister | offen | ISB |
+| Anforderungs- bzw. ISMS-System, in dem die Zuordnung der Systemdokumentation zu Anforderungen geführt wird | offen | ISB |

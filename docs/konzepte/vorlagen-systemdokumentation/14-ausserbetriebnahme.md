@@ -1,6 +1,6 @@
 # V14 Außerbetriebnahme
 
-Vorlagen-ID V14 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V14 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -48,22 +48,15 @@ Vorlagen-ID V14 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur intern
 
 ## Schritt 5: Zugänge und Verbindungen entfernen
 
-- ☐ Persönliche Administrationskonten und Rollen entfernt (V04).
-- ☐ Service-User, API-Schlüssel und Tokens gesperrt bzw. gelöscht; Einträge im Secret-Manager gelöscht (V04).
-- ☐ Clients bzw. Anwendungsregistrierungen im Identitätsdienst entfernt.
-- ☐ Zertifikate widerrufen (V03).
-- ☐ Firewall-Freigaben zurückgenommen, mit Change-Nummer (V03).
-- ☐ DNS-Einträge entfernt (V03).
-- ☐ Schnittstellen bei den Partnersystemen abgemeldet (V07).
+[HINWEIS: Beschreiben, wie das im System umgesetzt bzw. erledigt ist; Abweichungen mit Begründung. Typische Punkte: Persönliche Administrationskonten und Rollen entfernt (V04); Service-User, API-Schlüssel und Tokens gesperrt bzw. gelöscht; Einträge im Secret-Manager gelöscht (V04); Clients bzw. Anwendungsregistrierungen im Identitätsdienst entfernt; Zertifikate widerrufen (V03); Firewall-Freigaben zurückgenommen, mit Change-Nummer (V03); DNS-Einträge entfernt (V03); Schnittstellen bei den Partnersystemen abgemeldet (V07).]
+
+{{Beschreibung}}
 
 ## Schritt 6: Betrieb bereinigen
 
-- ☐ Überwachung und Alarme entfernt (V09); vorhandene Protokolle bleiben bis Fristablauf.
-- ☐ Sicherungsjobs beendet (V10).
-- ☐ Patch- und Scan-Zuordnung entfernt (V11).
-- ☐ Lizenzen und Verträge gekündigt.
-- ☐ Inventar bzw. CMDB auf „stillgelegt“ gesetzt; Grundschutz-Modellierung des Informationsverbunds aktualisiert.
-- ☐ Eintrag im Verzeichnis der Verarbeitungstätigkeiten angepasst.
+[HINWEIS: Beschreiben, wie das im System umgesetzt bzw. erledigt ist; Abweichungen mit Begründung. Typische Punkte: Überwachung und Alarme entfernt (V09); vorhandene Protokolle bleiben bis Fristablauf; Sicherungsjobs beendet (V10); Patch- und Scan-Zuordnung entfernt (V11); Lizenzen und Verträge gekündigt; Inventar bzw. CMDB auf „stillgelegt“ gesetzt; Anforderungs- bzw. ISMS-System aktualisiert; Eintrag im Verzeichnis der Verarbeitungstätigkeiten angepasst.]
+
+{{Beschreibung}}
 
 ## Schritt 7: Hardware
 
@@ -119,7 +112,7 @@ Die Systemdokumentation wird auf „außer Kraft“ gesetzt und nach [FIRMENANGA
 
     Sicherungen: laufen nach 12 Monaten ab; letzte Löschung am 15.07.2032, Nachweis durch Bericht des Sicherungssystems.
 
-    Zugänge und Betrieb: alle Prüfpunkte erledigt am 16. und 17.07.2031, Firewall-Rücknahme unter CHG-2031-0403.
+    Zugänge entfernt und Betrieb bereinigt am 16. und 17.07.2031, Firewall-Rücknahme unter CHG-2031-0403.
 
     Hardware: nur virtuell, keine Geräte.
 

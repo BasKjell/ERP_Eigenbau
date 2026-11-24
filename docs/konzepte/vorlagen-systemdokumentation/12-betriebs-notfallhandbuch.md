@@ -1,6 +1,6 @@
 # V12 Betriebs- und Notfallhandbuch
 
-Vorlagen-ID V12 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V12 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -91,13 +91,6 @@ Vorlagen-ID V12 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur intern
 | Ersatzverfahren | {{Kurzfassung}} |
 | Wiederanlauf | {{Verweis}} |
 | Ort der Sicherungen und Schlüssel | {{Verweis}} |
-
-## Prüfpunkte
-
-- ☐ Eine Vertretung hat Start, Stopp und Funktionsprüfung nach diesem Handbuch erfolgreich durchgeführt.
-- ☐ Alle Kontakte sind aktuell und erreichbar.
-- ☐ Die Notfallkarte liegt im Notfallhandbuch.
-- ☐ Der Meldeweg für Sicherheitsvorfälle ist dem Betrieb bekannt.
 
 ## Unternehmensweite Festlegungen
 

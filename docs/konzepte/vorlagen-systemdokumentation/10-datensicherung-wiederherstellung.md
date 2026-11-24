@@ -1,6 +1,6 @@
 # V10 Datensicherung und Wiederherstellung
 
-Vorlagen-ID V10 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V10 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -36,11 +36,9 @@ Nicht gesicherte Teile und Begründung: {{zum Beispiel Container-Images und Konf
 
 ## Schritt 3: Regel 3-2-1-1-0
 
-- ☐ Mindestens drei Kopien der Daten (Original und zwei Sicherungen).
-- ☐ Auf mindestens zwei unterschiedlichen Speichersystemen bzw. Medien.
-- ☐ Mindestens eine Kopie an einem anderen Standort.
-- ☐ Mindestens eine Kopie unveränderlich oder offline.
-- ☐ Null Fehler bei der Prüfung der Sicherungen und beim letzten Wiederherstellungstest.
+[HINWEIS: Beschreiben, wie das im System umgesetzt bzw. erledigt ist; Abweichungen mit Begründung. Typische Punkte: Mindestens drei Kopien der Daten (Original und zwei Sicherungen); Auf mindestens zwei unterschiedlichen Speichersystemen bzw. Medien; Mindestens eine Kopie an einem anderen Standort; Mindestens eine Kopie unveränderlich oder offline; Null Fehler bei der Prüfung der Sicherungen und beim letzten Wiederherstellungstest.]
+
+{{Beschreibung}}
 
 ## Schritt 4: Schlüssel und Berechtigungen
 
@@ -74,14 +72,6 @@ Nicht gesicherte Teile und Begründung: {{zum Beispiel Container-Images und Konf
 ## Ist-Stand erheben
 
 Sicherungsjobs und letzte Läufe aus dem Sicherungswerkzeug exportieren (zum Beispiel `restic snapshots` und `restic check` oder Berichte der Sicherungssoftware) und mit Datum als Anlage ablegen.
-
-## Prüfpunkte
-
-- ☐ RPO und RTO sind mit der systemverantwortlichen Person abgestimmt und erreichbar.
-- ☐ Alle Daten aus V01 Schritt 4 und V07 Schritt 6 sind gesichert oder der Verzicht ist begründet.
-- ☐ Die Regel 3-2-1-1-0 ist erfüllt oder die Abweichung ist genehmigt.
-- ☐ Der Schlüssel der Sicherung ist auch ohne das gesicherte System erreichbar.
-- ☐ Der letzte Wiederherstellungstest ist bestanden und nicht älter als das Testintervall.
 
 ## Unternehmensweite Festlegungen
 

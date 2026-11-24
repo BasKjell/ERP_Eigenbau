@@ -1,6 +1,6 @@
 # V04 Konten, Service-User und Berechtigungen
 
-Vorlagen-ID V04 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V04 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -91,15 +91,6 @@ Vorlagen-ID V04 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur intern
 | sudo-Regeln | `/etc/sudoers` und `/etc/sudoers.d/` | – |
 | Rechte eines Kontos | `sudo -l -U <konto>` | `whoami /priv` als betroffenes Konto |
 | Letzte Anmeldungen | `lastlog`, `last` | Sicherheitsprotokoll, Ereignis 4624 |
-
-## Prüfpunkte
-
-- ☐ Jedes Konto aus der Erhebung steht in Schritt 2, 3 oder 5.
-- ☐ Es gibt keine gemeinsam genutzten persönlichen Konten.
-- ☐ Service-User können sich nicht interaktiv anmelden, wo das technisch möglich ist.
-- ☐ Kein Geheimnis steht in diesem Dokument, in Git oder in Konfigurationsdateien im Klartext.
-- ☐ Standardkonten und Standardpasswörter von Betriebssystem, Anwendung und Datenbank sind entfernt bzw. geändert.
-- ☐ Das Notfallkonto ist getestet und seine Nutzung wird alarmiert.
 
 ## Unternehmensweite Festlegungen
 

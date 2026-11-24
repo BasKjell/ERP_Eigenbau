@@ -1,6 +1,6 @@
 # V09 Protokollierung und Überwachung
 
-Vorlagen-ID V09 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V09 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -78,14 +78,6 @@ Vorlagen-ID V09 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur intern
 | Weiterleitung | Konfiguration von rsyslog bzw. journald, Agent des SIEM | Konfiguration des Agenten bzw. der Ereignisweiterleitung |
 | Audit-Regeln | `auditctl -l` | `auditpol /get /category:*` |
 | Test einer Weiterleitung | Testmeldung mit `logger` und Prüfung im SIEM | Testereignis und Prüfung im SIEM |
-
-## Prüfpunkte
-
-- ☐ Alle Quellen aus Schritt 2 kommen in der zentralen Protokollierung an (mit Testmeldung geprüft).
-- ☐ Der Mindestumfang aus Schritt 3 ist erfasst.
-- ☐ Ein Testalarm aus Schritt 5 hat die Empfänger erreicht.
-- ☐ Aufbewahrung und Löschung entsprechen [FIRMENANGABE V-09].
-- ☐ Personenbezogene Protokolle sind mit Datenschutz und gegebenenfalls Betriebsrat abgestimmt.
 
 ## Unternehmensweite Festlegungen
 

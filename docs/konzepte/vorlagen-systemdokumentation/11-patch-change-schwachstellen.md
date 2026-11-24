@@ -1,6 +1,6 @@
 # V11 Patch-, Änderungs- und Schwachstellenmanagement
 
-Vorlagen-ID V11 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V11 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -80,13 +80,6 @@ Offene Befunde:
 | Ausstehende Updates SLES | `zypper list-patches` |
 | Installierte Windows-Updates | `Get-HotFix` |
 | Veraltete Container-Images | Image-Scan bzw. Abgleich mit der Registry (siehe V05) |
-
-## Prüfpunkte
-
-- ☐ Für jede Komponente ist der Update-Weg festgelegt und jemand verantwortlich.
-- ☐ Sicherheitsmitteilungen für alle Komponenten werden empfangen.
-- ☐ Keine offenen Befunde über ihrer Frist ohne genehmigte Ausnahme.
-- ☐ Keine Komponente ohne Herstellersupport ohne Plan und genehmigtes Restrisiko.
 
 ## Unternehmensweite Festlegungen
 

@@ -1,6 +1,6 @@
 # V03 Netz, Ports und Firewall
 
-Vorlagen-ID V03 · Vorlagenversion 1.0 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
+Vorlagen-ID V03 · Vorlagenversion 1.1 · Stand 24.11.2026 · Entwurf zur internen Abstimmung
 
 !!! note "Standardkopf"
     Jede ausgefüllte Systemdokumentation beginnt mit dem Standardkopf aus dem [Wegweiser](00-wegweiser.md#standardkopf-jeder-systemdokumentation).
@@ -91,15 +91,6 @@ DNS-Einträge:
 | Zertifikat eines Dienstes | `openssl s_client -connect <host>:443 -servername <host>` | gleich, mit installiertem OpenSSL |
 
 Zusätzlich prüft das Netzwerkteam von außen mit einem Portscan aus der Clientzone und aus der Management-Zone, ob genau die Ports aus Schritt 2 erreichbar sind. Portscans nur mit Freigabe nach [FIRMENANGABE V-03].
-
-## Prüfpunkte
-
-- ☐ Jeder lauschende Port aus der Erhebung steht in Schritt 2, keiner ist ohne Begründung.
-- ☐ Administrationsdienste sind nicht aus der Clientzone erreichbar.
-- ☐ Das Ergebnis des Portscans stimmt mit Schritt 2 überein.
-- ☐ Jede Netzwerk-Freigabe hat eine Change-Nummer; vorübergehende sind befristet.
-- ☐ Ausgehende Verbindungen sind auf die Ziele aus Schritt 5 beschränkt.
-- ☐ Alle Zertifikate werden auf Ablauf überwacht.
 
 ## Unternehmensweite Festlegungen
 
