@@ -32,7 +32,12 @@ class AgentRunCreate(BaseModel):
     exclusions: str = Field(default="", max_length=1500)
     success_example: str = Field(min_length=5, max_length=1500)
     data_class: Literal["oeffentlich", "intern", "vertraulich"] = "intern"
-    change_class: Literal["standard", "neue_funktion", "kritisch"] = "neue_funktion"
+    # Ohne Einstufung gilt die Änderungsklasse; mit Einstufung leitet der Orchestrator sie ab und
+    # eine ausdrücklich genannte Klasse darf den Weg nur verschärfen (KI-Softwareentwicklung Teil 01).
+    change_class: Literal["standard", "neue_funktion", "kritisch"] | None = None
+    project_class: Literal["", "S", "M", "L"] = ""
+    criticality: Literal["", "K1", "K2", "K3"] = ""
+    domain: Literal["it", "produkt", "pruefsoftware", "werkzeug"] = "it"
     scope: str = Field(min_length=2, max_length=40)
     project: str = Field(default="FLOW-PLATFORM", pattern=r"^[A-Z][A-Z0-9-]{2,30}$")
     execution: Literal["automatisch", "lokal", "abo"] = "automatisch"

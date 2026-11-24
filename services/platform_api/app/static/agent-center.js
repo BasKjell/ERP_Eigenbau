@@ -10,7 +10,7 @@
   const SVG = "http://www.w3.org/2000/svg";
   const POLL_MS = 3000;
   const POS = {
-    geschaeftsfuehrung: [540, 56],
+    geschaeftsfuehrung: [540, 56], projektplanung: [700, 56], EP1: [860, 56], integrationstest: [1015, 160],
     anforderungen: [110, 160], anforderungspruefung: [265, 160], G1: [415, 160], architektur: [565, 160], sicherheit: [720, 160], G2: [870, 160],
     planung: [870, 280], akzeptanztest: [720, 280], entwicklung: [565, 280], integration: [415, 280], codepruefung: [265, 280], G3: [110, 280],
     dokumentation: [110, 400], nachweise: [265, 400], G4: [565, 400], G5: [720, 400], schwachstellen: [870, 400],
@@ -23,10 +23,11 @@
     architektur: "Architektur", sicherheit: "Sicherheit", planung: "Planung", entwicklung: "Entwicklung",
     akzeptanztest: "Akzeptanztest", codepruefung: "Codeprüfung", dokumentation: "Dokumentation", nachweise: "Nachweise",
     schwachstellen: "Schwachstellen", integration: "Integration", flowwork: "FLOWWORK",
+    projektplanung: "Projektplanung", integrationstest: "Integrationstest",
   };
   const HUMAN_CODES = { "product-owner": "PO", "tech-lead": "TL", "key-user": "KU", release: "RL", isb: "IS", geschaeftsfuehrung: "GF" };
   const STATE_LABEL = { arbeitet: "arbeitet", als_naechstes: "als Nächstes", wartet: "wartet auf Mensch", bereit: "bereit", pausiert: "pausiert", inaktiv: "nicht freigegeben", unbekannt: "—" };
-  const KIND_LABEL = { uebergabe: "übergibt", ruecklauf: "gibt zurück", entscheidung_offen: "fragt", entscheidung: "entscheidet", werkzeug: "schreibt", start: "beginnt", ergebnis: "liefert", gate: "Gate", baseline: "fixiert", auftrag: "beauftragt", vertrag: "Vertrag", pausiert: "pausiert", abschluss: "Abschluss", abbruch: "Abbruch", steuerung: "Steuerung", wiederanlauf: "Wiederanlauf" };
+  const KIND_LABEL = { uebergabe: "übergibt", ruecklauf: "gibt zurück", entscheidung_offen: "fragt", entscheidung: "entscheidet", werkzeug: "schreibt", start: "beginnt", ergebnis: "liefert", gate: "Gate", baseline: "fixiert", auftrag: "beauftragt", vertrag: "Vertrag", pausiert: "pausiert", abschluss: "Abschluss", abbruch: "Abbruch", steuerung: "Steuerung", wiederanlauf: "Wiederanlauf", uebersprungen: "überspringt", projekt: "Projekt" };
 
   const previewUrl = (d) => {
     const url = d?.context?.preview_url || "";
@@ -42,7 +43,7 @@
     sicherheitsbefund: "Sicherheitsbefund", plan: "Arbeitspakete", akzeptanztests: "Akzeptanztests",
     implementierung: "Code-Änderung", integration: "Integrationsprüfung", codebefund: "Codeprüfung",
     dokumentation: "Dokumentation", nachweise: "Nachweise", prozessbewertung: "Prozessbewertung Geschäftsführung",
-    uebernahme: "Übernahme als Branch",
+    uebernahme: "Übernahme als Branch", projektplan: "Projektplan (Arbeitspakete)", integrationstests: "Integrationstests",
   };
 
   function artifactText(artifact) {
@@ -142,7 +143,8 @@ const SCOPE_PROJECTS = { dms: "FLOW-DMS", portal: "FLOW-PORTAL", erp: "FLOW-ERP"
   plattform: "FLOW-PLATFORM", agenten: "FLOW-AGENTS", prozess: "FLOW-PROZESSE" };
 const FIELD_LABELS = { title: "Titel", goal: "Zweck", user_group: "Nutzergruppe", behavior: "Gewünschtes Verhalten",
   success_example: "Erfolgsbeispiel", exclusions: "Ausgeschlossen", project: "Projekt", scope: "Änderungsbereich",
-  change_class: "Änderungsklasse", data_class: "Datenklasse", execution: "Umsetzung" };
+  change_class: "Änderungsklasse", data_class: "Datenklasse", execution: "Umsetzung", project_class: "Projektklasse",
+  criticality: "Kritikalität", domain: "Domäne" };
 
 function normalizeProject(value) {
   const key = String(value || "").trim().toUpperCase().replace(/[ÄÖÜ]/g, (c) => ({ Ä: "AE", Ö: "OE", Ü: "UE" })[c])
@@ -282,7 +284,7 @@ class AgentCenter {
       const integrationActive = runs.some((r) => r.step === "integrationspruefung" && r.status === "aktiv");
       nodes.set("integration", { id: "integration", type: "system", code: "CI", state: integrationActive ? "arbeitet" : "bereit" });
       nodes.set("flowwork", { id: "flowwork", type: "system", code: "FW", state: data.rm_connected === false ? "inaktiv" : "bereit" });
-      for (const gate of ["G1", "G2", "G3", "G4", "G5"]) {
+      for (const gate of ["EP1", "G1", "G2", "G3", "G4", "G5"]) {
         const waiting = (data.decisions || []).some((d) => d.gate === gate);
         nodes.set(gate, { id: gate, type: "gate", code: gate, state: waiting ? "wartet" : "bereit" });
       }
@@ -468,7 +470,7 @@ class AgentCenter {
       this.runsSignature = signature;
       this.$("[data-runs]").innerHTML = runs.length ? runs.map((run) => `
         <button class="ac-run" type="button" data-run="${esc(run.id)}">
-          <span><span class="key">${esc(run.auftrag_id)}</span><br><small>${esc(run.change_class.replace("_", " "))}</small></span>
+          <span><span class="key">${esc(run.auftrag_id)}</span><br><small>${esc(run.project_class || "S")}/${esc(run.criticality || "K1")} · ${esc(run.change_class.replace("_", " "))}</small></span>
           <span><b>${esc(run.title)}</b><small>${esc(run.step_label)}${run.waiting_for ? ` · wartet auf ${esc(data.human_roles?.[run.waiting_for]?.label || run.waiting_for)}` : ""}${run.reason && run.status === "blockiert" ? ` · ${esc(run.reason)}` : ""}${run.branch ? ` · Branch ${esc(run.branch)}` : ""}</small></span>
           <span class="ac-progress-cell"><div class="ac-progress"><i style="width:${Number(run.progress) || 0}%"></i></div><small>${Number(run.progress) || 0} % · ${esc(run.model_calls)} Modellaufrufe</small></span>
           <span class="ac-status ${esc(run.status)}">${esc(run.status)}</span>
@@ -502,7 +504,9 @@ class AgentCenter {
           <label class="wide">Gewünschtes Verhalten<textarea name="behavior" required minlength="10" maxlength="3000"></textarea></label>
           <label class="wide">Erfolgsbeispiel<input name="success_example" required minlength="5" maxlength="1500" placeholder="z. B. Bei Beta und Alpha erscheint Alpha zuerst"></label>
           <label class="wide">Ausgeschlossen (optional)<input name="exclusions" maxlength="1500" placeholder="z. B. keine Änderung an Rechten"></label>
-          <label>Änderungsklasse<select name="change_class"><option value="standard">Standardänderung</option><option value="neue_funktion" selected>Neue Funktion</option><option value="kritisch">Hoher Schutzbedarf / neuer Dienst</option></select></label>
+          <label title="S: Änderung an bestehendem System (Kurzweg G1–G5) · M: Release oder Teilsystem, mit Projektplanung und Integrationstests · L: Großprojekt, plant Arbeitspakete, die einzeln als Aufträge laufen">Projektklasse<select name="project_class"><option value="S">S – kleine Änderung (Kurzweg)</option><option value="M" selected>M – Release / Teilsystem</option><option value="L">L – Großprojekt mit Arbeitspaketen</option></select></label>
+          <label title="K1 normal · K2 Schutzbedarf hoch oder Produktsoftware · K3 funktionale Sicherheit: KI liefert nur Entwürfe">Kritikalität<select name="criticality"><option value="K1" selected>K1 normal</option><option value="K2">K2 erhöht</option><option value="K3">K3 kritisch (Sicherheit)</option></select></label>
+          <label>Domäne<select name="domain"><option value="it" selected>IT-Anwendung</option><option value="produkt">Produktsoftware / Firmware</option><option value="pruefsoftware">Prüf- und Fertigungssoftware</option><option value="werkzeug">Engineering-Werkzeug</option></select></label>
           <label>Datenklasse<select name="data_class"><option value="intern" selected>intern</option><option value="oeffentlich">öffentlich</option><option value="vertraulich">vertraulich</option></select></label>
           <label>Umsetzung<select name="execution"><option value="automatisch" selected>automatisch (komplex → Codex/Claude)</option><option value="lokal">nur lokale Modelle</option><option value="abo">Codex/Claude (Abo)</option></select></label>
           <label class="wide">Freigegebener Änderungsbereich<select name="scope" required data-scopes><option value="">wird geladen …</option></select></label>
@@ -536,9 +540,12 @@ class AgentCenter {
         this.$("[data-run-msg]").className = "msg error";
       }
       if (draft) {
-        for (const name of ["title", "goal", "user_group", "behavior", "success_example", "exclusions", "project", "change_class", "data_class", "execution"]) {
+        for (const name of ["title", "goal", "user_group", "behavior", "success_example", "exclusions", "project", "data_class", "execution"]) {
           if (draft[name] && form.elements[name]) form.elements[name].value = draft[name];
         }
+        // Vorschläge aus FLOWAI nennen eine Änderungsklasse; daraus eine Einstufung vorschlagen.
+        form.elements.project_class.value = draft.change_class === "standard" ? "S" : "M";
+        form.elements.criticality.value = draft.change_class === "kritisch" ? "K2" : "K1";
         if (draft.scope && [...select.options].some((o) => o.value === draft.scope)) select.value = draft.scope;
         this.$("[data-run-msg]").textContent = `Vorschlag ${draft.id} aus FLOWAI${draft.note ? `: ${draft.note}` : ""}. Bitte prüfen, ergänzen und einreichen.`;
       }
@@ -649,7 +656,7 @@ class AgentCenter {
     const latest = new Map();
     for (const artifact of detail.artifacts) latest.set(artifact.kind, artifact);
     const label = (role) => (data?.agents || []).find((a) => a.role === role)?.name || role || "Orchestrator";
-    return `<header class="run-head"><div><span class="ac-chip lime">${esc(run.auftrag_id)}</span> <span class="ac-status ${esc(run.status)}">${esc(run.status)}</span><h3>${esc(run.title)}</h3><p class="lead">${esc(run.id)} · ${esc(run.change_class)} · beauftragt von ${esc(run.requested_by?.name)} · ${esc(run.model_calls)} Modellaufrufe${run.reason ? ` · ${esc(run.reason)}` : ""}</p></div><div><button class="ac-btn" data-close type="button">Schließen</button> ${["aktiv", "wartet", "blockiert", "pausiert"].includes(run.status) ? '<button class="ac-btn danger" data-cancel-run type="button">Lauf abbrechen</button>' : ""}</div></header>
+    return `<header class="run-head"><div><span class="ac-chip lime">${esc(run.auftrag_id)}</span> <span class="ac-status ${esc(run.status)}">${esc(run.status)}</span><h3>${esc(run.title)}</h3><p class="lead">${esc(run.id)} · ${esc(run.auftrag?.project_class || "S")}/${esc(run.auftrag?.criticality || "K1")} · ${esc(run.change_class)} · beauftragt von ${esc(run.requested_by?.name)} · ${esc(run.model_calls)} Modellaufrufe${run.reason ? ` · ${esc(run.reason)}` : ""}</p></div><div><button class="ac-btn" data-close type="button">Schließen</button> ${["aktiv", "wartet", "blockiert", "pausiert"].includes(run.status) ? '<button class="ac-btn danger" data-cancel-run type="button">Lauf abbrechen</button>' : ""}</div></header>
       ${detail.manifest_gaps?.length ? `<p class="gaps">Nachweislücken: ${detail.manifest_gaps.map((g) => esc(g)).join(" · ")}</p>` : ""}
       ${renderFocus(detail, focus)}
       <h4>Verlauf</h4><ol class="timeline">${detail.steps.map((s) => `<li class="${esc(s.status)}"><b>${esc(label(s.role))}</b> <small>${esc(s.step_id)} · Versuch ${esc(s.attempt)} · ${esc(s.status)} · ${esc(s.provider)} ${esc(s.model)}</small><p>${esc(s.summary || s.error)}</p>${(s.findings || []).length ? `<small>${s.findings.length} Befund(e)</small>` : ""}</li>`).join("")}</ol>

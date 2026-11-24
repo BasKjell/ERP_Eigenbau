@@ -87,6 +87,7 @@ tools:
 artifact_kinds:
   - auftrag
   - geschaeftsbewertung
+  - projektplan
   - anforderungen
   - anforderungsbefund
   - baseline
@@ -95,6 +96,7 @@ artifact_kinds:
   - plan
   - implementierung
   - akzeptanztests
+  - integrationstests
   - codebefund
   - integration
   - dokumentation
@@ -102,6 +104,29 @@ artifact_kinds:
   - prozessbewertung
 
 agents:
+  - id: AG-ENG-00
+    role: projektplanung
+    number: 0
+    name: Projektplanungs-Agent
+    umbrella: AG-ENGINEERING
+    owner: Projektleitung
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: assistenz
+    kind: create
+    mission: >-
+      Schneidet Vorhaben der Projektklassen M und L in Arbeitspakete je Ebene des V-Modells, mit
+      Abnahmekriterium, Welle und Schätzspanne. Plant nur; EP1 „Projekt definiert“ entscheidet ein Mensch.
+    tools: [rm.search, rm.get]
+    reads: [auftrag, geschaeftsbewertung]
+    data_classes: [intern]
+    limits: {max_packages_per_run: 20}
+    escalation: Unklarer Umfang, Termin, Hardware oder Budget -> Product Owner
+    evidence: Arbeitspakete mit Ebene, Ergebnis, Abnahmekriterium und Welle
+    prompt: prompts/00-projektplanung.md
+
   - id: AG-ENG-01
     role: anforderungen
     number: 1
@@ -202,7 +227,7 @@ agents:
     kind: create
     mission: Zerlegt die fixierte Baseline in Aufgaben mit Abhängigkeiten und Testbezug.
     tools: [rm.get_baseline, rm.search, rm.link_trace, ticket.create]
-    reads: [auftrag, anforderungen, baseline, architektur]
+    reads: [auftrag, projektplan, anforderungen, baseline, architektur]
     data_classes: [intern]
     limits: {max_tasks_per_run: 15}
     escalation: Offene Entscheidung oder fehlende Abhängigkeit
@@ -251,6 +276,29 @@ agents:
     escalation: Unklarer Sollwert -> Anforderungsprüfung und Product Owner
     evidence: Testfall-IDs je Kriterium
     prompt: prompts/07-akzeptanztest.md
+
+  - id: AG-ENG-13
+    role: integrationstest
+    number: 13
+    name: Integrationstest-Agent
+    umbrella: AG-ENGINEERING
+    owner: Testmanagement
+    deputy: offen
+    status: testbetrieb
+    autonomy: A1
+    approved_until: "2027-05-31"
+    model_profile: pruefer
+    kind: create
+    mission: >-
+      Leitet aus Architektur und Schnittstellen Integrationstests ab (Projektklassen M und L).
+      Kein Zugriff auf die Implementierung.
+    tools: [rm.get_baseline, rm.search]
+    reads: [auftrag, baseline, architektur]
+    data_classes: [intern]
+    limits: {max_tests_per_run: 20}
+    escalation: Unklare Schnittstelle -> Tech Lead
+    evidence: Integrationstestfälle je Schnittstelle mit Bezug auf Anforderungen
+    prompt: prompts/13-integrationstest.md
 
   - id: AG-ENG-08
     role: codepruefung
@@ -354,7 +402,7 @@ agents:
       Aufwand, Risiko und Abläufen des Unternehmens passen. Bewertet, erteilt aber keine
       Freigabe (A4 bleibt beim Menschen).
     tools: [rm.search, rm.get, rm.get_baseline, rm.comment]
-    reads: [auftrag, geschaeftsbewertung, anforderungen, baseline, architektur, plan, akzeptanztests, integration, dokumentation, nachweise]
+    reads: [auftrag, geschaeftsbewertung, projektplan, anforderungen, baseline, architektur, plan, akzeptanztests, integration, dokumentation, nachweise]
     data_classes: [intern]
     limits: {}
     escalation: Zielkonflikt, unklarer Nutzen, neuer Prozess oder Mehraufwand für Beschäftigte -> Geschäftsführung
@@ -365,6 +413,6 @@ agents:
 # Sie laufen nicht über den Entwicklungsfluss, erscheinen aber in der Agentenzentrale.
 productive_agents:
   - {id: AG-SUPPLIER, name: Lieferanten-Agent, owner: Leitung Einkauf, autonomy: A2, status: testbetrieb, scope: "Risiken erkennen, Anfrage entwerfen, bestätigte Erinnerung senden"}
-  - {id: AG-ENGINEERING, name: Engineering-Agent, owner: Leitung Entwicklung, autonomy: A1, status: testbetrieb, scope: "Dach für die Entwicklungsrollen AG-ENG-01 bis AG-ENG-11"}
+  - {id: AG-ENGINEERING, name: Engineering-Agent, owner: Leitung Entwicklung, autonomy: A1, status: testbetrieb, scope: "Dach für die Entwicklungsrollen AG-ENG-00 bis AG-ENG-11 und AG-ENG-13"}
   - {id: AG-PLANNING, name: Planungs-Agent, owner: Leitung Operations, autonomy: A2, status: testbetrieb, scope: "Szenarien rechnen und bestätigte Umplanung übertragen"}
   - {id: AG-QUALITY, name: Qualitäts-Agent, owner: Leitung Qualität, autonomy: A1, status: testbetrieb, scope: "Prüfkontext sammeln und Entscheidung vorbereiten"}

@@ -36,7 +36,19 @@ ARTIFACTS: dict[str, tuple[str, dict[str, type], dict[str, type], int]] = {
         {"alternatives": LIST, "trust_boundaries": LIST, "new_trust_boundary": bool, "recovery": str},
         3,
     ),
+    "projektplanung": (
+        "arbeitspaket",
+        {"key": str, "title": str, "result": str, "v_level": str, "acceptance": str},
+        {"wave": int, "effort": str, "depends_on": LIST, "scope": str, "owner_role": str, "criticality": str},
+        20,
+    ),
     "planung": ("aufgabe", {"key": str, "title": str, "covers": LIST}, {"depends_on": LIST}, 15),
+    "integrationstest": (
+        "integrationstestfall",
+        {"key": str, "title": str, "interface": str, "steps": LIST},
+        {"covers": LIST, "preconditions": str, "negative": bool},
+        20,
+    ),
     "akzeptanztest": (
         "testfall",
         {"key": str, "title": str, "criterion": str, "steps": LIST},
@@ -55,6 +67,10 @@ ARTIFACTS: dict[str, tuple[str, dict[str, type], dict[str, type], int]] = {
     ),
 }
 REVIEW_ONLY = frozenset({"anforderungspruefung", "sicherheit", "codepruefung"})
+# Ebenen des V-Modells für Arbeitspakete (KI-Softwareentwicklung Teil 02).
+V_LEVELS = ("projektplanung", "anforderungen", "systemanforderungen", "systemarchitektur", "software_anforderungen",
+            "software_architektur", "feinentwurf", "implementierung", "modulverifikation", "software_integration",
+            "software_verifikation", "systemintegration", "systemverifikation", "abnahme", "betrieb")
 RECOMMENDATION_STATUS = {"weiter": "fertig", "mit Auflagen": "fertig", "anhalten": "nacharbeit"}
 
 
@@ -127,6 +143,10 @@ def _check_fields(item: Any, required: dict[str, type], optional: dict[str, type
         value = item[name]
         if kind is str:
             result[name] = _text(value, name, MAX_CONTENT if name == "content" else MAX_TEXT)
+        elif kind is int:
+            if isinstance(value, bool) or not isinstance(value, int) or not 0 < value <= 20:
+                raise ContractError(f"{label}.{name} muss eine ganze Zahl von 1 bis 20 sein")
+            result[name] = value
         elif kind is bool:
             if not isinstance(value, bool):
                 raise ContractError(f"{label}.{name} muss true oder false sein")
@@ -247,7 +267,12 @@ def _check_items(role: str, artifact: dict[str, Any], label: str) -> None:
         for threat in artifact["threats"]:
             if not isinstance(threat, dict) or not {"threat", "control"} <= set(threat):
                 raise ContractError(f"{label}: jede Bedrohung braucht threat und control")
-    elif role == "akzeptanztest":
+    elif role == "projektplanung":
+        if artifact["v_level"] not in V_LEVELS:
+            raise ContractError(f"{label}: v_level muss einer von {', '.join(V_LEVELS)} sein")
+        if artifact.get("criticality") not in (None, "K1", "K2", "K3"):
+            raise ContractError(f"{label}: criticality muss K1, K2 oder K3 sein")
+    elif role in {"akzeptanztest", "integrationstest"}:
         steps = artifact["steps"] = _normalize_steps(artifact["steps"])
         for index, step in enumerate(steps, 1):
             if not isinstance(step, dict) or not {"action", "expected"} <= set(step):

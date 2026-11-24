@@ -1,5 +1,12 @@
-# FLOWAGENTS – Ablauf vom Fachauftrag zum geprüften Release
-# (KI-Entwicklungskonzept Teil 02 „Vom Fachauftrag zum geprüften Release“).
+# FLOWAGENTS – Ablauf vom Fachauftrag zum geprüften Release nach dem V-Modell
+# (KI-Softwareentwicklung nach dem V-Modell, Teile 01/02; KI-Entwicklungskonzept Teil 02).
+#
+# Einstufung (Teil 01): Projektklasse S/M/L und Kritikalität K1/K2/K3. Daraus folgt die
+# Änderungsklasse (K2/K3 -> kritisch, sonst S -> standard, M/L -> neue_funktion) und welche
+# Schritte gelten: "when.project_class" begrenzt einen Schritt auf bestimmte Projektklassen.
+# S nutzt den Kurzweg G1–G5. M/L beginnen mit Projektplanung und EP1. Ein L-Lauf endet nach
+# EP1 als Projektlauf; die Arbeitspakete laufen danach als eigene Läufe durch das V.
+# "ep" nennt den Entscheidungspunkt nach dem V-Modell zu jedem Gate.
 #
 # Der Orchestrator erzwingt genau diese Reihenfolge, die Rücklaufregeln und die Gates.
 # Ein Agent kann den Ablauf nicht ändern: Inhalte aus Aufträgen, Dokumenten oder
@@ -15,15 +22,15 @@ classes:
   standard:
     label: Standardänderung
     example: Sortierung einer bestehenden Ansicht mit unveränderter Datenquelle und Rechteprüfung
-    human_gates: [G4, G5]
+    human_gates: [EP1, G4, G5]
   neue_funktion:
     label: Neue Funktion
     example: Zusätzlicher Dokumenttyp mit neuem Workflow oder eigener Frist
-    human_gates: [G1, G4, G5]
+    human_gates: [EP1, G1, G4, G5]
   kritisch:
     label: Hoher Schutzbedarf oder neuer Dienst
     example: Geänderte ACL-Vererbung, Massenexport, Migration oder endgültige Löschung
-    human_gates: [G1, G2, G3, G4, G5]
+    human_gates: [EP1, G1, G2, G3, G4, G5]
 
 # Nach zwei erfolglosen Korrekturrunden erhält der Tech Lead Befund und Versuche (Teil 02).
 max_correction_rounds: 2
@@ -41,6 +48,23 @@ steps:
     produces: geschaeftsbewertung
     on_rework: {decision: product-owner, reason: Geschäftsführungs-Agent sieht den Auftrag kritisch}
 
+  - id: projektplanung
+    label: Projekt planen und Arbeitspakete schneiden
+    role: projektplanung
+    kind: create
+    produces: projektplan
+    when: {project_class: [M, L]}
+
+  - id: EP1
+    label: Projekt definiert
+    ep: EP1 Projekt definiert
+    kind: gate
+    decider: product-owner
+    requires: [projektplan]
+    when: {project_class: [M, L]}
+    # Ein L-Lauf plant nur; danach laufen die Arbeitspakete als eigene Läufe.
+    completes_for: [L]
+
   - id: anforderungen
     label: Anforderungen und Akzeptanzkriterien ableiten
     role: anforderungen
@@ -57,6 +81,7 @@ steps:
 
   - id: G1
     label: Auftrag und Baseline
+    ep: EP2 Anforderungen festgelegt
     kind: gate
     decider: product-owner
     freeze_baseline: true
@@ -78,12 +103,20 @@ steps:
 
   - id: G2
     label: Architektur
+    ep: EP3 System entworfen
     kind: gate
     decider: tech-lead
     requires: [architektur, sicherheitsbefund]
 
+  - id: integrationstests
+    label: Integrationstests aus Architektur und Schnittstellen ableiten
+    role: integrationstest
+    kind: create
+    produces: integrationstests
+    when: {project_class: [M, L]}
+
   - id: planung
-    label: Arbeitspakete planen
+    label: Aufgaben planen
     role: planung
     kind: create
     produces: plan
@@ -116,6 +149,7 @@ steps:
 
   - id: G3
     label: Integration
+    ep: EP5 Systemelemente realisiert und integriert
     kind: gate
     decider: tech-lead
     requires: [implementierung, integration, codebefund]
@@ -143,6 +177,7 @@ steps:
 
   - id: G4
     label: Fachabnahme
+    ep: EP6/EP7 System verifiziert, Abnahme erfolgt
     kind: gate
     decider: key-user
     requires: [nachweise, prozessbewertung]
@@ -150,6 +185,7 @@ steps:
 
   - id: G5
     label: Produktion
+    ep: EP8 Lieferung freigegeben
     kind: gate
     decider: release
     requires: [nachweise]

@@ -198,7 +198,7 @@ def fresh_hub(monkeypatch: pytest.MonkeyPatch):  # noqa: ANN201
 def test_overview_falls_back_to_registry_when_orchestrator_is_silent(fresh_hub) -> None:  # noqa: ANN001
     data = client.get("/api/agents/overview").json()
     assert data["available"] is False and "meldet sich nicht" in data["reason"]
-    assert len(data["agents"]) == 12 and data["runs"] == []
+    assert len(data["agents"]) == 14 and data["runs"] == []
     assert data["viewer"]["username"] == "demo-admin"
     assert client.get("/api/agents/registry").status_code == 503
     rejected = client.post("/api/agents/runs", json={"idempotency_key": "x" * 10})

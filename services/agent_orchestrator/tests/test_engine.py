@@ -319,7 +319,7 @@ def test_overview_shows_agents_interactions_and_inbox(make_engine) -> None:  # n
     run = submit(engine, change_class="neue_funktion")
     drive(engine)
     overview = engine.overview()
-    assert len(overview["agents"]) == 12
+    assert len(overview["agents"]) == 14
     assert overview["metrics"]["decisions_open"] == 1
     assert overview["decisions"][0]["decider"] == "product-owner"
     assert overview["runs"][0]["waiting_for"] == "product-owner"

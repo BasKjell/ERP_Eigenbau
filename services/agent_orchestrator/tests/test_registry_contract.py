@@ -30,8 +30,9 @@ def test_registry_has_all_roles_ceo_and_gates(registry) -> None:  # noqa: ANN001
     roles = {agent.role for agent in registry.agents.values()}
     assert {"anforderungen", "anforderungspruefung", "architektur", "sicherheit", "planung", "entwicklung",
             "akzeptanztest", "codepruefung", "dokumentation", "nachweise", "schwachstellen",
-            "geschaeftsfuehrung"} == roles
-    assert [step.id for step in registry.steps if step.kind == "gate"] == ["G1", "G2", "G3", "G4", "G5"]
+            "geschaeftsfuehrung", "projektplanung", "integrationstest"} == roles
+    assert [step.id for step in registry.steps if step.kind == "gate"] == ["EP1", "G1", "G2", "G3", "G4", "G5"]
+    assert registry.agent("projektplanung").number == 0 and registry.agent("integrationstest").number == 13
     ceo = registry.agent("geschaeftsfuehrung")
     assert ceo.autonomy == "A0" and "rm.create_draft" not in ceo.tools
     assert all(not registry_module.FORBIDDEN_TOOL.search(tool) for agent in registry.agents.values()

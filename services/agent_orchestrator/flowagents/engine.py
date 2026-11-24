@@ -22,7 +22,7 @@ from typing import Any
 from .adoption import Adoption, Preview
 from .contract import ARTIFACTS, REVIEW_ONLY, ContractError, Handoff, extract_json, validate
 from .providers import AgentReply, AgentRequest, Provider, ProviderError
-from .registry import Agent, Registry, Step
+from .registry import CRITICALITIES, PROJECT_CLASSES, Agent, Registry, Step
 from .rm import RM, RMConflict, RMError
 from .sandbox import Sandbox, SandboxError, validate_path
 from .store import OPEN_RUN_STATES, Store, digest_of
@@ -31,8 +31,12 @@ from .uicheck import UiCheckError, UiRunner, scenarios_from
 ORCHESTRATOR = ("orchestrator", "FLOW-ORCHESTRATOR")
 # Laufsteuerung (Pause, Fortsetzen, Abbrechen): Plattformbetrieb und Tech Lead (KI-EK Teil 02).
 CONTROL_ROLES = frozenset({"platform-admin", "it-user", "work-admin", "flow-techlead"})
-GATE_BACK_TO = {"G1": "anforderungen", "G2": "architektur", "G3": "entwicklung", "G4": "entwicklung"}
+GATE_BACK_TO = {"EP1": "projektplanung", "G1": "anforderungen", "G2": "architektur", "G3": "entwicklung", "G4": "entwicklung"}
 DATA_CLASSES = ("oeffentlich", "intern", "vertraulich")
+# Domänenprofile (KI-Softwareentwicklung Teil 07).
+DOMAINS = ("it", "produkt", "pruefsoftware", "werkzeug")
+CLASS_ORDER = ("standard", "neue_funktion", "kritisch")
+GATE_IDS = frozenset({"EP1", "G1", "G2", "G3", "G4", "G5"})
 MAX_INVALID_ATTEMPTS = 2
 
 
@@ -98,7 +102,7 @@ class Engine:
 
     def _validated_auftrag(self, values: dict[str, Any], user: dict[str, Any]) -> dict[str, Any]:
         allowed = {"title", "goal", "user_group", "behavior", "exclusions", "success_example", "data_class",
-                   "change_class", "scope", "project", "execution"}
+                   "change_class", "scope", "project", "execution", "project_class", "criticality", "domain"}
         unknown = set(values) - allowed
         if unknown:
             raise EngineError(f"unbekannte Auftragsfelder {sorted(unknown)}")
@@ -109,9 +113,10 @@ class Engine:
                 raise EngineError(f"{name}: {low} bis {high} Zeichen erforderlich")
             return value
 
-        change_class = str(values.get("change_class") or "neue_funktion")
-        if change_class not in self.registry.classes:
-            raise EngineError("unbekannte Änderungsklasse")
+        project_class, criticality, change_class = self._classify(values)
+        domain = str(values.get("domain") or "it")
+        if domain not in DOMAINS:
+            raise EngineError(f"Domäne muss einer von {', '.join(DOMAINS)} sein")
         data_class = str(values.get("data_class") or "intern")
         if data_class not in DATA_CLASSES:
             raise EngineError("Datenklasse muss oeffentlich, intern oder vertraulich sein")
@@ -150,6 +155,9 @@ class Engine:
             "success_example": text("success_example", 5, 1500),
             "data_class": data_class,
             "change_class": change_class,
+            "project_class": project_class,
+            "criticality": criticality,
+            "domain": domain,
             "scope": scope_id,
             "scope_label": str(scope.get("label", scope_id)),
             "paths": sorted(set(checked)),
@@ -158,6 +166,29 @@ class Engine:
             "execution": execution,
             "owner": _person(user)["name"],
         }
+
+    def _classify(self, values: dict[str, Any]) -> tuple[str, str, str]:
+        """Einstufung nach Teil 01: Projektklasse und Kritikalität bestimmen die Änderungsklasse.
+
+        K2/K3 -> kritisch, sonst S -> standard und M/L -> neue_funktion. Eine ausdrücklich genannte
+        Änderungsklasse darf den Weg nur verschärfen. Ohne Einstufung gilt der bisherige Kurzweg (S).
+        """
+        explicit = values.get("change_class")
+        if explicit is not None and str(explicit) not in self.registry.classes:
+            raise EngineError("unbekannte Änderungsklasse")
+        if not values.get("project_class") and not values.get("criticality"):
+            change_class = str(explicit or "neue_funktion")
+            return "S", "K2" if change_class == "kritisch" else "K1", change_class
+        project_class = str(values.get("project_class") or "S")
+        criticality = str(values.get("criticality") or "K1")
+        if project_class not in PROJECT_CLASSES:
+            raise EngineError("Projektklasse muss S, M oder L sein")
+        if criticality not in CRITICALITIES:
+            raise EngineError("Kritikalität muss K1, K2 oder K3 sein")
+        derived = "kritisch" if criticality in {"K2", "K3"} else "standard" if project_class == "S" else "neue_funktion"
+        if explicit and CLASS_ORDER.index(str(explicit)) > CLASS_ORDER.index(derived):
+            derived = str(explicit)
+        return project_class, criticality, derived
 
     # =================================================================================
     # Ein Arbeitsschritt
@@ -185,6 +216,9 @@ class Engine:
                 self.store.update_run(run["id"], status="abgeschlossen")
                 return True
             step = self._step(run)
+            if not step.applies(run["auftrag"]):
+                self._skip(run)
+                return True
         if step.kind in {"create", "review"}:
             self._agent_step(run, step)
         elif step.kind == "check":
@@ -196,6 +230,24 @@ class Engine:
 
     def _step(self, run: dict[str, Any]) -> Step:
         return self.registry.steps[run["step_index"]]
+
+    def _next_applicable(self, run: dict[str, Any], index: int) -> int:
+        steps = self.registry.steps
+        while index < len(steps) and not steps[index].applies(run["auftrag"]):
+            index += 1
+        return index
+
+    def _skip(self, run: dict[str, Any]) -> None:
+        """Schritte, die für die Projektklasse nicht gelten, ohne Arbeit überspringen."""
+        step = self._step(run)
+        index = self._next_applicable(run, run["step_index"])
+        if index >= len(self.registry.steps):
+            self.store.update_run(run["id"], status="abgeschlossen", step_index=index, reason="")
+            return
+        self.store.update_run(run["id"], step_index=index)
+        self.store.event(run["id"], "uebersprungen", "orchestrator", step.role or step.id,
+                         f"{step.label} entfällt für Projektklasse {run['auftrag'].get('project_class', 'S')}",
+                         {"step": step.id})
 
     # -- Agentenschritt ------------------------------------------------------------------
     def _agent_step(self, run: dict[str, Any], step: Step) -> None:
@@ -461,6 +513,8 @@ class Engine:
                     context["digests"][kind] = {"version": item["version"], "digest": item["digest"]}
         if step.kind == "review":
             context["subject_kind"] = step.subject
+        if agent.role == "projektplanung":
+            context["scopes"] = {key: str(spec.get("label", key)) for key, spec in self.scopes.items()}
         pending = (run["corrections"].get("pending") or {}).get(step.id)
         if pending:
             context["findings_to_fix"] = pending
@@ -492,7 +546,14 @@ class Engine:
         lines = [
             f"Lauf: {run['id']} · Auftrag: {run['auftrag_id']} · Schritt: {step.id} ({step.label})",
             f"Rolle: {agent.id} {agent.name} · Stufe {agent.autonomy} · Klasse: {run['change_class']}",
+            "Zuschnitt: Projektklasse {project_class} · Kritikalität {criticality} · Domäne {domain}".format(
+                project_class=run["auftrag"].get("project_class", "S"), criticality=run["auftrag"].get("criticality", "K1"),
+                domain=run["auftrag"].get("domain", "it")),
         ]
+        if run["auftrag"].get("criticality") == "K3":
+            lines.append("Kritikalität K3: Du lieferst nur Entwürfe und Prüfhinweise; jedes Ergebnis prüft eine "
+                         "qualifizierte Person nach Norm. Kennzeichne es als „KI-Entwurf, menschliche Prüfung nach "
+                         "Norm erforderlich“.")
         if agent.role == "entwicklung":
             lines.append("Freigegebene Pfade: " + (", ".join(context.get("allowed_paths") or []) or "keine"))
         if agent.role == "akzeptanztest" and _has_ui(run["auftrag"].get("paths") or []):
@@ -725,6 +786,17 @@ class Engine:
                     review.get("content", {}).get("status") == "fertig"
             return bound.get("version") == subject.get("version") and review.get("content", {}).get("status") == "fertig"
 
+        if step.id == "EP1":
+            packages = latest("projektplan").get("content", {}).get("items", [])
+            keys = {item.get("key") for item in packages}
+            if not packages:
+                problems.append("Projektplan enthält keine Arbeitspakete")
+            unknown = sorted({dep for item in packages for dep in item.get("depends_on", []) if dep not in keys})
+            if unknown:
+                problems.append(f"Abhängigkeiten auf unbekannte Arbeitspakete: {', '.join(unknown)}")
+            bad_scopes = sorted({item["scope"] for item in packages if item.get("scope") and item["scope"] not in self.scopes})
+            if bad_scopes:
+                problems.append(f"Arbeitspakete nennen nicht freigegebene Änderungsbereiche: {', '.join(bad_scopes)}")
         if step.id == "G1" and not reviewed("anforderungsbefund", "anforderungen"):
             problems.append("Prüfung gilt nicht für den aktuellen Anforderungsstand")
         if step.id == "G2" and not reviewed("sicherheitsbefund", "architektur"):
@@ -737,13 +809,33 @@ class Engine:
                 problems.append("Integrationsprüfung gehört zu einem anderen Änderungsstand")
             if not reviewed("codebefund", "implementierung", by_digest=True):
                 problems.append("Codeprüfung gehört zu einem anderen Änderungsstand")
+            if self._requires_kind(run, "integrationstests") and not latest("integrationstests"):
+                problems.append("Integrationstests aus der Architektur fehlen")
         if step.id in {"G4", "G5"}:
             problems += self.verify_manifest(run["id"])
         return problems
 
+    def _requires_kind(self, run: dict[str, Any], kind: str) -> bool:
+        """Entsteht diese Artefaktart im Zuschnitt des Laufs (Projektklasse)?"""
+        producer = self.registry.producer(kind)
+        return producer is not None and producer.applies(run["auftrag"])
+
     def verify_manifest(self, run_id: str) -> list[str]:
-        """Der Orchestrator prüft das Nachweispaket selbst (Teil 07, Test 30)."""
+        """Der Orchestrator prüft das Nachweispaket selbst (Teil 07, Test 30).
+
+        Nach dem V-Modell hat jede Anforderung der Baseline eine Prüfung auf derselben Ebene
+        (Akzeptanztest je Anforderung; bei M/L zusätzlich Integrationstests).
+        """
         gaps = []
+        run = self.store.run(run_id)
+        baseline = (self.store.latest_artifact(run_id, "baseline") or {}).get("content", {})
+        tests = (self.store.latest_artifact(run_id, "akzeptanztests") or {}).get("content", {}).get("items", [])
+        covered = {str(item.get("criterion", "")).split("/")[0] for item in tests}
+        for requirement in baseline.get("items", []):
+            if requirement.get("key") not in covered:
+                gaps.append(f"Anforderung {requirement.get('key')} hat keinen Akzeptanztest")
+        if self._requires_kind(run, "integrationstests") and self.store.latest_artifact(run_id, "integrationstests") is None:
+            gaps.append("Integrationstests fehlen (Projektklasse M/L)")
         manifest = (self.store.latest_artifact(run_id, "nachweise") or {}).get("content", {})
         claimed = {item.get("title"): item for item in manifest.get("items", [])}
         for kind in ("anforderungen", "baseline", "implementierung", "integration", "codebefund", "akzeptanztests"):
@@ -786,6 +878,7 @@ class Engine:
 
     def _gate_question(self, run: dict[str, Any], step: Step) -> str:
         texts = {
+            "EP1": "Projekt definiert? Einstufung, Arbeitspakete, Wellen und Abnahmekriterien bestätigen.",
             "G1": "Anforderungen fachlich freigeben? Die Arbeitsbaseline ist fixiert und unabhängig geprüft.",
             "G2": "Architektur und Sicherheitsbewertung bestätigen?",
             "G3": "Integrationsstand (Code, Prüfungen, Codeprüfung am selben Digest) bestätigen?",
@@ -817,12 +910,16 @@ class Engine:
 
     def _gate_context(self, run: dict[str, Any], step: Step) -> dict[str, Any]:
         summaries = {}
-        for kind in (*step.requires, "baseline", "geschaeftsbewertung", "prozessbewertung"):
+        for kind in (*step.requires, "baseline", "geschaeftsbewertung", "prozessbewertung", "projektplan",
+                     "integrationstests"):
             item = self.store.latest_artifact(run["id"], kind)
             if item:
                 summaries[kind] = {"version": item["version"], "digest": item["digest"],
                                    "summary": item["content"].get("summary", "")}
-        return {"artifacts": summaries, "change_class": run["change_class"]}
+        auftrag = run["auftrag"]
+        return {"artifacts": summaries, "change_class": run["change_class"], "ep": step.ep,
+                "project_class": auftrag.get("project_class", "S"), "criticality": auftrag.get("criticality", "K1"),
+                "domain": auftrag.get("domain", "it")}
 
     # =================================================================================
     # Menschliche Entscheidungen
@@ -866,6 +963,9 @@ class Engine:
             self._apply_decision(run, step, decision, outcome, comment, person)
             return self.store.decision(decision_id)
 
+    def _on_project_defined(self, run: dict[str, Any], person: dict[str, Any]) -> None:
+        """EP1 für Projektklasse L: Projekt mit Arbeitspaketen anlegen (Stufe 2)."""
+
     def _adopt(self, run: dict[str, Any], person: dict[str, Any], digest: str) -> None:
         if self.adoption is None:
             return
@@ -886,8 +986,15 @@ class Engine:
     ) -> None:
         gate = decision["gate"]
         accepted = outcome == "annehmen"
-        if gate in {"G1", "G2", "G3", "G4", "G5"}:
+        if gate in GATE_IDS:
             if accepted:
+                if gate == "EP1" and run["auftrag"].get("project_class") in step.completes_for:
+                    self.store.update_run(run["id"], status="abgeschlossen", step_index=len(self.registry.steps),
+                                          reason="Projekt definiert; Arbeitspakete laufen als eigene Aufträge")
+                    self.store.event(run["id"], "projekt", f"mensch:{decision['decider']}", "projektplanung",
+                                     f"EP1 Projekt definiert durch {person['name']}")
+                    self._on_project_defined(run, person)
+                    return
                 if gate == "G5":
                     self.store.update_run(run["id"], status="abgeschlossen", step_index=len(self.registry.steps),
                                           reason="Produktionsfreigabe protokolliert; Auslieferung manuell")
@@ -981,7 +1088,7 @@ class Engine:
     # Hilfen
     # =================================================================================
     def _advance(self, run: dict[str, Any], step: Step, message: str) -> None:
-        index = self.registry.step_index(step.id) + 1
+        index = self._next_applicable(run, self.registry.step_index(step.id) + 1)
         if index >= len(self.registry.steps):
             self.store.update_run(run["id"], status="abgeschlossen", step_index=index, reason="")
             return
@@ -1073,8 +1180,8 @@ class Engine:
             "human_roles": {name: {"label": spec.get("label", name), "keycloak_roles": spec.get("keycloak_roles", []),
                                    "open": sum(1 for d in open_decisions if d["decider"] == name)}
                             for name, spec in self.registry.human_roles.items()},
-            "pipeline": [{"id": s.id, "label": s.label, "kind": s.kind, "role": s.role, "decider": s.decider}
-                         for s in steps],
+            "pipeline": [{"id": s.id, "label": s.label, "kind": s.kind, "role": s.role, "decider": s.decider,
+                          "ep": s.ep, "when": {k: list(v) for k, v in s.when.items()}} for s in steps],
             "runs": [self._run_summary(run, open_decisions) for run in runs],
             "decisions": [self._decision_summary(d, {r["id"]: r for r in runs}) for d in open_decisions],
             "events": events[-40:],
@@ -1097,11 +1204,17 @@ class Engine:
         index = min(run["step_index"], len(steps))
         current = steps[index] if index < len(steps) else None
         waiting = next((d for d in open_decisions if d["run_id"] == run["id"]), None)
+        auftrag = run["auftrag"]
+        applicable = [i for i, s in enumerate(steps) if s.applies(auftrag)] or [0]
+        done = sum(1 for i in applicable if i < index)
         return {
             "id": run["id"], "auftrag_id": run["auftrag_id"], "title": run["title"],
             "change_class": run["change_class"], "status": run["status"], "reason": run["reason"],
             "step": current.id if current else "fertig", "step_label": current.label if current else "Abgeschlossen",
-            "role": current.role if current else None, "progress": round(index / len(steps) * 100),
+            "role": current.role if current else None, "progress": round(done / len(applicable) * 100),
+            "ep": current.ep if current else "", "project_class": auftrag.get("project_class", "S"),
+            "criticality": auftrag.get("criticality", "K1"), "domain": auftrag.get("domain", "it"),
+            "project_id": auftrag.get("project_id", ""), "package_key": auftrag.get("package_key", ""),
             "requested_by": run["requested_by"].get("name"), "updated_at": run["updated_at"],
             "created_at": run["created_at"], "model_calls": run["model_calls"],
             "waiting_for": waiting["decider"] if waiting else None,
@@ -1126,10 +1239,13 @@ class Engine:
                 "id": run["auftrag_id"], "title": run["title"], "change_class": run["change_class"],
                 "requested_by": run["requested_by"].get("name"), "goal": auftrag.get("goal", ""),
                 "success_example": auftrag.get("success_example", ""), "scope_label": auftrag.get("scope_label", ""),
+                "project_class": auftrag.get("project_class", "S"), "criticality": auftrag.get("criticality", "K1"),
+                "domain": auftrag.get("domain", "it"),
             }
         return summary
 
     GATE_FOCUS = {
+        "EP1": ["projektplan", "geschaeftsbewertung"],
         "G1": ["anforderungen", "baseline", "anforderungsbefund"],
         "G2": ["architektur", "sicherheitsbefund"],
         "G3": ["implementierung", "integration", "codebefund"],
@@ -1204,6 +1320,10 @@ def _schema_hint(role: str, kind: str) -> str:
 
 
 SHAPE_HINTS = {
+    "integrationstest": (' Form von "steps": [{"action": "Aufruf über die Schnittstelle", "expected": "beobachtbares '
+                         'Ergebnis"}]; "interface" nennt die Schnittstelle aus der Architektur.'),
+    "projektplanung": (' "v_level" ist eine Ebene des V-Modells (zum Beispiel anforderungen, software_architektur, '
+                       'implementierung, software_integration, software_verifikation, abnahme); "wave" ist eine Zahl.'),
     "akzeptanztest": (' Form von "steps": [{"action": "Was die Person tut", "expected": "Was sie danach sieht"}] '
                       "– jeder Schritt ein Objekt mit genau diesen beiden Texten, auch bei Dokumentation "
                       '(z. B. action "Seite Wareneingang öffnen", expected "Diagramm und Zuständigkeiten sichtbar").'),
@@ -1228,7 +1348,8 @@ def _require_real_change(role: str, handoff: Handoff, originals: dict[str, str |
 
 
 def _limit(agent: Agent) -> int | None:
-    for key in ("max_drafts_per_run", "max_tasks_per_run", "max_tests_per_run", "max_changed_files"):
+    for key in ("max_drafts_per_run", "max_tasks_per_run", "max_tests_per_run", "max_changed_files",
+                "max_packages_per_run"):
         if key in agent.limits:
             return int(agent.limits[key])
     return None

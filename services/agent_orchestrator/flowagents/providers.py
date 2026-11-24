@@ -286,6 +286,43 @@ class SimulatedProvider:
             "recommendation": recommendation,
         }
 
+    def _projektplanung(self, context: dict[str, Any]) -> dict[str, Any]:
+        auftrag = self._auftrag(context)
+        scope = auftrag.get("scope") or ""
+        packages = [
+            ("AP-1", "Anforderungen festlegen", "Anforderungs-Baseline mit Prüfkriterien", "anforderungen", 1, []),
+            ("AP-2", "Architektur und Schnittstellen", "Architektur mit Bedrohungsmodell", "software_architektur", 1, ["AP-1"]),
+            ("AP-3", "Umsetzung im freigegebenen Bereich", "Geprüfter Änderungsstand mit Unit-Tests", "implementierung", 1, ["AP-2"]),
+            ("AP-4", "Integration und Verifikation", "Bestandene Integrations- und Software-Tests", "software_verifikation", 2, ["AP-3"]),
+            ("AP-5", "Abnahme durch den Fachbereich", "Dokumentierte Fachabnahme am Digest", "abnahme", 2, ["AP-4"]),
+        ]
+        artifacts = [
+            {"type": "arbeitspaket", "key": key, "title": f"{title} ({auftrag.get('title', '')[:60]})", "result": result,
+             "v_level": level, "acceptance": f"{result} liegt mit Nachweis vor", "wave": wave,
+             "effort": "2–4 PT, Annahme: bestehende Plattform-API", "depends_on": deps,
+             **({"scope": scope} if scope and level in {"implementierung", "anforderungen"} else {}),
+             "owner_role": "Tech Lead" if level != "abnahme" else "Product Owner"}
+            for key, title, result, level, wave, deps in packages
+        ]
+        return {"status": "fertig", "summary": f"{len(artifacts)} Arbeitspakete in 2 Wellen geschnitten.",
+                "artifacts": artifacts, "findings": [], "questions": []}
+
+    def _integrationstest(self, context: dict[str, Any]) -> dict[str, Any]:
+        architecture = (context.get("artifacts") or {}).get("architektur") or {}
+        tests = []
+        for item in architecture.get("items", []):
+            for index, flow in enumerate(item.get("data_flows") or ["Komponenten tauschen Daten aus"], start=1):
+                tests.append({
+                    "type": "integrationstestfall", "key": f"IT-{item.get('key', 'ADR')}-{index}",
+                    "title": f"Schnittstelle prüfen: {flow}"[:150], "interface": flow.split(":")[0][:200],
+                    "covers": ["R2/AC-2"], "preconditions": "Synthetische Testdaten, zwei Testprofile",
+                    "steps": [{"action": f"Aufruf über {flow.split(':')[0]}",
+                               "expected": "Antwort nur mit berechtigten Objekten; Fehler ohne Objektnamen"}],
+                    "negative": True,
+                })
+        return {"status": "fertig", "summary": f"{len(tests)} Integrationstests aus der Architektur abgeleitet.",
+                "artifacts": tests, "findings": [], "questions": []}
+
     def _anforderungen(self, context: dict[str, Any]) -> dict[str, Any]:
         auftrag = self._auftrag(context)
         source = auftrag.get("id", "A-?")

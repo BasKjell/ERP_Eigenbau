@@ -17,6 +17,10 @@ AGENT_AUTONOMY = frozenset({"A0", "A1", "A2", "A3"})
 KINDS = frozenset({"create", "review"})
 STEP_KINDS = frozenset({"create", "review", "check", "gate"})
 GATES = ("G1", "G2", "G3", "G4", "G5")
+# Zusätzliche Entscheidungspunkte nach dem V-Modell (Teil 02): EP1 „Projekt definiert“ vor G1.
+EXTRA_GATES = ("EP1",)
+PROJECT_CLASSES = ("S", "M", "L")
+CRITICALITIES = ("K1", "K2", "K3")
 # Werkzeuge, die keine Agentenrolle besitzen darf (Teil 09).
 FORBIDDEN_TOOL = re.compile(r"(approve|freigabe|merge|delete|loesch|deploy|admin|release)", re.I)
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}")
@@ -90,6 +94,14 @@ class Step:
     bind_digest: str | None = None
     on_rework: dict[str, str] = field(default_factory=dict)
     on_failure: dict[str, str] = field(default_factory=dict)
+    when: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    ep: str = ""
+    completes_for: tuple[str, ...] = ()
+
+    def applies(self, auftrag: dict[str, Any]) -> bool:
+        """Gilt dieser Schritt für den Zuschnitt des Auftrags (Projektklasse)?"""
+        allowed = self.when.get("project_class")
+        return not allowed or str(auftrag.get("project_class") or "S") in allowed
 
 
 @dataclass(frozen=True)
@@ -150,6 +162,8 @@ class Registry:
                     "decider": step.decider,
                     "produces": step.produces,
                     "subject": step.subject,
+                    "ep": step.ep,
+                    "when": {k: list(v) for k, v in step.when.items()},
                 }
                 for step in self.steps
             ],
@@ -256,7 +270,7 @@ def load(directory: Path) -> Registry:
     _require({"standard", "neue_funktion", "kritisch"} <= set(classes), "Änderungsklassen unvollständig")
     for name, spec in classes.items():
         gates = set(spec.get("human_gates") or ())
-        _require(gates <= set(GATES), f"Klasse {name}: unbekanntes Gate")
+        _require(gates <= set(GATES) | set(EXTRA_GATES), f"Klasse {name}: unbekanntes Gate")
         _require({"G4", "G5"} <= gates, f"Klasse {name}: Fachabnahme und Produktion bleiben menschlich")
 
     steps: list[Step] = []
@@ -276,7 +290,15 @@ def load(directory: Path) -> Registry:
             bind_digest=raw.get("bind_digest"),
             on_rework=dict(raw.get("on_rework") or {}),
             on_failure=dict(raw.get("on_failure") or {}),
+            when={str(k): tuple(str(x) for x in v) for k, v in dict(raw.get("when") or {}).items()},
+            ep=str(raw.get("ep") or ""),
+            completes_for=tuple(str(x) for x in raw.get("completes_for") or ()),
         )
+        _require(set(step.when) <= {"project_class"}, f"Schritt {step.id}: unbekannte Bedingung")
+        _require(set(step.when.get("project_class", ())) <= set(PROJECT_CLASSES),
+                 f"Schritt {step.id}: unbekannte Projektklasse")
+        _require(set(step.completes_for) <= set(PROJECT_CLASSES) and (not step.completes_for or step.kind == "gate"),
+                 f"Schritt {step.id}: completes_for nur an Gates mit Projektklassen")
         _require(all(s.id != step.id for s in steps), f"Schritt {step.id} doppelt")
         if step.kind in {"create", "review"}:
             agent = agents.get(step.role or "")
@@ -292,7 +314,7 @@ def load(directory: Path) -> Registry:
                     f"Schritt {step.id}: Prüfer und Ersteller gehören zur selben Modellfamilie",
                 )
         if step.kind == "gate":
-            _require(step.id in GATES, f"Gate {step.id} unbekannt")
+            _require(step.id in GATES or step.id in EXTRA_GATES, f"Gate {step.id} unbekannt")
             _require(step.decider in human_roles, f"Gate {step.id}: Entscheider fehlt")
             _require(set(step.requires) <= produced, f"Gate {step.id}: Voraussetzung entsteht nicht vorher")
         for target in (step.on_rework.get("back_to"), step.on_failure.get("back_to")):
@@ -306,13 +328,20 @@ def load(directory: Path) -> Registry:
         if step.kind == "gate" and step.freeze_baseline:
             produced.add("baseline")
         steps.append(step)
-    _require([s.id for s in steps if s.kind == "gate"] == list(GATES), "Gates G1 bis G5 müssen in Reihenfolge folgen")
+    _require([s.id for s in steps if s.kind == "gate" and s.id in GATES] == list(GATES),
+             "Gates G1 bis G5 müssen in Reihenfolge folgen")
+    gate_order = [s.id for s in steps if s.kind == "gate"]
+    if "EP1" in gate_order:
+        _require(gate_order.index("EP1") < gate_order.index("G1"), "EP1 muss vor G1 liegen")
+        _require(all("EP1" in spec.get("human_gates", ()) for spec in classes.values()),
+                 "EP1 „Projekt definiert“ entscheidet in jeder Klasse ein Mensch")
     for agent in agents.values():
         _require(set(agent.reads) <= produced, f"Agent {agent.id}: liest Artefakte, die nie entstehen")
     # Akzeptanztests bleiben unabhängig von der Implementierung (Teil 04, Test 08/19).
-    tester = agents.get("akzeptanztest")
-    if tester:
-        _require("implementierung" not in tester.reads, "Akzeptanztest-Agent darf keine Implementierung lesen")
+    for name in ("akzeptanztest", "integrationstest"):
+        tester = agents.get(name)
+        if tester:
+            _require("implementierung" not in tester.reads, f"{tester.name} darf keine Implementierung lesen")
 
     budget = dict(flow.get("budget") or {})
     _require(all(isinstance(budget.get(key), int) and budget[key] > 0
