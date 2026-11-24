@@ -25,7 +25,7 @@ Der Satz ist ein Baukasten. Acht Vorlagen gelten für jedes System, fünf kommen
 | V05 | Container: Images und Docker/Compose | Bei Containern | Teil A Images (immer bei Containern), Teil B Docker-Host und Compose |
 | V06 | Kubernetes-Workloads | Bei Betrieb auf Kubernetes | Namespace, Workloads, Sicherheitskontext, Netzwerkregeln, RBAC, Secrets, Speicher |
 | V07 | Anwendung, Webdienst und Schnittstellen | Wenn eine Anwendung läuft | Software und Lizenz, Komponenten, Konfiguration, Anmeldung, Schnittstellen, Datenablage, Abnahme |
-| V08 | Datenbank | Wenn eine Datenbank dazugehört | Datenbanksystem, Datenbanken, Datenbankkonten, Zugriffssteuerung, Sicherheitseinstellungen |
+| V08 | Datenbank | Wenn eine Datenbank dazugehört | Teil A Datenbanksystem bzw. Cluster (einmal je Cluster), Teil B Datenbanken der Anwendung mit Verweis auf den Cluster |
 | V09 | Protokollierung und Überwachung | Immer | Protokollquellen, Mindestumfang, Weiterleitung, Aufbewahrung, Monitoring, Alarme |
 | V10 | Datensicherung und Wiederherstellung | Immer | RPO und RTO, Sicherungsobjekte, 3-2-1-1-0, Wiederherstellungstest |
 | V11 | Patch-, Änderungs- und Schwachstellenmanagement | Immer | Update-Quellen, Patchfristen, Wartungsfenster, Changes, Schwachstellenscan, Supportende |
@@ -41,7 +41,7 @@ Systemtypen:
 - **B Anwendung direkt installiert:** Fachanwendung als Paket oder Installer auf einem Server oder einer VM.
 - **C Anwendung in Docker oder Compose:** Anwendung läuft als Container auf einem Docker-Host.
 - **D Anwendung auf Kubernetes:** Anwendung läuft auf einer bestehenden Kubernetes-Plattform.
-- **E Datenbankserver:** eigenständiger Server, der Datenbanken für andere Systeme bereitstellt.
+- **E Datenbankserver oder Datenbankcluster:** eigenständiger Server oder Cluster aus mehreren Knoten, der Datenbanken für andere Systeme bereitstellt.
 - **F Plattform:** Docker-Host oder Kubernetes-Cluster, auf dem andere Systeme laufen.
 
 | Vorlage | A | B | C | D | E | F |
@@ -53,7 +53,7 @@ Systemtypen:
 | V05 Container | – | – | ● | ● nur Teil A | – | ● Teil B bei Docker-Host |
 | V06 Kubernetes | – | – | – | ● | – | ● Plattformteil |
 | V07 Anwendung | – | ● | ● | ● | – | ○ |
-| V08 Datenbank | – | ○ | ○ | ○ | ● | – |
+| V08 Datenbank | – | ○ | ○ | ○ | ● Teil A | – |
 | V09 Protokollierung | ● | ● | ● | ● | ● | ● |
 | V10 Datensicherung | ● | ● | ● | ● | ● | ● |
 | V11 Patch und Change | ● | ● | ● | ● | ● | ● |
@@ -61,11 +61,11 @@ Systemtypen:
 | V13 Freigabe | ● | ● | ● | ● | ● | ● |
 | V14 Außerbetriebnahme | bei Stilllegung | bei Stilllegung | bei Stilllegung | bei Stilllegung | bei Stilllegung | bei Stilllegung |
 
-Legende: ● Pflicht · ○ wenn zutreffend · Verweis: steht in der Dokumentation der Plattform · – entfällt.
+Legende: ● Pflicht · ○ wenn zutreffend · Verweis: steht in der Dokumentation der Plattform · – entfällt. Bei V08 gilt für Anwendungen (B, C, D): eigene Datenbank im System = Teil A und B; Datenbank auf einem Datenbankcluster = nur Teil B mit Verweis auf den Cluster.
 
 Mischformen werden kombiniert. Läuft zum Beispiel eine Anwendung in Docker und ihre Datenbank direkt auf demselben Server, gelten die Vorlagen von C und zusätzlich V08.
 
-**Plattformen einmal dokumentieren, Anwendungen verweisen.** Ein Docker-Host oder Kubernetes-Cluster wird als eigenes System vom Typ F vollständig dokumentiert. Anwendungen darauf verweisen mit der Dokument-ID auf die Plattformdokumentation und beschreiben nur, was für sie selbst gilt: eigene Ports, eigene Konten, eigene Daten, eigene Sicherung.
+**Plattformen einmal dokumentieren, Anwendungen verweisen.** Ein Docker-Host oder Kubernetes-Cluster wird als eigenes System vom Typ F vollständig dokumentiert, ein Datenbankcluster als eigenes System vom Typ E (V08 Teil A). Anwendungen darauf verweisen mit der Dokument-ID auf die Plattformdokumentation und beschreiben nur, was für sie selbst gilt: eigene Ports, eigene Konten, eigene Daten, eigene Sicherung.
 
 ## Schritt für Schritt
 
@@ -102,7 +102,7 @@ Jede Vorlage V01 bis V14 beginnt mit diesem Kopf. Die Marke `[[DOKUMENTKOPF]]` i
 | --- | --- |
 | Dokument-ID | {{System-ID}}-{{Vorlagen-ID}} |
 | System | {{Systemname}} |
-| Systemtyp | {{Auswahl: A Grundinstallation; B Anwendung direkt; C Docker/Compose; D Kubernetes; E Datenbankserver; F Plattform}} |
+| Systemtyp | {{Auswahl: A Grundinstallation; B Anwendung direkt; C Docker/Compose; D Kubernetes; E Datenbankserver bzw. -cluster; F Plattform}} |
 | Umgebung | {{Auswahl: Produktion; Test; Entwicklung}} |
 | Dokumentversion und Status | {{Version}} / {{Auswahl: Entwurf; in Prüfung; freigegeben; außer Kraft}} |
 | Erstellt von, am | {{Name}}, {{Datum}} |
@@ -126,7 +126,7 @@ Die Tabelle dient nur der Orientierung, welche Themen eine Vorlage berührt; die
 | V05 | SYS.1.6, APP.6, OPS.1.1.3 | 8.8, 8.9, 8.19, 8.22 |
 | V06 | APP.4.4, SYS.1.6 | 8.9, 8.22, 8.31, 8.32 |
 | V07 | APP.6, APP.3.1, APP.3.2, OPS.1.1.6, bei Eigenentwicklung CON.8 | 5.14, 8.24, 8.25, 8.26, 8.29, 8.31 |
-| V08 | APP.4.3, CON.1, CON.3 | 8.3, 8.5, 8.13, 8.24 |
+| V08 | APP.4.3, CON.1, CON.3 | 8.3, 8.5, 8.13, 8.14, 8.24 |
 | V09 | OPS.1.1.5, DER.1 | 8.6, 8.15, 8.16, 8.17 |
 | V10 | CON.3, DER.4 | 5.29, 5.30, 8.13, 8.14 |
 | V11 | OPS.1.1.3, OPS.1.1.6 | 8.8, 8.9, 8.19, 8.32 |
