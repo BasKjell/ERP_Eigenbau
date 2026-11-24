@@ -10,7 +10,7 @@ Dieser Bereich enthält die Konzepte und Vorlagen, auf denen die Referenzumgebun
 | [KI-Unternehmenskonzept](ki-unternehmenskonzept/00-hauptdokument.md) | Wohin das Unternehmen mit KI will (Arbeitsplatz 2028) und wie der KI-Einsatz in den Fachprozessen geregelt ist: Portal, Freigaben, Agentenregister, Rechte, Schnittstellen, Qualität, ISMS | 20.11.2026, abgestimmt auf diese Referenzumgebung |
 | [IT-Zielbild Business Applications](it-zielbild/index.md) | Plattform, Technologie-Standards, Portal und Integration, ERP und DMS, Weg aus der Microsoft-Abhängigkeit, Fahrplan | Revision vom 20.11.2026 |
 | [KI-Entwicklungskonzept](ki-entwicklungskonzept/index.md) | Ursprüngliches Konzept am Beispiel eines DMS; die technischen Teile 08 bis 10 (Identitäten und MCP-Werkzeuge, Gateway-Regeln, Abnahmetests 01 bis 36) gelten weiter | Revision vom 20.11.2026 |
-| [Vorlagen Systemdokumentation](vorlagen-systemdokumentation/00-wegweiser.md) | Baukasten aus 14 Vorlagen für die Dokumentation jedes Systems nach IT-Grundschutz und ISO 27001, mit Ausfüllbeispiel je Vorlage | 24.11.2026 |
+| [Vorlagen Systemdokumentation](vorlagen-systemdokumentation/00-wegweiser.md) | Baukasten aus 14 Vorlagen für eine einheitliche Grunddokumentation jedes Systems (IT-Grundschutz, ISO 27001), ohne Prüflisten und Tests je Anforderung; die Zuordnung zu Anforderungen führt der ISB im eigenen System. Mit Ausfüllbeispiel je Vorlage | 24.11.2026 |
 
 ## Wie die Dokumente zusammenhängen
 
