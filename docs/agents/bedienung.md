@@ -64,6 +64,27 @@ Auf der Startseite (kompakt) und unter **`/agents`** (vollständig):
   Werkzeug prüft (FLOWWORK RM-Adapter, Orchestrator-Sandbox), was er liest, seine Grenzen und was er
   nie darf.
 
+### Konfiguration eines Agenten ansehen und ändern
+
+Auf der Karte einen Agenten anklicken und **Konfiguration ansehen** wählen. Das Fenster zeigt alles, was
+den Agenten ausmacht: Ausführung (lokal über FLOWGATE, OpenCode, Codex/Claude), Modell und Modellfamilie,
+Status, Stufe, Verantwortliche, Auftrag, Werkzeuge, lesbare Ergebnisse, Datenklassen, Grenzen, die
+vollständige Rollenanweisung (Prompt) und das Änderungsprotokoll.
+
+- **Alle Angemeldeten** sehen die Konfiguration, die Felder sind gesperrt.
+- **Administratoren** (`platform-admin`, z. B. `admin.demo`) ändern Felder und speichern mit Begründung.
+  Der Orchestrator prüft die Änderung wie das Agentenregister: Prüfer bleiben unabhängig vom Ersteller
+  (andere Modellfamilie), Testagenten lesen keine Implementierung, nur bekannte Werkzeuge ohne Freigabe-,
+  Merge-, Lösch- oder Deployrechte, nur bekannte Datenklassen, Stufe höchstens A3. Ungültiges wird mit
+  Grund abgelehnt.
+- Geänderte Felder tragen das Zeichen *geändert* (der Registerwert steht im Tooltip). **↺ Register**
+  setzt ein Feld auf den Wert aus `agents/registry.yaml` bzw. der Prompt-Datei zurück.
+- Jede Änderung ändert den **Registerstand**. Offene Aufträge halten dann mit „Agentenregister oder
+  Ablauf wurden geändert“ an, bis ein Mensch sie auf den neuen Stand umstellt.
+- Gespeichert wird als Übersteuerung in der Orchestrator-Datenbank (`agent_settings`, Protokoll in
+  `agent_settings_log`), nicht in der YAML-Datei. Soll eine Änderung dauerhaft ins Repository, trägt man
+  sie in `agents/registry.yaml` ein und setzt das Feld danach zurück.
+
 ## 4. Einen Fachauftrag erteilen
 
 1. **＋ Fachauftrag starten**.

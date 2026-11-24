@@ -119,3 +119,15 @@ def test_switch_is_off_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(main_module, "oidc_auth", OidcAuth(settings))
     client = TestClient(main_module.app)
     assert client.get("/auth/switch?user=po.demo", follow_redirects=False).status_code == 404
+
+
+def test_only_admins_may_change_agent_configuration(switch_client) -> None:  # noqa: ANN001
+    client, auth = switch_client
+    payload = {"changes": {"owner": "Teamleitung IT"}, "reason": "Zuständigkeit gewechselt"}
+    assert client.put("/api/agents/agents/planung/config", json=payload).status_code == 401
+    denied = client.put("/api/agents/agents/planung/config", json=payload, cookies=session(auth, "po.demo"))
+    assert denied.status_code == 403 and "Administratoren" in denied.json()["detail"]
+    assert client.put("/api/agents/agents/Bad-Role/config", json=payload,
+                      cookies=session(auth, "po.demo")).status_code == 404
+    assert client.put("/api/agents/agents/planung/config", json={"changes": {}, "reason": "x"},
+                      cookies=session(auth, "po.demo")).status_code == 422

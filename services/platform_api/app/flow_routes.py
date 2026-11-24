@@ -24,6 +24,12 @@ DEMO_PERSON = {"username": "demo-admin", "name": "Lokale Funktionsdemo", "roles"
                "department": "Demo"}
 
 
+class AgentConfigUpdate(BaseModel):
+    # Feld -> neuer Wert, null setzt auf das Register zurück. Form und Inhalt prüft der Orchestrator.
+    changes: dict[str, Any] = Field(min_length=1, max_length=20)
+    reason: str = Field(min_length=5, max_length=500)
+
+
 class AgentRunCreate(BaseModel):
     idempotency_key: str = Field(min_length=8, max_length=80, pattern=r"^[A-Za-z0-9_.:-]+$")
     title: str = Field(min_length=5, max_length=160)
@@ -330,6 +336,30 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
             raise HTTPException(status_code=404, detail="Arbeitspaket nicht gefunden")
         return forward("start_package", {"project_id": project_id, "package_key": key, "scope": payload.scope},
                        request, with_person=True)
+
+    @router.get("/api/agents/agents/{role}/config", tags=["agents"])
+    def agents_config(role: str, request: Request) -> dict[str, Any]:
+        """Konfiguration eines Agenten – für alle Angemeldeten lesbar."""
+        if not re.fullmatch(r"[a-z][a-z0-9_]{1,40}", role):
+            raise HTTPException(status_code=404, detail="Agent nicht gefunden")
+        result = forward("agent_config", {"role": role}, request, with_person=False)
+        viewer = {str(r) for r in (person(request) or {}).get("roles", [])}
+        result["can_edit"] = "platform-admin" in viewer
+        return result
+
+    @router.put("/api/agents/agents/{role}/config", tags=["agents"])
+    def agents_config_update(role: str, payload: AgentConfigUpdate, request: Request) -> dict[str, Any]:
+        """Agenteneigenschaften ändern – nur Administratoren; der Orchestrator prüft erneut."""
+        if not re.fullmatch(r"[a-z][a-z0-9_]{1,40}", role):
+            raise HTTPException(status_code=404, detail="Agent nicht gefunden")
+        viewer = person(request)
+        if viewer is None:
+            raise HTTPException(status_code=401, detail="Anmeldung über FLOWID erforderlich")
+        if "platform-admin" not in {str(r) for r in viewer.get("roles", [])}:
+            raise HTTPException(status_code=403, detail="Agenteneigenschaften ändern nur Administratoren")
+        result = forward("agent_update", {"role": role, **payload.model_dump()}, request, with_person=True)
+        result["can_edit"] = True
+        return result
 
     @router.post("/api/agents/control", tags=["agents"])
     def agents_control(payload: AgentControl, request: Request) -> dict[str, Any]:

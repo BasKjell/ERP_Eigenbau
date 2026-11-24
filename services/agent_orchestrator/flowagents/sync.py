@@ -21,7 +21,7 @@ from .engine import Engine, EngineError
 
 AUDIENCE = "flow-platform-sync"
 ISSUER = "flow-agents"
-ACTIONS = ("submit", "decide", "control", "detail", "start_package")
+ACTIONS = ("submit", "decide", "control", "detail", "start_package", "agent_config", "agent_update")
 
 
 class SyncError(RuntimeError):
@@ -66,6 +66,8 @@ class PlatformSync:
                 return {"status": 400, "body": {"detail": "unbekannte Aktion"}}
             if kind == "detail":
                 return {"status": 200, "body": self.engine.run_detail(str(payload.get("run_id", "")))}
+            if kind == "agent_config":
+                return {"status": 200, "body": self.engine.agent_config(str(payload.get("role", "")))}
             if not isinstance(person, dict) or not person.get("username"):
                 return {"status": 403, "body": {"detail": "Aktion braucht eine angemeldete Person"}}
             if kind == "submit":
@@ -76,6 +78,10 @@ class PlatformSync:
                 body = self.engine.start_package(str(payload.get("project_id", "")), str(payload.get("package_key", "")),
                                                  person, str(payload.get("scope", "")))
                 return {"status": 201, "body": body}
+            if kind == "agent_update":
+                body = self.engine.update_agent(str(payload.get("role", "")), dict(payload.get("changes") or {}),
+                                                person, str(payload.get("reason", "")))
+                return {"status": 200, "body": body}
             if kind == "decide":
                 body = self.engine.decide(str(payload.get("decision_id", "")), person, str(payload.get("outcome", "")),
                                           str(payload.get("comment", "")))
@@ -87,7 +93,9 @@ class PlatformSync:
             return {"status": 404, "body": {"detail": "nicht gefunden"}}
         except EngineError as exc:
             message = str(exc)
-            status = 403 if ("Befugnis" in message or "Steuerung nur" in message) else 409 if kind != "submit" else 422
+            denied = ("Befugnis" in message or "Steuerung nur" in message or "nur Administratoren" in message)
+            status = 403 if denied else 404 if "steht nicht im Agentenregister" in message else \
+                409 if kind != "submit" else 422
             return {"status": status, "body": {"detail": message}}
 
     def once(self) -> int:

@@ -32,6 +32,11 @@ class DecisionBody(BaseModel):
     comment: str = Field(default="", max_length=2000)
 
 
+class AgentUpdateBody(BaseModel):
+    changes: dict[str, Any]
+    reason: str = Field(min_length=5, max_length=500)
+
+
 class PackageBody(BaseModel):
     scope: str = Field(default="", max_length=40)
 
@@ -143,6 +148,20 @@ def create_app(runtime: Runtime, *, start_worker: bool = True) -> FastAPI:
             return engine.start_package(project_id, key, person(claims), body.scope)
         except EngineError as exc:
             raise HTTPException(status_code=403 if "Befugnis" in str(exc) else 409, detail=str(exc)) from None
+
+    @app.get("/v1/agents/{role}/config")
+    def agent_config(role: str, _: Caller) -> dict[str, Any]:
+        try:
+            return engine.agent_config(role)
+        except EngineError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from None
+
+    @app.put("/v1/agents/{role}/config")
+    def agent_update(role: str, body: AgentUpdateBody, claims: Caller) -> dict[str, Any]:
+        try:
+            return engine.update_agent(role, body.changes, person(claims), body.reason)
+        except EngineError as exc:
+            raise HTTPException(status_code=403 if "nur Administratoren" in str(exc) else 409, detail=str(exc)) from None
 
     @app.post("/v1/control")
     def control(body: ControlBody, claims: Caller) -> dict[str, Any]:

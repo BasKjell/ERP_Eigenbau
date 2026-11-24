@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import date
@@ -24,6 +25,16 @@ CRITICALITIES = ("K1", "K2", "K3")
 # Werkzeuge, die keine Agentenrolle besitzen darf (Teil 09).
 FORBIDDEN_TOOL = re.compile(r"(approve|freigabe|merge|delete|loesch|deploy|admin|release)", re.I)
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}")
+DATA_CLASSES = ("oeffentlich", "intern", "vertraulich")
+# Felder, die ein Administrator in der Agentenzentrale übersteuern darf. Kennung, Rolle, Nummer und Art
+# (Ersteller/Prüfer) bleiben fest, weil der Ablauf darauf aufbaut. Jede Übersteuerung läuft durch
+# dieselbe Prüfung wie das Register und ändert den Registerstand (Digest).
+EDITABLE_FIELDS = {
+    "name": "text", "owner": "text", "deputy": "text", "status": "choice", "autonomy": "choice",
+    "approved_until": "date", "model_profile": "choice", "mission": "longtext", "tools": "list",
+    "reads": "list", "data_classes": "list", "limits": "limits", "escalation": "longtext",
+    "evidence": "longtext", "prompt_text": "prompt",
+}
 
 
 class RegistryError(ValueError):
@@ -54,6 +65,7 @@ class Agent:
     limits: dict[str, Any] = field(default_factory=dict)
     umbrella: str = ""
     data_classes: tuple[str, ...] = ()
+    deputy: str = ""
 
     def active(self, today: date | None = None) -> bool:
         return self.status in ACTIVE_STATUSES and (today or date.today()) <= self.approved_until
@@ -77,6 +89,11 @@ class Agent:
             "escalation": self.escalation,
             "evidence": self.evidence,
             "umbrella": self.umbrella,
+            "deputy": self.deputy,
+            "reads": list(self.reads),
+            "data_classes": list(self.data_classes),
+            "limits": dict(self.limits),
+            "prompt_file": self.prompt_file.name,
         }
 
 
@@ -120,6 +137,8 @@ class Registry:
     budget: dict[str, int]
     prompts_dir: Path
     digest: str
+    # Geprüfte Übersteuerungen aus der Agentenzentrale (Rolle -> Feld -> Wert), Rollenanweisung als Text.
+    overrides: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def agent(self, role: str) -> Agent:
         try:
@@ -141,7 +160,12 @@ class Registry:
 
     def prompt(self, role: str) -> str:
         common = (self.prompts_dir / "_gemeinsam.md").read_text(encoding="utf-8")
-        return common + "\n\n" + self.agent(role).prompt_file.read_text(encoding="utf-8")
+        return common + "\n\n" + self.role_prompt(role)
+
+    def role_prompt(self, role: str) -> str:
+        """Rollenanweisung: übersteuerter Text oder die Datei aus dem Register."""
+        text = (self.overrides.get(role) or {}).get("prompt_text")
+        return str(text) if text else self.agent(role).prompt_file.read_text(encoding="utf-8")
 
     def public(self) -> dict[str, Any]:
         return {
@@ -184,8 +208,41 @@ def _as_date(value: Any, label: str) -> date:
         raise RegistryError(f"{label}: ungültiges Datum") from None
 
 
-def load(directory: Path) -> Registry:
-    """Lädt ``registry.yaml`` und ``workflow.yaml`` aus *directory* und prüft beide vollständig."""
+def check_override(field_name: str, value: Any) -> Any:
+    """Form eines übersteuerten Feldes prüfen; Inhalte prüft danach das Laden des Registers."""
+    _require(field_name in EDITABLE_FIELDS, f"Feld {field_name} ist nicht änderbar")
+    kind = EDITABLE_FIELDS[field_name]
+    if kind == "text":
+        _require(isinstance(value, str) and len(value.strip()) <= 80, f"{field_name}: Text bis 80 Zeichen")
+        _require(field_name == "deputy" or len(value.strip()) >= 2, f"{field_name}: Text fehlt")
+        return value.strip()
+    if kind in {"choice", "date"}:
+        _require(isinstance(value, str) and 1 <= len(value) <= 40, f"{field_name}: Auswahl fehlt")
+        return value
+    if kind == "longtext":
+        _require(isinstance(value, str) and 3 <= len(value.strip()) <= 1500, f"{field_name}: 3 bis 1500 Zeichen")
+        return " ".join(value.split())
+    if kind == "list":
+        _require(isinstance(value, list) and all(isinstance(v, str) and SAFE_ID.fullmatch(v) for v in value),
+                 f"{field_name}: Liste von Kennungen erwartet")
+        return sorted(set(value), key=value.index)
+    if kind == "limits":
+        _require(isinstance(value, dict) and all(
+            isinstance(k, str) and re.fullmatch(r"max_[a-z_]{2,40}", k) and isinstance(v, int)
+            and not isinstance(v, bool) and 0 <= v <= 1000 for k, v in value.items()),
+            "limits: Name max_… und ganze Zahl 0 bis 1000")
+        return dict(value)
+    _require(isinstance(value, str) and 20 <= len(value) <= 20000, "Rollenanweisung: 20 bis 20000 Zeichen")
+    return value
+
+
+def load(directory: Path, overrides: dict[str, dict[str, Any]] | None = None) -> Registry:
+    """Lädt ``registry.yaml`` und ``workflow.yaml`` aus *directory* und prüft beide vollständig.
+
+    *overrides* sind Übersteuerungen aus der Agentenzentrale. Sie werden vor der Prüfung eingemischt;
+    ein Register, das mit ihnen ungültig wäre, wird abgewiesen.
+    """
+    overrides = {str(role): dict(values) for role, values in (overrides or {}).items() if values}
     registry_path, workflow_path = directory / "registry.yaml", directory / "workflow.yaml"
     try:
         raw_registry = registry_path.read_bytes()
@@ -211,10 +268,18 @@ def load(directory: Path) -> Registry:
             f"Entscheidungsrolle {name} braucht Keycloak-Rollen",
         )
 
+    known_roles = {str(e.get("role")) for e in data.get("agents") or [] if isinstance(e, dict)}
+    unknown_roles = set(overrides) - known_roles
+    _require(not unknown_roles, f"Übersteuerung für unbekannte Rollen {sorted(unknown_roles)}")
     agents: dict[str, Agent] = {}
     seen_ids: set[str] = set()
     for entry in data.get("agents") or []:
         _require(isinstance(entry, dict), "Agenteneintrag muss ein Objekt sein")
+        changes = overrides.get(str(entry.get("role")), {})
+        if changes:
+            entry = {**entry, **{k: check_override(k, v) for k, v in changes.items() if k != "prompt_text"}}
+            if "prompt_text" in changes:
+                check_override("prompt_text", changes["prompt_text"])
         required = {"id", "role", "number", "name", "owner", "status", "autonomy", "approved_until",
                     "model_profile", "kind", "mission", "tools", "reads", "prompt", "escalation", "evidence"}
         missing = required - entry.keys()
@@ -258,7 +323,9 @@ def load(directory: Path) -> Registry:
             limits=dict(entry.get("limits") or {}),
             umbrella=str(entry.get("umbrella") or ""),
             data_classes=tuple(str(c) for c in entry.get("data_classes") or ()),
+            deputy=str(entry.get("deputy") or ""),
         )
+        _require(set(agents[role].data_classes) <= set(DATA_CLASSES), f"Agent {agent_id}: unbekannte Datenklasse")
     _require(bool(agents), "Register enthält keine Agenten")
     for agent in agents.values():
         if agent.reviewed_by:
@@ -351,7 +418,10 @@ def load(directory: Path) -> Registry:
 
     # Rollenanweisungen gehören zum Rollenvertrag (KI-U-05): jede Änderung ändert den Registerstand.
     prompt_bytes = b"".join(path.name.encode() + b"\0" + path.read_bytes() for path in sorted(prompts_dir.glob("*.md")))
-    digest = hashlib.sha256(raw_registry + b"\0" + raw_workflow + b"\0" + prompt_bytes).hexdigest()
+    material = raw_registry + b"\0" + raw_workflow + b"\0" + prompt_bytes
+    if overrides:  # ohne Übersteuerung bleibt der Digest des Registers unverändert
+        material += b"\0" + json.dumps(overrides, sort_keys=True, ensure_ascii=False).encode()
+    digest = hashlib.sha256(material).hexdigest()
     return Registry(
         version=int(data.get("version", 0)),
         register_id=str(data.get("register_id", "")),
@@ -367,6 +437,7 @@ def load(directory: Path) -> Registry:
         budget=budget,
         prompts_dir=prompts_dir,
         digest=digest,
+        overrides=overrides,
     )
 
 

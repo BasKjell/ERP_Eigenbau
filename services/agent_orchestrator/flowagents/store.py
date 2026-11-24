@@ -64,6 +64,14 @@ CREATE TABLE IF NOT EXISTS work_packages (
     run_id TEXT NOT NULL DEFAULT '', started_by TEXT NOT NULL DEFAULT '{}', started REAL,
     PRIMARY KEY (project_id, key)
 );
+-- Übersteuerungen der Agenteneigenschaften aus der Agentenzentrale (nur Administratoren) mit Protokoll.
+CREATE TABLE IF NOT EXISTS agent_settings (
+    role TEXT PRIMARY KEY, settings TEXT NOT NULL, updated REAL NOT NULL, updated_by TEXT NOT NULL DEFAULT '{}'
+);
+CREATE TABLE IF NOT EXISTS agent_settings_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT NOT NULL, changes TEXT NOT NULL, reason TEXT NOT NULL,
+    person TEXT NOT NULL, digest TEXT NOT NULL DEFAULT '', created REAL NOT NULL
+);
 CREATE INDEX IF NOT EXISTS events_run ON events(run_id, id);
 CREATE INDEX IF NOT EXISTS decisions_open ON decisions(status, created);
 """
@@ -189,6 +197,34 @@ class Store:
         value["updated_at"] = iso(value["updated"])
         value.pop("idempotency_key", None)
         return value
+
+    # -- Agenteneinstellungen (Übersteuerungen) -------------------------------------------
+    def agent_overrides(self) -> dict[str, dict[str, Any]]:
+        with self._lock:
+            rows = self.db.execute("SELECT role, settings FROM agent_settings").fetchall()
+        return {row["role"]: json.loads(row["settings"]) for row in rows if json.loads(row["settings"])}
+
+    def save_agent_override(self, role: str, settings: dict[str, Any], changes: dict[str, Any], reason: str,
+                            person: dict[str, Any], digest: str) -> None:
+        """Übersteuerung einer Rolle ersetzen und die Änderung (alt/neu je Feld) protokollieren."""
+        now = time.time()
+        with self._lock, self.db:
+            if settings:
+                self.db.execute("INSERT INTO agent_settings VALUES (?,?,?,?) ON CONFLICT(role) DO UPDATE SET "
+                                "settings=excluded.settings, updated=excluded.updated, updated_by=excluded.updated_by",
+                                (role, canonical(settings), now, canonical(person)))
+            else:
+                self.db.execute("DELETE FROM agent_settings WHERE role=?", (role,))
+            self.db.execute("INSERT INTO agent_settings_log(role, changes, reason, person, digest, created) "
+                            "VALUES (?,?,?,?,?,?)", (role, canonical(changes), reason, canonical(person), digest, now))
+
+    def agent_settings_log(self, role: str, *, limit: int = 30) -> list[dict[str, Any]]:
+        with self._lock:
+            rows = self.db.execute("SELECT * FROM agent_settings_log WHERE role=? ORDER BY id DESC LIMIT ?",
+                                   (role, limit)).fetchall()
+        return [{"id": row["id"], "changes": json.loads(row["changes"]), "reason": row["reason"],
+                 "person": json.loads(row["person"]).get("name", ""), "digest": row["digest"][:12],
+                 "at": iso(row["created"])} for row in rows]
 
     # -- Projekte und Arbeitspakete -------------------------------------------------------
     def create_project(self, run: dict[str, Any], packages: list[dict[str, Any]],

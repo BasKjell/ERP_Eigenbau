@@ -20,10 +20,25 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+import yaml
+
+from . import registry as registry_module
 from .adoption import Adoption, Preview
 from .contract import ARTIFACTS, REVIEW_ONLY, ContractError, Handoff, extract_json, validate
 from .providers import AgentReply, AgentRequest, Provider, ProviderError
-from .registry import CRITICALITIES, PROJECT_CLASSES, Agent, Registry, Step
+from .registry import (
+    AGENT_AUTONOMY,
+    CRITICALITIES,
+    DATA_CLASSES,
+    EDITABLE_FIELDS,
+    PROJECT_CLASSES,
+    STATUSES,
+    Agent,
+    Registry,
+    RegistryError,
+    Step,
+    check_override,
+)
 from .rm import RM, RMConflict, RMError
 from .sandbox import Sandbox, SandboxError, validate_path
 from .store import OPEN_RUN_STATES, Store, digest_of
@@ -35,8 +50,9 @@ CONTROL_ROLES = frozenset({"platform-admin", "it-user", "work-admin", "flow-tech
 # Aufsicht sieht alle Projekte, entscheidet aber nur in ihrer eigenen Rolle (Projektkatalog, agents/projects.json).
 OVERSIGHT_ROLES = frozenset({"platform-admin", "flow-isb", "flow-gf"})
 CATALOG_OWNER = {"username": "projektkatalog", "name": "Projektkatalog"}
+# Agenteneigenschaften ändern nur Administratoren; alle anderen sehen sie nur an.
+CONFIG_ADMIN_ROLES = frozenset({"platform-admin"})
 GATE_BACK_TO = {"EP1": "projektplanung", "G1": "anforderungen", "G2": "architektur", "G3": "entwicklung", "G4": "entwicklung"}
-DATA_CLASSES = ("oeffentlich", "intern", "vertraulich")
 # Domänenprofile (KI-Softwareentwicklung Teil 07).
 DOMAINS = ("it", "produkt", "pruefsoftware", "werkzeug")
 CLASS_ORDER = ("standard", "neue_funktion", "kritisch")
@@ -81,6 +97,14 @@ class Engine:
         self.ui_runner = ui_runner
         # Umsetzung „opencode“: diese Rollen arbeiten über den lokalen OpenCode-Worker (opencode.py).
         self.opencode_roles = tuple(opencode_roles)
+        # Gespeicherte Übersteuerungen der Agenteneigenschaften einmischen (geprüft wie das Register).
+        self.override_error = ""
+        stored = self.store.agent_overrides()
+        if stored:
+            try:
+                self.registry = registry_module.load(self.registry.prompts_dir.parent, stored)
+            except RegistryError as exc:
+                self.override_error = f"Übersteuerungen nicht angewendet: {exc}"
         # Projektkatalog mit Projektrechten. Ohne Katalog gilt der bisherige Ablauf ohne Projektprüfung.
         self.projects = dict(projects or {})
         for code, spec in self.projects.items():
@@ -1208,6 +1232,93 @@ class Engine:
                                  f"Lauf auf Registerstand {self.registry.digest[:12]} umgestellt durch {person['name']}")
             self.store.update_run(run["id"], status="aktiv", reason="")
 
+    # -- Agenteneigenschaften ansehen und ändern -----------------------------------------------
+    def _agents_dir(self) -> Path:
+        return self.registry.prompts_dir.parent
+
+    @staticmethod
+    def _editable_values(registry: Registry, role: str) -> dict[str, Any]:
+        agent = registry.agent(role)
+        values = {name: value for name, value in agent.public().items() if name in EDITABLE_FIELDS}
+        values["prompt_text"] = registry.role_prompt(role)
+        return values
+
+    def agent_config(self, role: str) -> dict[str, Any]:
+        """Wie ein Agent konfiguriert ist: wirksame Werte, Registerwerte, Übersteuerungen, Laufzeit, Protokoll."""
+        try:
+            agent = self.registry.agent(role)
+            base = registry_module.load(self._agents_dir())
+        except RegistryError as exc:
+            raise EngineError(str(exc)) from None
+        profiles = {name: {"alias": spec.get("gateway_alias"), "family": spec.get("family"),
+                           "description": spec.get("description", "")}
+                    for name, spec in yaml_profiles(self._agents_dir()).items()}
+        escalation = (self.escalation.get("roles") or {}).get(role) if self.escalation.get("enabled") else None
+        return {
+            "role": role, "id": agent.id, "number": agent.number, "kind": agent.kind,
+            "values": self._editable_values(self.registry, role),
+            "base": self._editable_values(base, role),
+            "overridden": sorted((self.registry.overrides.get(role) or {}).keys()),
+            "editable": list(EDITABLE_FIELDS),
+            "options": {"status": sorted(STATUSES), "autonomy": sorted(AGENT_AUTONOMY), "model_profile": profiles,
+                        "tools": dict(self.registry.tools), "reads": list(self.registry.artifact_kinds),
+                        "data_classes": list(DATA_CLASSES)},
+            "runtime": {
+                "provider": self.profile_providers.get(agent.model_profile, ""), "gateway_alias": agent.gateway_alias,
+                "family": agent.family, "escalation": escalation,
+                "opencode": role in self.opencode_roles and "opencode" in self.providers,
+                "paused": self.store.controls().get(f"agent:{role}") == "pausiert", "active": agent.active(),
+            },
+            "workflow": [{"id": s.id, "label": s.label, "kind": s.kind, "ep": s.ep} for s in self.registry.steps
+                         if s.role == role],
+            "reviewed_by": agent.reviewed_by,
+            "rights": self._agent_rights(agent),
+            "history": self.store.agent_settings_log(role),
+            "digest": self.registry.digest[:16], "override_error": self.override_error,
+        }
+
+    def update_agent(self, role: str, changes: dict[str, Any], user: dict[str, Any], reason: str) -> dict[str, Any]:
+        """Agenteneigenschaften übersteuern (nur Administratoren). ``None`` setzt ein Feld auf das Register zurück.
+
+        Das Ergebnis muss die Registerprüfung bestehen (Unabhängigkeit, Werkzeuge, Artefakte, Datenklassen).
+        Der Registerstand ändert sich; offene Läufe halten an, bis ein Mensch sie umstellt.
+        """
+        if not {str(r) for r in user.get("roles", [])} & CONFIG_ADMIN_ROLES:
+            raise EngineError("Agenteneigenschaften ändern nur Administratoren (platform-admin)")
+        reason = " ".join(str(reason or "").split())
+        if len(reason) < 5:
+            raise EngineError("Bitte eine Begründung angeben (mindestens 5 Zeichen)")
+        if not isinstance(changes, dict) or not changes:
+            raise EngineError("Keine Änderung angegeben")
+        with self.lock:
+            try:
+                self.registry.agent(role)
+                base = self._editable_values(registry_module.load(self._agents_dir()), role)
+                current = dict(self.registry.overrides.get(role) or {})
+                before = self._editable_values(self.registry, role)
+                for name, value in changes.items():
+                    if value is None or check_override(name, value) == base.get(name):
+                        current.pop(name, None)
+                    else:
+                        current[name] = check_override(name, value)
+                overrides = {**self.registry.overrides, role: current}
+                updated = registry_module.load(self._agents_dir(), {k: v for k, v in overrides.items() if v})
+            except RegistryError as exc:
+                raise EngineError(f"Abgelehnt: {exc}") from None
+            after = self._editable_values(updated, role)
+            diff = {name: [before[name], after[name]] for name in EDITABLE_FIELDS if before.get(name) != after.get(name)}
+            if not diff:
+                raise EngineError("Keine Änderung gegenüber dem aktuellen Stand")
+            person = _person(user)
+            logged = {name: ["(geändert)", "(geändert)"] if name == "prompt_text" else pair for name, pair in diff.items()}
+            self.store.save_agent_override(role, current, logged, reason, person, updated.digest)
+            self.registry = updated
+            self.override_error = ""
+            self.store.event(None, "steuerung", f"mensch:{person['username']}", role,
+                             f"{person['name']} ändert {self.registry.agent(role).name}: {', '.join(diff)} – {reason}"[:300],
+                             {"fields": list(diff), "digest": updated.digest[:16]})
+        return self.agent_config(role)
+
     # -- Projektrechte ------------------------------------------------------------------------
     def project_scopes(self, code: str) -> list[str]:
         """Änderungsbereiche eines Katalogprojekts; Muster wie dms-* werden gegen die Bereiche aufgelöst."""
@@ -1624,3 +1735,9 @@ def _diff(originals: dict[str, str | None], changes: dict[str, str]) -> str:
 
 
 __all__ = ["Engine", "EngineError", "digest_of"]
+
+
+def yaml_profiles(directory: Path) -> dict[str, dict[str, Any]]:
+    """Modellprofile aus dem Register (Auswahl für die Agentenzentrale)."""
+    data = yaml.safe_load((directory / "registry.yaml").read_text(encoding="utf-8")) or {}
+    return dict(data.get("model_profiles") or {})

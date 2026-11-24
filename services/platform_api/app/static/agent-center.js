@@ -392,8 +392,64 @@ class AgentCenter {
         <div class="chips"><span class="ac-chip ${agent.state === "arbeitet" ? "lime" : agent.state === "wartet" ? "amber" : agent.state === "pausiert" ? "red" : ""}">${esc(STATE_LABEL[agent.state] || agent.state)}</span>${agent.current ? `<span class="ac-chip">${esc(agent.current.auftrag_id || "")} · ${esc(agent.current.label || "")}</span>` : ""}${(agent.tools || []).map((t) => `<span class="ac-chip">${esc(t)}</span>`).join("")}</div>
         ${agent.last ? `<div class="ac-hint">Zuletzt (${esc(time(agent.last.at))}): ${esc(agent.last.message)}</div>` : ""}
         ${rightsBlock(agent)}
+        <div class="chips"><button class="ac-btn small" type="button" data-open-config="${esc(agent.role)}">${(data.viewer?.roles || []).includes("platform-admin") ? "Konfiguration ansehen und ändern" : "Konfiguration ansehen"}</button></div>
         ${this.full && isAdmin && data.available !== false ? `<div class="chips"><button class="ac-btn small ${paused ? "" : "danger"}" type="button" data-agent-control="${paused ? "resume" : "pause"}" data-role="${esc(agent.role)}">${paused ? "Agent fortsetzen" : "Agent pausieren (Stopp-Schalter)"}</button></div>` : ""}`;
       panel.querySelector("[data-agent-control]")?.addEventListener("click", (event) => this.control(event.currentTarget.dataset.agentControl, event.currentTarget.dataset.role));
+      panel.querySelector("[data-open-config]")?.addEventListener("click", (event) => this.openAgentConfig(event.currentTarget.dataset.openConfig));
+    }
+
+    // -- Agentenkonfiguration: alle sehen, Administratoren ändern (mit Begründung, protokolliert) --------
+    async openAgentConfig(role) {
+      const dialog = this.$("[data-agent-config-dialog]");
+      const form = this.$("[data-agent-config-form]");
+      form.innerHTML = '<p class="lead">Konfiguration wird geladen …</p>';
+      if (!dialog.open) dialog.showModal();
+      try {
+        const response = await fetch(`/api/agents/agents/${encodeURIComponent(role)}/config`, { headers: { Accept: "application/json" } });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.detail || `Nicht verfügbar (${response.status})`);
+        this.agentConfig = result;
+        form.innerHTML = configMarkup(result);
+        this.bindAgentConfig(form, result);
+      } catch (error) {
+        form.innerHTML = `<p class="lead">${esc(error.message)}</p><div class="ac-form-actions"><span></span><button class="ac-btn" value="cancel">Schließen</button></div>`;
+      }
+    }
+
+    bindAgentConfig(form, config) {
+      form.querySelectorAll("[data-reset-field]").forEach((button) => button.addEventListener("click", () => {
+        this.saveAgentConfig(config, { [button.dataset.resetField]: null }, `Feld ${button.dataset.resetField} auf Register zurückgesetzt`);
+      }));
+      form.querySelector("[data-config-save]")?.addEventListener("click", () => {
+        const changes = collectChanges(form, config.values);
+        if (!Object.keys(changes).length) { this.configMessage("Keine Änderung.", true); return; }
+        this.saveAgentConfig(config, changes, form.elements.reason.value);
+      });
+    }
+
+    configMessage(text, error = false) {
+      const message = this.$("[data-agent-config-form] [data-config-msg]");
+      if (message) { message.textContent = text; message.className = error ? "msg error" : "msg"; }
+    }
+
+    async saveAgentConfig(config, changes, reason) {
+      if (!reason || reason.trim().length < 5) { this.configMessage("Bitte eine Begründung angeben (mindestens 5 Zeichen).", true); return; }
+      this.configMessage("Wird geprüft und gespeichert …");
+      try {
+        const response = await fetch(`/api/agents/agents/${encodeURIComponent(config.role)}/config`, {
+          method: "PUT", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ changes, reason: reason.trim() }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(Array.isArray(result.detail) ? result.detail.map((d) => d.msg).join("; ") : result.detail || `Abgelehnt (${response.status})`);
+        const form = this.$("[data-agent-config-form]");
+        this.agentConfig = result;
+        form.innerHTML = configMarkup(result);
+        this.bindAgentConfig(form, result);
+        this.configMessage(`Gespeichert. Neuer Registerstand ${result.digest}.`);
+        this.poll();
+      } catch (error) {
+        this.configMessage(error.message, true);
+      }
     }
 
     renderInbox(data) {
@@ -542,7 +598,8 @@ class AgentCenter {
         </div>
         <div class="ac-form-actions"><span class="msg" data-run-msg>Pflichtfelder laut KI-Entwicklungskonzept Teil 08 „Fachauftrag“.</span><span><button class="ac-btn" value="cancel" formnovalidate type="submit">Abbrechen</button> <button class="ac-btn primary" type="button" data-run-submit>Auftrag einreichen</button></span></div>
       </form></dialog>
-      <dialog class="ac-dialog" data-run-detail-dialog><div class="content" data-run-detail></div></dialog>`;
+      <dialog class="ac-dialog" data-run-detail-dialog><div class="content" data-run-detail></div></dialog>
+      <dialog class="ac-dialog ac-config-dialog" data-agent-config-dialog><form method="dialog" data-agent-config-form></form></dialog>`;
     }
 
     bindDialog() {
@@ -786,6 +843,68 @@ class AgentCenter {
         ${p.packages.map((k) => `<tr data-package="${esc(k.key)}" data-project="${esc(p.id)}"><td><b>${esc(k.key)}</b><br><small>${esc(k.title)}</small></td><td>${esc((k.v_level || "").replace(/_/g, " "))}</td><td>${esc(k.result)}<br><small>${esc(k.acceptance)}</small></td><td>${esc(k.wave || 1)}</td><td>${esc((k.depends_on || []).join(", ") || "–")}</td><td>${k.status === "bereit" ? scopeSelect(k) : esc(k.scope || "–")}</td><td><span class="ac-chip ${PACKAGE_TONE[k.status] || ""}">${esc(PACKAGE_LABEL[k.status] || k.status)}</span>${k.auftrag_id ? `<br><small>${esc(k.auftrag_id)} · ${esc(k.run_status)}</small>` : ""}</td><td>${k.status === "bereit" && canStartIn(p) ? '<button class="ac-btn small primary" type="button" data-start-package>Starten (EPi)</button>' : ""}<br><small data-package-msg></small></td></tr>`).join("")}
         </tbody></table></article>`).join("")}
     </section>`;
+  }
+
+  const FIELD_TITLES = { name: "Name", owner: "Verantwortlich", deputy: "Vertretung", status: "Status", autonomy: "Stufe",
+    approved_until: "Freigegeben bis", model_profile: "Modellprofil", mission: "Auftrag des Agenten", escalation: "Eskalation",
+    evidence: "Nachweis", tools: "Werkzeuge", reads: "Liest Ergebnisse", data_classes: "Datenklassen", limits: "Grenzen",
+    prompt_text: "Rollenanweisung (Prompt)" };
+  const DATA_TITLES = { oeffentlich: "öffentlich", intern: "intern", vertraulich: "vertraulich" };
+
+  function configMarkup(config) {
+    const v = config.values, base = config.base, o = config.options, edit = !!config.can_edit;
+    const dis = edit ? "" : " disabled";
+    const changed = new Set(config.overridden || []);
+    const head = (name) => `${esc(FIELD_TITLES[name] || name)}${changed.has(name) ? ` <span class="ac-chip amber" title="Register: ${esc(typeof base[name] === "object" ? JSON.stringify(base[name]) : String(base[name]).slice(0, 300))}">geändert</span>${edit ? ` <button class="ac-link" type="button" data-reset-field="${esc(name)}" title="auf den Wert aus dem Register zurücksetzen">↺ Register</button>` : ""}` : ""}`;
+    const text = (name, wide = false) => `<label class="${wide ? "wide" : ""}">${head(name)}<input name="${name}" value="${esc(v[name] ?? "")}"${dis}></label>`;
+    const area = (name) => `<label class="wide">${head(name)}<textarea name="${name}"${dis}>${esc(v[name] ?? "")}</textarea></label>`;
+    const select = (name, choices) => `<label>${head(name)}<select name="${name}"${dis}>${choices.map(([value, label]) => `<option value="${esc(value)}"${value === v[name] ? " selected" : ""}>${esc(label)}</option>`).join("")}</select></label>`;
+    const checks = (name, choices) => `<fieldset class="wide ac-checks"><legend>${head(name)}</legend>${choices.map(([value, label]) => `<label title="${esc(value)}"><input type="checkbox" name="${name}" value="${esc(value)}"${(v[name] || []).includes(value) ? " checked" : ""}${dis}> ${esc(label)}</label>`).join("")}</fieldset>`;
+    const limits = Object.entries(v.limits || {}).map(([k, n]) => `${k}: ${n}`).join("\n");
+    const rt = config.runtime || {};
+    const providerLabel = { gateway: "lokale Modelle über FLOWGATE", simulated: "Simulator", opencode: "OpenCode (lokal)", codex: "Codex (Abo)", claude: "Claude (Abo)" };
+    return `<h3>${esc(v.name)} <small>${esc(config.id)} · Nr. ${esc(config.number)} · ${config.kind === "review" ? "Prüfer" : "Ersteller"}</small></h3>
+      <p class="lead">${edit ? "Du kannst als Administrator ändern. Jede Änderung braucht eine Begründung, wird geprüft wie das Agentenregister (Unabhängigkeit, Werkzeuge, Datenklassen) und protokolliert. Der Registerstand ändert sich: offene Aufträge halten an, bis ein Mensch sie auf den neuen Stand umstellt." : "Nur ansehen. Ändern können Administratoren."}${config.override_error ? ` <b>${esc(config.override_error)}</b>` : ""}</p>
+      <div class="ac-config-runtime"><span class="ac-chip">Ausführung: ${esc(providerLabel[rt.provider] || rt.provider)}</span><span class="ac-chip">Modell: ${esc(rt.gateway_alias)} (${esc(rt.family)})</span>${rt.escalation ? `<span class="ac-chip">komplex → ${esc(rt.escalation)}</span>` : ""}${rt.opencode ? '<span class="ac-chip">OpenCode wählbar</span>' : ""}<span class="ac-chip ${rt.paused ? "red" : rt.active ? "lime" : ""}">${rt.paused ? "pausiert" : rt.active ? "aktiv" : "nicht aktiv"}</span>${(config.workflow || []).map((s) => `<span class="ac-chip">Schritt ${esc(s.label)}</span>`).join("")}${config.reviewed_by ? `<span class="ac-chip">geprüft von ${esc(config.reviewed_by)}</span>` : ""}<span class="ac-chip">Registerstand ${esc(config.digest)}</span></div>
+      <div class="ac-form">
+        ${text("name")}${select("status", o.status.map((s) => [s, s]))}
+        ${text("owner")}${text("deputy")}
+        ${select("autonomy", o.autonomy.map((a) => [a, a]))}<label>${head("approved_until")}<input type="date" name="approved_until" value="${esc(v.approved_until)}"${dis}></label>
+        ${select("model_profile", Object.entries(o.model_profile).map(([name, p]) => [name, `${name} – ${p.alias} (${p.family})`]))}
+        ${area("mission")}${area("escalation")}${area("evidence")}
+        ${checks("tools", Object.entries(o.tools).map(([name, label]) => [name, `${name} – ${label}`]))}
+        ${checks("reads", o.reads.map((k) => [k, k]))}
+        ${checks("data_classes", o.data_classes.map((k) => [k, DATA_TITLES[k] || k]))}
+        <label class="wide">${head("limits")}<textarea name="limits" placeholder="max_drafts_per_run: 12"${dis}>${esc(limits)}</textarea></label>
+        <label class="wide">${head("prompt_text")}<textarea name="prompt_text" class="ac-prompt"${dis}>${esc(v.prompt_text)}</textarea></label>
+        ${edit ? '<label class="wide">BEGRÜNDUNG (PFLICHT)<input name="reason" maxlength="500" placeholder="z. B. Werkzeug ticket.create für Testbetrieb freigegeben"></label>' : ""}
+      </div>
+      <h4 class="ac-config-h">Änderungsprotokoll</h4>
+      ${(config.history || []).length ? `<table class="ac-table"><thead><tr><th>Wann</th><th>Wer</th><th>Felder</th><th>Begründung</th></tr></thead><tbody>${config.history.map((h) => `<tr><td>${esc(time(h.at))}</td><td>${esc(h.person)}</td><td>${Object.entries(h.changes).map(([f, pair]) => `<span title="${esc(JSON.stringify(pair))}">${esc(FIELD_TITLES[f] || f)}</span>`).join(", ")}</td><td>${esc(h.reason)}</td></tr>`).join("")}</tbody></table>` : '<div class="ac-hint">Noch keine Änderung – es gilt das Agentenregister (agents/registry.yaml).</div>'}
+      <div class="ac-form-actions"><span class="msg" data-config-msg></span><span><button class="ac-btn" value="cancel" formnovalidate type="submit">Schließen</button>${edit ? ' <button class="ac-btn primary" type="button" data-config-save>Prüfen und speichern</button>' : ""}</span></div>`;
+  }
+
+  function collectChanges(form, values) {
+    const changes = {};
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    for (const name of ["name", "owner", "deputy", "status", "autonomy", "approved_until", "model_profile", "mission", "escalation", "evidence", "prompt_text"]) {
+      const field = form.elements[name];
+      if (!field) continue;
+      const value = name === "prompt_text" ? field.value : field.value.trim();
+      const current = name === "prompt_text" ? values[name] : String(values[name] ?? "").trim();
+      if (value !== current) changes[name] = value;
+    }
+    for (const name of ["tools", "reads", "data_classes"]) {
+      const picked = [...form.querySelectorAll(`input[name="${name}"]:checked`)].map((i) => i.value);
+      if (!same([...picked].sort(), [...(values[name] || [])].sort())) changes[name] = picked;
+    }
+    const limits = {};
+    for (const line of form.elements.limits.value.split("\n")) {
+      const match = line.match(/^\s*([a-z_]+)\s*[:=]\s*(\d+)\s*$/);
+      if (match) limits[match[1]] = Number(match[2]);
+    }
+    if (!same(limits, values.limits || {})) changes.limits = limits;
+    return changes;
   }
 
   function rightsMatrix(data) {

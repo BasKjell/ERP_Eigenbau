@@ -199,3 +199,18 @@
 .ac-matrix td.ac-cell.on { color:var(--ac-lime); }
 .ac-matrix tr[data-card] { cursor:pointer; }
 .ac-matrix tr[data-card]:hover td { background:rgba(255,255,255,.04); }
+
+/* Agentenkonfiguration */
+.ac-config-dialog { width:min(980px,96vw); }
+.ac-config-dialog h3 small { font-size:12px; font-weight:600; color:#66767a; letter-spacing:0; }
+.ac-config-runtime { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 14px; }
+.ac-config-dialog .ac-chip { color:#102126; border-color:rgba(16,33,38,.18); }
+.ac-checks { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:4px 12px; margin:0; padding:10px 12px; border:1px solid rgba(16,33,38,.16); border-radius:8px; }
+.ac-checks legend { padding:0 4px; color:#66767a; font-size:10px; font-weight:800; letter-spacing:.04em; }
+.ac-checks label { display:flex; gap:6px; align-items:flex-start; color:#102126; font-size:11px; font-weight:500; letter-spacing:0; }
+.ac-checks input { width:auto; margin-top:2px; }
+.ac-form textarea.ac-prompt { min-height:260px; font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+.ac-config-h { margin:18px 0 6px; font-size:13px; }
+.ac-link { border:0; background:none; color:#0d756c; font-size:10px; font-weight:700; cursor:pointer; padding:0 2px; }
+.ac-form input:disabled, .ac-form textarea:disabled, .ac-form select:disabled { background:#f5f4ef; color:#3b4a4e; }
+.ac-form fieldset.wide { grid-column:1/-1; }
