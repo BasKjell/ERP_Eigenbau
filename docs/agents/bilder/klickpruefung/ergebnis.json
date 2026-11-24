@@ -1,0 +1,510 @@
+{
+  "model": "gateway/gemma3:12b",
+  "attempts": [
+    {
+      "attempt": 1,
+      "error": "AT-1: ein Klickpfad braucht mindestens eine Prüfung (expect_text oder expect_visible)"
+    },
+    {
+      "attempt": 2,
+      "error": "AT-1: ein Klickpfad braucht mindestens eine Prüfung (expect_text oder expect_visible)"
+    }
+  ],
+  "artifacts": [
+    {
+      "type": "testfall",
+      "key": "AT-1",
+      "title": "Standortauswahl und Verfügbarkeitsprüfung - Hamburg Projektbüro",
+      "criterion": "R1/AC-1",
+      "preconditions": "Demo-Modus aktiv, keine bestehende Buchung.",
+      "steps": [
+        {
+          "action": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "action": "click",
+          "role": "button",
+          "name": "Standort"
+        },
+        {
+          "action": "select",
+          "label": "Standort",
+          "value": "Hamburg · Projektbüro"
+        },
+        {
+          "action": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "action": "expect_text",
+          "text": "Hamburg"
+        },
+        {
+          "action": "expect_visible",
+          "label": "freie Plätze"
+        },
+        {
+          "do": "screenshot",
+          "name": "Hamburg_Projektbuero_Verfuegbarkeit"
+        }
+      ],
+      "negative": false,
+      "ui": [
+        {
+          "do": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Standort"
+        },
+        {
+          "do": "select",
+          "label": "Standort",
+          "value": "Hamburg · Projektbüro"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "do": "expect_text",
+          "text": "Hamburg"
+        },
+        {
+          "do": "expect_visible",
+          "label": "freie Plätze"
+        },
+        {
+          "do": "screenshot",
+          "name": "Hamburg_Projektbuero_Verfuegbarkeit"
+        }
+      ]
+    },
+    {
+      "type": "testfall",
+      "key": "AT-2",
+      "title": "Überprüfung der Zeitfenster-Optionen",
+      "criterion": "R1/AC-2",
+      "preconditions": "Demo-Modus aktiv, keine bestehende Buchung.",
+      "steps": [
+        {
+          "action": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "action": "expect_text",
+          "text": "Zeitfenster"
+        },
+        {
+          "action": "expect_text",
+          "text": "Ganztägig"
+        },
+        {
+          "action": "expect_text",
+          "text": "Vormittag"
+        },
+        {
+          "action": "expect_text",
+          "text": "Nachmittag"
+        },
+        {
+          "do": "screenshot",
+          "name": "Zeitfenster_Optionen"
+        }
+      ],
+      "negative": false,
+      "ui": [
+        {
+          "do": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "do": "expect_text",
+          "text": "Zeitfenster"
+        },
+        {
+          "do": "expect_text",
+          "text": "Ganztägig"
+        },
+        {
+          "do": "expect_text",
+          "text": "Vormittag"
+        },
+        {
+          "do": "expect_text",
+          "text": "Nachmittag"
+        },
+        {
+          "do": "screenshot",
+          "name": "Zeitfenster_Optionen"
+        }
+      ]
+    },
+    {
+      "type": "testfall",
+      "key": "AT-3",
+      "title": "Negative Test: Standortauswahl - Ungültiger Standort",
+      "criterion": "R1/AC-1",
+      "preconditions": "Demo-Modus aktiv, keine bestehende Buchung.",
+      "steps": [
+        {
+          "action": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "action": "click",
+          "role": "button",
+          "name": "Standort"
+        },
+        {
+          "action": "select",
+          "label": "Standort",
+          "value": "Ungültiger Standort"
+        },
+        {
+          "action": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "action": "expect_text",
+          "text": "Ungültiger Standort"
+        },
+        {
+          "do": "screenshot",
+          "name": "Ungueltiger_Standort_Fehlermeldung"
+        }
+      ],
+      "negative": true,
+      "ui": [
+        {
+          "do": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Standort"
+        },
+        {
+          "do": "select",
+          "label": "Standort",
+          "value": "Ungültiger Standort"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "do": "expect_text",
+          "text": "Ungültiger Standort"
+        },
+        {
+          "do": "screenshot",
+          "name": "Ungueltiger_Standort_Fehlermeldung"
+        }
+      ]
+    },
+    {
+      "type": "testfall",
+      "key": "AT-4",
+      "title": "Negative Test: Verfügbarkeitsprüfung ohne Standortauswahl",
+      "criterion": "R1/AC-1",
+      "preconditions": "Demo-Modus aktiv, keine bestehende Buchung.",
+      "steps": [
+        {
+          "action": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "action": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "action": "expect_text",
+          "text": "Bitte wählen Sie einen Standort"
+        },
+        {
+          "do": "screenshot",
+          "name": "Fehlermeldung_Standort_Pflichtfeld"
+        }
+      ],
+      "negative": true,
+      "ui": [
+        {
+          "do": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "do": "expect_text",
+          "text": "Bitte wählen Sie einen Standort"
+        },
+        {
+          "do": "screenshot",
+          "name": "Fehlermeldung_Standort_Pflichtfeld"
+        }
+      ]
+    }
+  ],
+  "scenarios_run": [
+    {
+      "key": "AT-1",
+      "title": "Standortauswahl und Verfügbarkeitsprüfung - Hamburg Projektbüro",
+      "steps": [
+        {
+          "do": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Standort"
+        },
+        {
+          "do": "select",
+          "label": "Standort",
+          "value": "Hamburg · Projektbüro"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "do": "expect_text",
+          "text": "Hamburg"
+        },
+        {
+          "do": "expect_visible",
+          "label": "freie Plätze"
+        },
+        {
+          "do": "screenshot",
+          "name": "Hamburg_Projektbuero_Verfuegbarkeit"
+        }
+      ]
+    },
+    {
+      "key": "AT-2",
+      "title": "Überprüfung der Zeitfenster-Optionen",
+      "steps": [
+        {
+          "do": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "do": "expect_text",
+          "text": "Zeitfenster"
+        },
+        {
+          "do": "expect_text",
+          "text": "Ganztägig"
+        },
+        {
+          "do": "expect_text",
+          "text": "Vormittag"
+        },
+        {
+          "do": "expect_text",
+          "text": "Nachmittag"
+        },
+        {
+          "do": "screenshot",
+          "name": "Zeitfenster_Optionen"
+        }
+      ]
+    },
+    {
+      "key": "AT-3",
+      "title": "Negative Test: Standortauswahl - Ungültiger Standort",
+      "steps": [
+        {
+          "do": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Standort"
+        },
+        {
+          "do": "select",
+          "label": "Standort",
+          "value": "Ungültiger Standort"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "do": "expect_text",
+          "text": "Ungültiger Standort"
+        },
+        {
+          "do": "screenshot",
+          "name": "Ungueltiger_Standort_Fehlermeldung"
+        }
+      ]
+    },
+    {
+      "key": "AT-4",
+      "title": "Negative Test: Verfügbarkeitsprüfung ohne Standortauswahl",
+      "steps": [
+        {
+          "do": "goto",
+          "path": "/desksharing"
+        },
+        {
+          "do": "click",
+          "role": "button",
+          "name": "Verfügbarkeit prüfen"
+        },
+        {
+          "do": "expect_text",
+          "text": "Bitte wählen Sie einen Standort"
+        },
+        {
+          "do": "screenshot",
+          "name": "Fehlermeldung_Standort_Pflichtfeld"
+        }
+      ]
+    }
+  ],
+  "report": {
+    "passed": 1,
+    "total": 4,
+    "seconds": 35.1,
+    "scenarios": [
+      {
+        "key": "AT-1",
+        "title": "Standortauswahl und Verfügbarkeitsprüfung - Hamburg Projektbüro",
+        "passed": false,
+        "steps": [
+          {
+            "do": "goto",
+            "ok": true,
+            "note": ""
+          },
+          {
+            "do": "click",
+            "ok": false,
+            "note": "Locator.click: Timeout 10000ms exceeded."
+          }
+        ],
+        "screenshots": [
+          {
+            "name": "fehler",
+            "data": "AT-1-fehler.png"
+          }
+        ]
+      },
+      {
+        "key": "AT-2",
+        "title": "Überprüfung der Zeitfenster-Optionen",
+        "passed": true,
+        "steps": [
+          {
+            "do": "goto",
+            "ok": true,
+            "note": ""
+          },
+          {
+            "do": "expect_text",
+            "ok": true,
+            "note": ""
+          },
+          {
+            "do": "expect_text",
+            "ok": true,
+            "note": "Option der Auswahlliste vorhanden"
+          },
+          {
+            "do": "expect_text",
+            "ok": true,
+            "note": "Option der Auswahlliste vorhanden"
+          },
+          {
+            "do": "expect_text",
+            "ok": true,
+            "note": "Option der Auswahlliste vorhanden"
+          },
+          {
+            "do": "screenshot",
+            "ok": true,
+            "note": ""
+          }
+        ],
+        "screenshots": [
+          {
+            "name": "Zeitfenster_Optionen",
+            "data": "AT-2-Zeitfenster_Optionen.png"
+          }
+        ]
+      },
+      {
+        "key": "AT-3",
+        "title": "Negative Test: Standortauswahl - Ungültiger Standort",
+        "passed": false,
+        "steps": [
+          {
+            "do": "goto",
+            "ok": true,
+            "note": ""
+          },
+          {
+            "do": "click",
+            "ok": false,
+            "note": "Locator.click: Timeout 10000ms exceeded."
+          }
+        ],
+        "screenshots": [
+          {
+            "name": "fehler",
+            "data": "AT-3-fehler.png"
+          }
+        ]
+      },
+      {
+        "key": "AT-4",
+        "title": "Negative Test: Verfügbarkeitsprüfung ohne Standortauswahl",
+        "passed": false,
+        "steps": [
+          {
+            "do": "goto",
+            "ok": true,
+            "note": ""
+          },
+          {
+            "do": "click",
+            "ok": true,
+            "note": ""
+          },
+          {
+            "do": "expect_text",
+            "ok": false,
+            "note": "Locator.wait_for: Timeout 10000ms exceeded."
+          }
+        ],
+        "screenshots": [
+          {
+            "name": "fehler",
+            "data": "AT-4-fehler.png"
+          }
+        ]
+      }
+    ]
+  }
+}

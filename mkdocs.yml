@@ -88,6 +88,7 @@ nav:
       - Bedienungsanleitung: agents/bedienung.md
       - Sicherheitskonzept: agents/sicherheitskonzept.md
       - Betrieb: agents/betrieb.md
+      - Klickprüfung mit lokaler KI: agents/klickpruefung.md
       - Sicherheit und Nachweise: agents/sicherheit.md
       - Modellbewertung: agents/modellbewertung.md
   - Werkzeuge:

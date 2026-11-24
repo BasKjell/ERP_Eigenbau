@@ -71,6 +71,8 @@ def validate_steps(steps: Any, label: str = "ui") -> list[dict[str, str]]:
             if action == "upload" and item.get("fixture") not in FIXTURES:
                 raise UiCheckError(f"{where}: upload nur mit {sorted(FIXTURES)}")
         clean.append(item)
+    if not any(item["do"] in {"expect_text", "expect_visible"} for item in clean):
+        raise UiCheckError(f"{label}: ein Klickpfad braucht mindestens eine Prüfung (expect_text oder expect_visible)")
     return clean
 
 

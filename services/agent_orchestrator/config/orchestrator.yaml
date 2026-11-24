@@ -270,6 +270,22 @@ container:
     network: trading-dev-claude
     auth_volume: trading-dev-claude-auth
 
+# OpenCode (Open Source, https://opencode.ai) als lokaler Agenten-Worker: wählbar je Auftrag über
+# „Umsetzung: OpenCode (lokal)“. Gleiche Modelle und Rollenschlüssel wie FLOWGATE, kein Abo, kein
+# Internet (internes Netz flow-agents-opencode, nur FLOWGATE erreichbar), keine Werkzeuge im Container.
+# Image: services/agent_orchestrator/opencode.Dockerfile (OpenCode 1.19.6), nur per Digest.
+# Fällt der Worker aus, antwortet der direkte FLOWGATE-Aufruf (fallback) und das Ergebnis ist markiert.
+opencode:
+  enabled: true
+  image: flow-agents-opencode@sha256:e63705994d8b3631648e0a79ac5d07ac3de413b3b43b4f0de0c975b949113c1c
+  network: flow-agents-opencode
+  gateway_url: http://agentgateway:4000/v1
+  roles: [entwicklung]
+  fallback: true
+  memory: 2g
+  cpus: 2
+  timeout_seconds: 1800
+
 # Komplexe Aufträge: Entwicklung durch Codex, Code-Review durch Claude (verschiedene Familien,
 # auch gegenüber qwen/gemma). Komplex = Klasse kritisch, Änderungsbereich „complexity: hoch“,
 # Umsetzung „abo“ im Auftrag oder zwei gescheiterte lokale Versuche desselben Schritts.

@@ -62,13 +62,24 @@ def run_scenario(page: Page, base: str, scenario: dict, files: dict[str, Path]) 
                 locate(page, step).click(timeout=STEP_TIMEOUT)
                 page.wait_for_load_state("networkidle", timeout=STEP_TIMEOUT)
             elif action == "fill":
-                locate(page, step).fill(step["value"], timeout=STEP_TIMEOUT)
+                target = locate(page, step)
+                if target.evaluate("e => e.tagName", timeout=STEP_TIMEOUT) == "SELECT":
+                    # Kleine lokale Modelle verwechseln Auswahllisten mit Textfeldern: Option wählen.
+                    target.select_option(label=step["value"], timeout=STEP_TIMEOUT)
+                    note = "Auswahlliste: Option gewählt"
+                else:
+                    target.fill(step["value"], timeout=STEP_TIMEOUT)
             elif action == "select":
                 locate(page, step).select_option(label=step["value"], timeout=STEP_TIMEOUT)
             elif action == "upload":
                 locate(page, step).set_input_files(str(files[step["fixture"]]), timeout=STEP_TIMEOUT)
             elif action == "expect_text":
-                page.get_by_text(step["text"]).first.wait_for(state="visible", timeout=STEP_TIMEOUT)
+                option = page.locator("select option", has_text=step["text"])
+                if option.count():
+                    # Optionen einer Auswahlliste sind nie „sichtbar“; vorhanden genügt.
+                    note = "Option der Auswahlliste vorhanden"
+                else:
+                    page.get_by_text(step["text"]).first.wait_for(state="visible", timeout=STEP_TIMEOUT)
             elif action == "expect_visible":
                 locate(page, step).wait_for(state="visible", timeout=STEP_TIMEOUT)
             elif action == "screenshot":

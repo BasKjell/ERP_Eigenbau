@@ -66,6 +66,7 @@ class Engine:
         escalation: dict[str, Any] | None = None,
         ui_runner: UiRunner | None = None,
         projects: dict[str, dict[str, Any]] | None = None,
+        opencode_roles: tuple[str, ...] = ("entwicklung",),
     ) -> None:
         missing = {profile for profile in {a.model_profile for a in registry.agents.values()}
                    if profile_providers.get(profile) not in providers}
@@ -78,6 +79,8 @@ class Engine:
         self.adoption, self.preview, self.budgets = adoption, preview, budgets or {}
         self.escalation = escalation or {}
         self.ui_runner = ui_runner
+        # Umsetzung „opencode“: diese Rollen arbeiten über den lokalen OpenCode-Worker (opencode.py).
+        self.opencode_roles = tuple(opencode_roles)
         # Projektkatalog mit Projektrechten. Ohne Katalog gilt der bisherige Ablauf ohne Projektprüfung.
         self.projects = dict(projects or {})
         for code, spec in self.projects.items():
@@ -172,8 +175,10 @@ class Engine:
                 raise EngineError("Änderungsbereich ist zu groß für die lokalen Modelle; bitte einen kleineren "
                                   "Bereich wählen oder die Umsetzung durch Codex/Claude zulassen")
         execution = str(values.get("execution") or "automatisch")
-        if execution not in {"automatisch", "lokal", "abo"}:
-            raise EngineError("Umsetzung muss automatisch, lokal oder abo sein")
+        if execution not in {"automatisch", "lokal", "abo", "opencode"}:
+            raise EngineError("Umsetzung muss automatisch, lokal, abo oder opencode sein")
+        if execution == "opencode" and "opencode" not in self.providers:
+            raise EngineError("Der OpenCode-Worker ist nicht eingerichtet (opencode.enabled)")
         if execution == "abo" and data_class == "vertraulich":
             raise EngineError("vertrauliche Daten werden nur lokal verarbeitet")
         return {
@@ -433,12 +438,15 @@ class Engine:
         schließt die Eskalation aus.
         """
         local = self.providers[self.profile_providers[agent.model_profile]]
+        auftrag = run["auftrag"]
+        if auftrag.get("execution") == "opencode" and agent.role in self.opencode_roles and "opencode" in self.providers:
+            # Lokal und agentisch: gleiche Modelle und Schlüssel wie FLOWGATE, auch für vertrauliche Daten.
+            return self.providers["opencode"], "Umsetzung durch OpenCode (lokal) im Auftrag festgelegt"
         esc = self.escalation
         target = (esc.get("roles") or {}).get(agent.role)
         if not esc.get("enabled") or not target or target not in self.providers:
             return local, ""
-        auftrag = run["auftrag"]
-        if auftrag.get("data_class") == "vertraulich" or auftrag.get("execution") == "lokal":
+        if auftrag.get("data_class") == "vertraulich" or auftrag.get("execution") in {"lokal", "opencode"}:
             return local, ""
         reasons = []
         if auftrag.get("execution") == "abo":
@@ -1541,7 +1549,9 @@ UI_HINT = (
     '{"do":"fill","label":"…","value":"…"}, {"do":"select","label":"…","value":"…"}, '
     '{"do":"upload","label":"…","fixture":"beispiel.stl|beispiel.pdf|beispiel.png|beispiel.txt"}, '
     '{"do":"expect_text","text":"…"}, {"do":"expect_visible","label":"…"}, {"do":"screenshot","name":"…"}. '
-    "Nutze sichtbare Beschriftungen aus den Anforderungen, keine CSS-Selektoren, höchstens 25 Schritte."
+    "Nutze sichtbare Beschriftungen aus den Anforderungen, keine CSS-Selektoren, höchstens 25 Schritte. "
+    'Auswahllisten bedienst du mit "select" (label = Feldname, value = sichtbarer Optionstext), nicht mit "click". '
+    "Prüfe das Ergebnis mit expect_text und beende jeden Klickpfad mit einem screenshot."
 )
 
 

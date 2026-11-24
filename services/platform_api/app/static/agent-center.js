@@ -536,7 +536,7 @@ class AgentCenter {
           <label title="K1 normal · K2 Schutzbedarf hoch oder Produktsoftware · K3 funktionale Sicherheit: KI liefert nur Entwürfe">Kritikalität<select name="criticality"><option value="K1" selected>K1 normal</option><option value="K2">K2 erhöht</option><option value="K3">K3 kritisch (Sicherheit)</option></select></label>
           <label>Domäne<select name="domain"><option value="it" selected>IT-Anwendung</option><option value="produkt">Produktsoftware / Firmware</option><option value="pruefsoftware">Prüf- und Fertigungssoftware</option><option value="werkzeug">Engineering-Werkzeug</option></select></label>
           <label>Datenklasse<select name="data_class"><option value="intern" selected>intern</option><option value="oeffentlich">öffentlich</option><option value="vertraulich">vertraulich</option></select></label>
-          <label>Umsetzung<select name="execution"><option value="automatisch" selected>automatisch (komplex → Codex/Claude)</option><option value="lokal">nur lokale Modelle</option><option value="abo">Codex/Claude (Abo)</option></select></label>
+          <label>Umsetzung<select name="execution"><option value="automatisch" selected>automatisch (komplex → Codex/Claude)</option><option value="lokal">nur lokale Modelle</option><option value="abo">Codex/Claude (Abo)</option><option value="opencode">OpenCode (lokal, agentisch)</option></select></label>
           <label class="wide">Freigegebener Änderungsbereich<select name="scope" required data-scopes><option value="">wird geladen …</option></select></label>
           <input type="hidden" name="draft_id" value="">
         </div>

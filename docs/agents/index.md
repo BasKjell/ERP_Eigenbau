@@ -123,6 +123,11 @@ flowchart LR
 | Neue Funktion | zusätzlich EP1 (bei M/L) und G1 durch den Product Owner |
 | Hoher Schutzbedarf / neuer Dienst | EP1 (bei M/L) und G1 bis G5 |
 
+Ändert ein Auftrag Oberflächendateien, schreibt der Akzeptanztest-Agent zusätzlich Klickpfade; an G4
+führt ein Prüfbrowser sie gegen die Vorschau aus ([Klickprüfung mit lokaler KI](klickpruefung.md)). Für die
+Entwicklung ist neben den direkten lokalen Modellen und Codex/Claude auch der lokale
+[OpenCode-Worker](betrieb.md#opencode-worker-lokal-agentisch) wählbar.
+
 Nach zwei erfolglosen Korrekturrunden entscheidet der Tech Lead. Ein neuer Änderungsstand macht
 Codeprüfung, Integrationsprüfung und Abnahme ungültig (Digest-Bindung). Der Orchestrator prüft das
 Nachweispaket selbst; eine Lücke sperrt G4/G5.

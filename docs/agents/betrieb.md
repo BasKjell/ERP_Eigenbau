@@ -100,6 +100,34 @@ ansehen“ → „Klickprüfung im Browser“). Das Modell selbst steuert keinen
   read-only, `--cap-drop ALL`; der Browser lädt nur Adressen der Vorschau; Uploads nur mit
   eingebauten Testdateien (`beispiel.stl`, `.pdf`, `.png`, `.txt`).
 - Abschalten: `ui_check.enabled: false`.
+- Ablauf, echte Vorführung mit lokaler KI und Bilder: [Klickprüfung mit lokaler KI](klickpruefung.md).
+
+## OpenCode-Worker (lokal, agentisch)
+
+[OpenCode](https://opencode.ai) ist eine Open-Source-Agenten-CLI. FLOWAGENTS nutzt sie als dritten Worker
+neben Codex und Claude, aber **ohne Abo und ohne Internet**: OpenCode spricht nur mit FLOWGATE und damit
+mit denselben lokalen Modellen und Rollenschlüsseln wie der direkte Aufruf.
+
+| Punkt | Festlegung |
+|---|---|
+| Auswahl | je Auftrag: „Umsetzung → OpenCode (lokal, agentisch)“; gilt für die Rollen in `opencode.roles` (Standard: Entwicklung) |
+| Daten | bleiben im Haus; auch für vertrauliche Aufträge zulässig |
+| Image | `services/agent_orchestrator/opencode.Dockerfile`, OpenCode 1.19.6, nur per Digest in `opencode.image` |
+| Netz | internes Docker-Netz `flow-agents-opencode` ohne Internet; einziger Partner ist FLOWGATE (`agentgateway:4000`) |
+| Container | read-only, `--cap-drop ALL`, `no-new-privileges`, Speicher- und CPU-Grenzen, keine Logs |
+| Werkzeuge | Schreiben, Bearbeiten, Shell und Webzugriff verboten; Plugins, Skills, Modellkatalog und Selbstaktualisierung aus |
+| Schlüssel | virtueller FLOWGATE-Schlüssel der Rolle über die Prozessumgebung, nie in der Befehlszeile |
+| Sicht | kein Repository; nur der Prompt als Datei im tmpfs |
+| Ausfall | Rückfall auf den direkten FLOWGATE-Aufruf (`opencode.fallback`), im Ergebnis als Rückfall markiert |
+
+Einrichten, einmal je Rechner:
+
+1. `make agents-opencode-image` und die ausgegebene Image-ID in `opencode.image` eintragen.
+2. FLOWGATE mit dem internen Netz starten: `docker compose --profile ai-gateway up -d agentgateway`.
+3. `make agents-restart`.
+
+Abschalten: `opencode.enabled: false`. Die Unabhängigkeit von Ersteller und Prüfer bleibt erhalten,
+weil OpenCode dasselbe Modell der Rolle nutzt; die Modellfamilie ändert sich nicht.
 
 ## Abo-Worker (Codex/Claude) für komplexe Änderungen
 

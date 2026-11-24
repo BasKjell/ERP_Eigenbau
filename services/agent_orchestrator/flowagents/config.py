@@ -15,6 +15,7 @@ from . import registry as registry_module
 from .adoption import Adoption, Preview
 from .container import ContainerProvider, validate_settings
 from .engine import Engine
+from .opencode import OpenCodeProvider
 from .providers import GatewayProvider, Provider, SimulatedProvider
 from .rm import FlowworkRM, OfflineRM
 from .sandbox import DockerCheck, LocalCheck, Sandbox
@@ -23,7 +24,7 @@ from .sync import PlatformSync
 from .uicheck import UiRunner
 
 DEMO_SECRET_HINT = "change-before-network-use"
-PROVIDER_NAMES = ("gateway", "simulated", "codex", "claude")
+PROVIDER_NAMES = ("gateway", "simulated", "codex", "claude", "opencode")
 
 
 class ConfigError(ValueError):
@@ -94,8 +95,10 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
     if unknown:
         raise ConfigError(f"unbekannte Provider {sorted(unknown)}")
     used = set(profile_providers.values())
+    # OpenCode ist je Auftrag wählbar (Umsetzung „opencode“), auch wenn kein Profil es fest nutzt.
+    used_workers = used | {"opencode"} if (settings.get("opencode") or {}).get("enabled") else used
     providers: dict[str, Provider] = {"simulated": SimulatedProvider()}
-    if "gateway" in used:
+    if used_workers & {"gateway", "opencode"}:
         gateway = settings.get("gateway") or {}
         prefix = str(gateway.get("keys_env_prefix", "FLOW_AGENT_GATEWAY_KEY_"))
         keys = {}
@@ -110,6 +113,15 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
             str(gateway.get("url", "http://127.0.0.1:4000")), keys,
             timeout=float(gateway.get("timeout_seconds", 900)), no_think=bool(gateway.get("no_think", True)),
         )
+    if "opencode" in used_workers:
+        # OpenCode-Worker: gleiche Rollenschlüssel und Modellaliasse wie FLOWGATE, aber agentische CLI im
+        # isolierten Container. Rückfall auf den direkten FLOWGATE-Aufruf, wenn der Worker ausfällt.
+        opencode = dict(settings.get("opencode") or {"enabled": False})
+        try:
+            providers["opencode"] = OpenCodeProvider(
+                opencode, keys, fallback=providers["gateway"] if opencode.get("fallback", True) else None)
+        except ValueError as exc:
+            raise ConfigError(str(exc)) from None
     container = settings.get("container") or {"execution_enabled": False}
     escalation = dict(settings.get("escalation") or {})
     escalation_roles = {str(k): str(v) for k, v in (escalation.get("roles") or {}).items()}
@@ -162,7 +174,8 @@ def build(config_path: Path, *, repo_root: Path) -> Runtime:
                     scopes=dict(settings.get("scopes") or {}), demo_mode=bool(settings.get("demo_mode")),
                     adoption=adoption, preview=preview, budgets=budgets,
                     escalation={**escalation, "roles": escalation_roles}, ui_runner=ui_runner,
-                    projects=_projects(agents_dir))
+                    projects=_projects(agents_dir),
+                    opencode_roles=tuple((settings.get("opencode") or {}).get("roles") or ("entwicklung",)))
     engine.seed_projects()
     listen = str(settings.get("listen", "127.0.0.1:8095"))
     host, _, port = listen.rpartition(":")

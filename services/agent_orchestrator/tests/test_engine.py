@@ -509,7 +509,8 @@ def test_click_paths_are_validated_strictly() -> None:
                        ([{"do": "upload", "label": "Datei", "fixture": "/etc/passwd"}], "upload nur"),
                        ([{"do": "fill", "label": "Titel"}], "braucht value"),
                        ([{"do": "click", "role": "button"}], "braucht name"),
-                       ([{"do": "click", "text": "x"}] * 26, "Schritte")]:
+                       ([{"do": "click", "text": "x"}] * 26, "Schritte"),
+                       ([{"do": "goto", "path": "/dms"}], "mindestens eine Prüfung")]:
         with pytest.raises(UiCheckError, match=match):
             validate_steps(bad)
 
@@ -518,7 +519,8 @@ def test_acceptance_contract_rejects_an_invalid_click_path() -> None:
     from flowagents.contract import validate
 
     case = {"type": "testfall", "key": "T1", "title": "STL", "criterion": "R1", "steps": [{"action": "a", "expected": "b"}]}
-    ok = {"status": "fertig", "summary": "s", "artifacts": [{**case, "ui": [{"do": "goto", "path": "/dms"}]}]}
+    ok = {"status": "fertig", "summary": "s",
+          "artifacts": [{**case, "ui": [{"do": "goto", "path": "/dms"}, {"do": "expect_text", "text": "Dokumente"}]}]}
     assert validate(ok, role="akzeptanztest", kind="create").artifacts[0]["ui"]
     bad = {**ok, "artifacts": [{**case, "ui": [{"do": "goto", "path": "http://x"}]}]}
     with pytest.raises(Exception, match="Pfad"):

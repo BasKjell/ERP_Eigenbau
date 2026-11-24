@@ -146,6 +146,11 @@ stop:
 agents-sandbox-image:
 	docker build -t flow-agents-sandbox:1 -f services/agent_orchestrator/sandbox.Dockerfile services
 
+# OpenCode-Worker (lokale Modelle über FLOWGATE). Danach die Image-ID als Digest in opencode.image eintragen.
+agents-opencode-image:
+	docker build -t flow-agents-opencode:1 -f services/agent_orchestrator/opencode.Dockerfile services/agent_orchestrator
+	docker image inspect --format 'opencode.image: flow-agents-opencode@{{.Id}}' flow-agents-opencode:1
+
 agents-up:
 	./scripts/flow_agents.sh start
 

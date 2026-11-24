@@ -42,7 +42,7 @@ class AgentRunCreate(BaseModel):
     domain: Literal["", "it", "produkt", "pruefsoftware", "werkzeug"] = ""
     scope: str = Field(min_length=2, max_length=40)
     project: str = Field(default="FLOW-PLATFORM", pattern=r"^[A-Z][A-Z0-9-]{2,30}$")
-    execution: Literal["automatisch", "lokal", "abo"] = "automatisch"
+    execution: Literal["automatisch", "lokal", "abo", "opencode"] = "automatisch"
     draft_id: str = Field(default="", max_length=20, pattern=r"^(VOR-[0-9A-F]{6})?$")
 
 

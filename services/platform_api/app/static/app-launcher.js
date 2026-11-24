@@ -147,7 +147,7 @@
     setupManagementTour();
     if (window.location.origin === new URL(platformHref("/") || "/", window.location.href).origin && !document.querySelector("script[data-demo-switch]")) {
       const script = document.createElement("script");
-      script.src = "/assets/demo-switch.js?v=20261124";
+      script.src = "/assets/demo-switch.js?v=20261124b";
       script.defer = true;
       script.dataset.demoSwitch = "1";
       document.head.append(script);

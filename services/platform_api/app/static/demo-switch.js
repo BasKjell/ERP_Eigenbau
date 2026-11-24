@@ -57,7 +57,11 @@
   async function init() {
     try {
       const response = await fetch("/api/auth/demo-accounts", { headers: { Accept: "application/json" } });
-      if (!response.ok) return;
+      if (!response.ok) {
+        // Antwort immer auslesen: sonst bleibt die Anfrage offen und die Seite wird nie „ruhig“ (Klickprüfung).
+        await response.text().catch(() => "");
+        return;
+      }
       style();
       render(await response.json());
     } catch (_) { /* Benutzerwechsel ist optional. */ }
