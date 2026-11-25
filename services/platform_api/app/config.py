@@ -83,6 +83,8 @@ class Settings:
         "AUTH_SESSION_SECRET", "local-session-secret-change-before-network-use"
     )
     auth_session_minutes: int = int(os.getenv("AUTH_SESSION_MINUTES", "480"))
+    # Rollen der Sitzung höchstens so lange ungeprüft: danach Refresh bei Keycloak (AD-Rechteentzug wirkt).
+    auth_role_refresh_seconds: int = int(os.getenv("AUTH_ROLE_REFRESH_SECONDS", "300"))
     auth_cookie_secure: bool = _env_bool("AUTH_COOKIE_SECURE")
     demo_admin_api_token: str = os.getenv("PLATFORM_DEMO_ADMIN_TOKEN", "")
     # Benutzerwechsel in der Demo: Kopfzeile listet die Demo-Konten; der Wechsel meldet über Keycloak

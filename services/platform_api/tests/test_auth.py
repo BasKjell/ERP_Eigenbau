@@ -142,7 +142,7 @@ def test_oidc_middleware_requires_login_and_enforces_roles(monkeypatch: object) 
 
     session = auth._sign(
         {
-            "expires_at": 4_102_444_800,
+            "expires_at": 4_102_444_800, "roles_checked_at": 4_102_444_800,
             "user": {
                 "username": "demo01",
                 "roles": ["sales-user"],
@@ -164,7 +164,7 @@ def test_oidc_middleware_requires_login_and_enforces_roles(monkeypatch: object) 
 
     work_session = auth._sign(
         {
-            "expires_at": 4_102_444_800,
+            "expires_at": 4_102_444_800, "roles_checked_at": 4_102_444_800,
             "user": {"username": "engineer", "roles": ["work-user"]},
         }
     )
@@ -178,7 +178,7 @@ def test_oidc_middleware_requires_login_and_enforces_roles(monkeypatch: object) 
 
     management_session = auth._sign(
         {
-            "expires_at": 4_102_444_800,
+            "expires_at": 4_102_444_800, "roles_checked_at": 4_102_444_800,
             "user": {"username": "manager", "roles": ["management-user"]},
         }
     )
@@ -204,7 +204,7 @@ def test_sso_proxy_requires_session_and_maps_identity_headers(monkeypatch: objec
     assert client.get("/auth/proxy?app_id=paperless").status_code == 401
     session = auth._sign(
         {
-            "expires_at": 4_102_444_800,
+            "expires_at": 4_102_444_800, "roles_checked_at": 4_102_444_800,
             "user": {
                 "username": "demo01",
                 "name": "Anna Schneider",
@@ -234,7 +234,7 @@ def test_sso_app_return_is_allowlisted_and_role_checked(monkeypatch: object) -> 
     client = TestClient(main_module.app)
     session = auth._sign(
         {
-            "expires_at": 4_102_444_800,
+            "expires_at": 4_102_444_800, "roles_checked_at": 4_102_444_800,
             "user": {"username": "demo01", "roles": ["dms-user"]},
         }
     )
@@ -253,3 +253,52 @@ def test_sso_app_return_is_allowlisted_and_role_checked(monkeypatch: object) -> 
         cookies={auth.SESSION_COOKIE: session},
     )
     assert forbidden.status_code == 403
+
+
+def test_ad_role_revocation_takes_effect_at_the_next_role_refresh(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review B5: Rollen der Portalsitzung gelten höchstens AUTH_ROLE_REFRESH_SECONDS ungeprüft. Danach lädt die
+    Plattform sie über das Refresh-Token neu; ein Entzug im AD wirkt damit nicht erst am Sitzungsende."""
+    auth = OidcAuth(oidc_settings())
+    monkeypatch.setattr(main_module, "oidc_auth", auth)
+    client = TestClient(main_module.app)
+    stale = int(time.time()) - auth.settings.auth_role_refresh_seconds - 1
+    session = auth._sign({"expires_at": 4_102_444_800, "roles_checked_at": stale, "refresh_token": "rt-1",
+                          "user": {"sub": "u-1", "username": "engineer", "roles": ["work-user"]}})
+    calls: list[dict[str, str]] = []
+
+    def token(url: str, values: dict[str, str]) -> dict[str, str]:
+        calls.append(values)
+        return {"access_token": "at-2", "refresh_token": "rt-2"}
+
+    # Im AD wurde die Gruppe entzogen: Keycloak liefert work-user nicht mehr.
+    monkeypatch.setattr(auth, "_form_request", token)
+    monkeypatch.setattr(auth, "_json_request", lambda url, access: {"sub": "u-1", "preferred_username": "engineer",
+                                                                     "roles": ["dms-user"]})
+    response = client.get("/api/work/dashboard", cookies={auth.SESSION_COOKIE: session})
+    assert response.status_code == 403, "entzogene Rolle wirkt sofort nach dem Refresh"
+    assert calls[0]["grant_type"] == "refresh_token" and calls[0]["refresh_token"] == "rt-1"
+    renewed = auth._unsign(response.cookies.get(auth.SESSION_COOKIE) or "")
+    assert renewed["user"]["roles"] == ["dms-user"] and renewed["refresh_token"] == "rt-2"
+    assert renewed["roles_checked_at"] >= int(time.time()) - 5
+
+
+@pytest.mark.parametrize("failure", ["gesperrt", "keycloak_weg", "fremde_person", "kein_refresh_token"])
+def test_stale_session_ends_when_roles_cannot_be_confirmed(monkeypatch: pytest.MonkeyPatch, failure: str) -> None:
+    auth = OidcAuth(oidc_settings())
+    monkeypatch.setattr(main_module, "oidc_auth", auth)
+    client = TestClient(main_module.app)
+    stale = int(time.time()) - auth.settings.auth_role_refresh_seconds - 1
+    payload = {"expires_at": 4_102_444_800, "roles_checked_at": stale, "refresh_token": "rt-1",
+               "user": {"sub": "u-1", "username": "engineer", "roles": ["work-user"]}}
+    if failure == "kein_refresh_token":
+        payload.pop("refresh_token")  # Sitzung aus der Zeit vor der Rollenprüfung
+
+    def token(url: str, values: dict[str, str]) -> dict[str, str]:
+        if failure in {"gesperrt", "keycloak_weg"}:
+            raise AuthError("Keycloak-Kommunikation fehlgeschlagen: HTTP 400 invalid_grant")
+        return {"access_token": "at-2", "refresh_token": "rt-2"}
+
+    monkeypatch.setattr(auth, "_form_request", token)
+    monkeypatch.setattr(auth, "_json_request", lambda url, access: {"sub": "u-2", "roles": ["work-user"]})
+    response = client.get("/api/work/dashboard", cookies={auth.SESSION_COOKIE: auth._sign(payload)})
+    assert response.status_code == 401, "ohne bestätigte Rollen keine Rechte (fail closed)"

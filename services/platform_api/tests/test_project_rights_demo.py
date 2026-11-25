@@ -79,7 +79,7 @@ def switch_client(monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, OidcAuth
 
 
 def session(auth: OidcAuth, username: str) -> dict[str, str]:
-    return {auth.SESSION_COOKIE: auth._sign({"expires_at": 4_102_444_800,
+    return {auth.SESSION_COOKIE: auth._sign({"expires_at": 4_102_444_800, "roles_checked_at": 4_102_444_800,
                                               "user": {"username": username, "roles": ["dms-user"]}})}
 
 

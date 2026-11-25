@@ -2,8 +2,9 @@
 
 Stand: 2026-11-25 · Bearbeitung: Claude · Freigabe und Merge: Codex/Bas
 
-Die Befunde A1–A6 und B1–B4 sind behoben. B5 und alle folgenden Befunde lagen nur abgeschnitten vor
-(„Ein AD-Rechteentzug kann bis zum Ende der Portalsitz…“) und sind **noch offen**.
+Die Befunde A1–A6 und B1–B5 sind behoben. Der Text von B5 lag nur abgeschnitten vor („Ein
+AD-Rechteentzug kann bis zum Ende der Portalsitz…“); die Behebung folgt den genannten Fundstellen.
+Weitere Befunde nach B5 sind hier nicht bekannt.
 
 ## Die drei wichtigsten Regressionstests
 
@@ -33,12 +34,10 @@ Alle Pfade relativ zu `services/agent_orchestrator/`.
 | B1 Auskunft vor Recht | `start_package` prüft das Projektrecht vor jeder Auskunft und Zustandsänderung. Einzelabbruch nur mit Projektrecht; projektübergreifend nur `CROSS_PROJECT_OPERATIONS` (platform-admin). | `engine.py` `start_package`, `control` | Regression 1, `test_cancel_needs_the_project_right_or_cross_project_operations`, `test_platform_operations_may_cancel_across_projects` |
 | B2 Leck über Nebenansichten | Die Übersicht liefert `access.runs` (Projektbindung jedes referenzierten Laufs). Die Plattform bildet Läufe, Entscheidungen, Ereignisse, `usage.by_run`, `agents[].current/last` und Kennzahlen aus derselben berechtigten Laufmenge; unbekannte Läufe sind verborgen. FLOWAI (Dienstrecht ohne Person) sieht nur ungebundene Altaufträge. | `engine.py` `overview`, `_access_map`; `platform_api/app/flow_routes.py` `visible_overview`, `internal_status` | `test_overview_names_the_project_binding_of_every_referenced_run`; Plattform: `test_foreign_run_details_do_not_leak_through_agents_usage_or_older_events`, `test_flowai_service_status_contains_no_project_runs` |
 | B3 Altauftragsregel | Aufträge unter einem Katalog werden als `catalog_bound` gekennzeichnet (Pakete erben). Gebundene Läufe bleiben geschützt, wenn Katalogdatei, Projekte oder Projektcode fehlen; offen sind nur nie gebundene Altaufträge. Details prüft der Orchestrator mit der Identität der anfragenden Person. | `engine.py` `auftrag_access`, `can_see_run`, `run_detail(user)`; `sync.py` (detail mit Person); `flow_routes.py` `project_visible`, `agents_run` | `test_bound_runs_stay_protected_when_the_catalog_loses_the_project`, `test_true_legacy_runs_stay_open`, `test_run_detail_needs_the_project_right`, `test_sync.py` (b0); Plattform: `test_bound_runs_stay_protected_when_the_catalog_loses_the_project` |
+| B5 Rechteentzug wirkt erst am Sitzungsende | Die Portalsitzung speichert Refresh-Token und Zeitpunkt der Rollenprüfung. Rollen gelten höchstens `AUTH_ROLE_REFRESH_SECONDS` (300 s) ungeprüft; danach lädt die Middleware sie über Keycloak (Refresh-Token, userinfo) neu und setzt das Cookie neu, auch bei 403. Gesperrtes Konto, beendete Keycloak-Sitzung, andere Person, Keycloak nicht erreichbar oder Altsitzung ohne Refresh-Token: Sitzung endet (fail closed, 401). `AUTH_SESSION_MINUTES` bleibt die SSO-Bequemlichkeit, nicht mehr die Rechtegültigkeit. | `platform_api/app/auth.py` `refresh_session`, `_roles_stale`, `_user_from`; `main.py` `enforce_oidc`; `config.py`; `compose.yaml` | `test_auth.py::test_ad_role_revocation_takes_effect_at_the_next_role_refresh`, `test_stale_session_ends_when_roles_cannot_be_confirmed` (4 Fälle) |
 | B4 Demo und Bindung | Compose bindet die Plattform an `${PLATFORM_BIND:-127.0.0.1}` und setzt standardmäßig `AUTH_MODE=oidc`. Die Demo ohne Anmeldung muss ausdrücklich gewählt werden; die Plattform startet nicht mit `AUTH_MODE=demo` an einer Nicht-Loopback-Adresse oder mit unbekanntem Modus. Anonyme Plattformrechte nur bei `AUTH_MODE=demo`. | `compose.yaml`; `platform_api/app/config.py` `check_auth_exposure`; `main.py`; `flow_routes.py` `person` | `test_demo_without_login_only_on_loopback`, `test_compose_binds_the_platform_to_loopback_and_defaults_to_oidc` |
 
-## Offen
+## Hinweise
 
-- **B5 und folgende:** Befundtext abgeschnitten. Erkennbar ist: Rollen werden in der Portalsitzung bis zu
-  `AUTH_SESSION_MINUTES` (480) festgehalten, ein AD-Rechteentzug wirkt erst danach. Lösung abhängig vom
-  vollständigen Befund (z. B. Rollen regelmäßig über Refresh-Token neu laden oder Sitzung verkürzen).
 - Registeränderung durch diesen Commit (`workflow.yaml`, Entwicklung liest `integrationstests`): offene
   Läufe werden einmal blockiert und vom Tech Lead neu bewertet – genau der Ablauf aus A2.

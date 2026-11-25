@@ -132,6 +132,10 @@ async def enforce_oidc(request: Request, call_next: Callable[..., Any]) -> Respo
     if not oidc_auth.enabled or oidc_auth.public_path(request.url.path):
         return await call_next(request)
     user = oidc_auth.current_user(request)
+    refreshed = None
+    if user is None:
+        # Rollen älter als AUTH_ROLE_REFRESH_SECONDS: bei Keycloak erneuern (AD-Rechteentzug wirkt).
+        user, refreshed = oidc_auth.refresh_session(request)
     if user is None:
         if request.url.path.startswith("/api/"):
             return JSONResponse(
@@ -160,12 +164,19 @@ async def enforce_oidc(request: Request, call_next: Callable[..., Any]) -> Respo
         and not management_read_only
     ):
         if request.url.path.startswith("/api/"):
-            return JSONResponse(
+            denied: Response = JSONResponse(
                 status_code=403,
                 content={"detail": "Für diesen Bereich fehlt die erforderliche Rolle"},
             )
-        return Response("Zugriff verweigert", status_code=403, media_type="text/plain")
-    return await call_next(request)
+        else:
+            denied = Response("Zugriff verweigert", status_code=403, media_type="text/plain")
+        if refreshed:
+            oidc_auth.session_cookie(denied, refreshed)  # erneuerte Rollen auch bei Ablehnung merken
+        return denied
+    response = await call_next(request)
+    if refreshed:
+        oidc_auth.session_cookie(response, refreshed)
+    return response
 
 
 class Question(BaseModel):

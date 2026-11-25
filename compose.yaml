@@ -91,6 +91,8 @@ services:
       PLATFORM_BIND: ${PLATFORM_BIND:-127.0.0.1}
       AUTH_SESSION_SECRET: ${AUTH_SESSION_SECRET:-local-session-secret-change-before-network-use}
       AUTH_SESSION_MINUTES: ${AUTH_SESSION_MINUTES:-480}
+      # Rollen der Sitzung spätestens nach 5 Minuten bei Keycloak neu laden (AD-Rechteentzug wirkt).
+      AUTH_ROLE_REFRESH_SECONDS: ${AUTH_ROLE_REFRESH_SECONDS:-300}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       PLATFORM_DEMO_ADMIN_TOKEN: ${PLATFORM_DEMO_ADMIN_TOKEN:-local-demo-admin-token-change-before-network-use}
       DEMO_USER_SWITCH: ${DEMO_USER_SWITCH:-true}

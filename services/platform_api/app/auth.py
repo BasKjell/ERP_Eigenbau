@@ -48,7 +48,68 @@ class OidcAuth:
         payload = self._unsign(raw)
         if not payload or int(payload.get("expires_at", 0)) <= int(time.time()):
             return None
+        if self._roles_stale(payload):
+            return None  # ungeprüfte Rollen nie verwenden; refresh_session() erneuert sie
         return payload.get("user")
+
+    def _roles_stale(self, payload: dict[str, Any]) -> bool:
+        return int(time.time()) - int(payload.get("roles_checked_at", 0)) >= self.settings.auth_role_refresh_seconds
+
+    def refresh_session(self, request: Request) -> tuple[dict[str, Any] | None, str | None]:
+        """Rollen einer Sitzung spätestens nach ``auth_role_refresh_seconds`` bei Keycloak neu laden.
+
+        Liefert (Person, neuer Cookie-Wert). Ein AD-Rechteentzug, ein gesperrtes Konto oder eine beendete
+        Keycloak-Sitzung beenden damit auch die Portalsitzung. Ist Keycloak nicht erreichbar, endet die
+        Sitzung ebenfalls (fail closed); eine erneute Anmeldung ist bei laufender SSO-Sitzung sofort möglich.
+        """
+        payload = self._unsign(request.cookies.get(self.SESSION_COOKIE, ""))
+        if not payload or int(payload.get("expires_at", 0)) <= int(time.time()):
+            return None, None
+        if not self._roles_stale(payload):
+            return payload.get("user"), None
+        refresh_token = str(payload.get("refresh_token") or "")
+        if not refresh_token:
+            return None, None  # Sitzung aus der Zeit vor der Rollenprüfung: neu anmelden
+        issuer = self.settings.oidc_internal_issuer.rstrip("/")
+        try:
+            token = self._form_request(f"{issuer}/protocol/openid-connect/token", {
+                "grant_type": "refresh_token", "client_id": self.settings.oidc_client_id,
+                "refresh_token": refresh_token})
+            userinfo = self._json_request(f"{issuer}/protocol/openid-connect/userinfo", str(token["access_token"]))
+        except (AuthError, KeyError):
+            return None, None
+        previous = payload.get("user") or {}
+        if not hmac.compare_digest(str(previous.get("sub", "")), str(userinfo.get("sub", ""))):
+            return None, None
+        user = self._user_from(userinfo)
+        payload.update({"user": user, "roles_checked_at": int(time.time()),
+                        "refresh_token": str(token.get("refresh_token") or refresh_token)})
+        return user, self._sign(payload)
+
+    def session_cookie(self, response: Response, value: str) -> None:
+        response.set_cookie(self.SESSION_COOKIE, value, max_age=self.settings.auth_session_minutes * 60,
+                            httponly=True, secure=self.settings.auth_cookie_secure, samesite="lax", path="/")
+
+    @staticmethod
+    def _user_from(userinfo: dict[str, Any]) -> dict[str, Any]:
+        roles = userinfo.get("roles", [])
+        if isinstance(roles, str):
+            roles = [roles]
+        if not roles and isinstance(userinfo.get("realm_access"), dict):
+            roles = userinfo["realm_access"].get("roles", [])
+        user = {
+            "sub": userinfo.get("sub"),
+            "username": userinfo.get("preferred_username"),
+            "name": userinfo.get("name")
+            or " ".join(
+                part for part in (userinfo.get("given_name"), userinfo.get("family_name")) if part
+            ),
+            "email": userinfo.get("email"),
+            "roles": roles,
+            "department": userinfo.get("department"),
+            "desksharing_user_id": userinfo.get("desksharing_user_id"),
+        }
+        return user
 
     def _demo_service_user(self, request: Request) -> dict[str, Any] | None:
         """Authorize only the two deterministic demo lifecycle endpoints."""
@@ -151,23 +212,7 @@ class OidcAuth:
         )
         if not hmac.compare_digest(str(id_claims.get("sub", "")), str(userinfo.get("sub", ""))):
             raise AuthError("OIDC-Identitäten in ID-Token und UserInfo stimmen nicht überein")
-        roles = userinfo.get("roles", [])
-        if isinstance(roles, str):
-            roles = [roles]
-        if not roles and isinstance(userinfo.get("realm_access"), dict):
-            roles = userinfo["realm_access"].get("roles", [])
-        user = {
-            "sub": userinfo.get("sub"),
-            "username": userinfo.get("preferred_username"),
-            "name": userinfo.get("name")
-            or " ".join(
-                part for part in (userinfo.get("given_name"), userinfo.get("family_name")) if part
-            ),
-            "email": userinfo.get("email"),
-            "roles": roles,
-            "department": userinfo.get("department"),
-            "desksharing_user_id": userinfo.get("desksharing_user_id"),
-        }
+        user = self._user_from(userinfo)
         response = RedirectResponse(str(flow.get("next", "/")))
         response.set_cookie(
             self.SESSION_COOKIE,
@@ -176,6 +221,8 @@ class OidcAuth:
                     "user": user,
                     "expires_at": int(time.time())
                     + self.settings.auth_session_minutes * 60,
+                    "roles_checked_at": int(time.time()),
+                    "refresh_token": str(token.get("refresh_token") or ""),
                 }
             ),
             max_age=self.settings.auth_session_minutes * 60,
