@@ -59,11 +59,16 @@ Auf der Startseite (kompakt) und unter **`/agents`** (vollständig):
 
 - **Kennzahlen:** Agenten im Register, wer gerade arbeitet, offene Aufträge, *Warten auf dich*,
   Rückläufe.
-- **Zusammenarbeit live:** Kreise = Agenten (Nummer 00–13, GF = Geschäftsführungs-Agent),
-  Rauten = Entscheidungspunkte EP1 und G1–G5, unten die Menschen. Ein leuchtender Ring heißt „arbeitet“, gelb heißt
+- **Zusammenarbeit live:** Kreise = Agenten, und zwar 00 Projektplanung (nur Projektklasse M/L),
+  01–11 die Entwicklungsagenten, 13 Integrationstests (nur M/L) und GF der Geschäftsführungs-Agent
+  (Register-Nr. 12, siehe [Rollen](index.md#die-rollen)); Rauten = Entscheidungspunkte EP1 und G1–G5,
+  unten die Menschen. Ein leuchtender Ring heißt „arbeitet“, gelb heißt
   „wartet auf einen Menschen“. Linien: türkis Übergabe, rot Rücklauf nach Prüfbefund, gelb Frage an
   einen Menschen, lime Entscheidung, blau Schreibzugriff in FLOWWORK. Klick auf einen Knoten zeigt
-  Auftrag, Stufe, Werkzeuge und letzte Aktion.
+  Auftrag, Stufe, Werkzeuge und letzte Aktion. Der Zustand am Kreis gilt für die Rolle über alle
+  Aufträge; bei welchem Auftrag sie gerade wirklich arbeitet, zeigt „Wo es gerade hängt“. In schmalen
+  Fenstern und auf dem Smartphone behält die Grafik eine lesbare Mindestbreite und lässt sich seitlich
+  verschieben (auch per Tastatur, nach Fokus mit Tab).
 - **Live-Protokoll:** jedes Ereignis mit Uhrzeit.
 - **Aufträge:** Fortschritt, aktueller Schritt, wartende Rolle, übernommener Branch. Klick öffnet
   die Laufdetails (Verlauf, Entscheidungen, alle Ergebnisse inkl. Diff und Nachweise).
@@ -71,7 +76,8 @@ Auf der Startseite (kompakt) und unter **`/agents`** (vollständig):
   Arbeitspaketen und dem Knopf **Starten (EPi)**.
 - **Rechte der Agenten** (nur `/agents`): Matrix, welcher Agent über welche technische Rolle
   welche Werkzeuge hat, welches Modell er nutzt (und ob komplexe Aufträge an Codex/Claude gehen),
-  welche Datenklassen er verarbeiten darf und welche menschliche Rolle sein Ergebnis freigibt –
+  welche Datenklassen er verarbeiten darf und an welchem Gate eine menschliche Rolle sein Ergebnis
+  freigibt (nur, wenn das Gate dieses Ergebnis laut Ablauf voraussetzt) –
   mit der zugehörigen Keycloak-Rolle. Klick auf einen Agenten zeigt die Einzelheiten: wer jedes
   Werkzeug prüft (FLOWWORK RM-Adapter, Orchestrator-Sandbox), was er liest, seine Grenzen und was er
   nie darf.
@@ -86,16 +92,31 @@ gespeichert):
 | **Meine Sicht** | nur Aufträge, an denen du beteiligt bist (selbst beauftragt, selbst entschieden oder sie warten auf eine deiner Entscheidungsrollen); auf der Karte sind nur die Agenten dieser Aufträge, deine Entscheidungsrollen und die betroffenen Gates hervorgehoben |
 | **Alle** | alle Aufträge, Entscheidungen und Agenten; Aufträge mit deiner Beteiligung tragen den Hinweis „du bist beteiligt“ |
 
-Die Liste **„Wo es gerade hängt“** nennt je offenem Auftrag, bei wem er liegt: bei einem **Agenten**
-(mit Zustand, z. B. „arbeitet“), bei einer **Person** in einer Entscheidungsrolle (mit „du“, wenn du sie
-hast), oder **blockiert**/**pausiert** mit Grund, jeweils mit „seit …“. Ein Klick öffnet den Auftrag.
+Die Liste **„Wo es gerade hängt“** nennt je offenem Auftrag, bei wem genau *dieser* Auftrag liegt,
+jeweils mit „seit …“. Ein Klick öffnet den Auftrag.
+
+| Anzeige | Bedeutung |
+|---|---|
+| Agent … *arbeitet an diesem Auftrag* | der Schritt dieses Auftrags läuft gerade |
+| Agent … *eingeplant, beginnt als Nächstes* | der Auftrag steht beim Agenten, der arbeitet aber noch nicht daran (z. B. weil er einen anderen Auftrag bearbeitet) |
+| Dienst *Integrationsprüfung* | Lint und Tests laufen oder sind eingeplant |
+| Mensch … (mit „du“, wenn du die Rolle hast) | eine Entscheidung dieser Rolle ist offen |
+| *angehalten* – alle Agenten | der globale Stopp-Schalter ist aktiv |
+| *angehalten* – Agent … ist pausiert | nur dieser Agent ist angehalten |
+| *blockiert* / *pausiert* mit Grund | der Auftrag selbst ist blockiert bzw. pausiert |
+
+Die Ansicht aktualisiert sich alle drei Sekunden, zeichnet aber nur bei geänderten Daten neu. Fokus,
+aufgeklappte Bereiche, gewählte Werte, eingeblendete Meldungen und markierter Text bleiben dabei
+erhalten.
 
 ### Konfiguration eines Agenten ansehen und ändern
 
 In der Vollansicht `/agents` steht unten das **Agentenregister**: je Agent eine Karte mit technischer
 Rolle, Ersteller oder Prüfer, Stufe, Status, Verantwortlichen, **Aufgaben** (die Schritte im Ablauf und
-was dabei entsteht, z. B. „Akzeptanztests aus der Baseline ableiten – erstellt akzeptanztests“), wer
-prüft und freigibt, Modell und Ausführung, Werkzeuge, lesbare Ergebnisse, Datenklassen, Grenzen,
+was dabei entsteht, z. B. „Akzeptanztests aus der Baseline ableiten – erstellt Akzeptanztests“, bei
+Prüfern „prüft Anforderungen → erstellt Prüfbefund Anforderungen“), wer prüft, an welchem Gate das
+Ergebnis freigegeben wird (nur wenn das Gate es voraussetzt, sonst „Nächste menschliche Entscheidung im
+Ablauf“) und wer bei Bedenken entscheidet, Modell und Ausführung, Werkzeuge, lesbare Ergebnisse, Datenklassen, Grenzen,
 Eskalation und Freigabedatum. Geänderte Agenten tragen den Hinweis „… Felder geändert“.
 
 Von dort, oder auf der Karte über einen Agenten, öffnet **Konfiguration und Prompt ansehen** bzw.

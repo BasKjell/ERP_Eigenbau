@@ -476,19 +476,31 @@ class Engine:
                   name.split(".", 1)[0], "Orchestrator")} for name in agent.tools]
         steps = self.registry.steps
         decided: list[dict[str, str]] = []
+        # relation „freigabe“ nur, wenn das Gate das Ergebnis des Schritts ausdrücklich voraussetzt
+        # (gate.requires enthält step.produces); sonst ist es nur der nächste menschliche Entscheidungspunkt.
         for index, step in enumerate(steps):
             if step.role != agent.role:
                 continue
-            gate = next((s for s in steps[index + 1:] if s.kind == "gate"), None)
-            for decider, gate_id, gate_label, why in (
-                (gate.decider, gate.id, gate.label, "nächstes Gate nach diesem Schritt") if gate else (None,) * 4,
-                (step.on_rework.get("decision"), step.id, step.label, "bei Bedenken des Agenten"),
-            ):
-                if decider and not any(d["gate"] == gate_id and d["role"] == decider for d in decided):
+            gates = [s for s in steps[index + 1:] if s.kind == "gate"]
+            approving = next((g for g in gates if step.produces and step.produces in g.requires), None)
+            following = gates[0] if gates else None
+            candidates = [
+                (approving.decider, approving.id, approving.label,
+                 f"{approving.id} setzt das Ergebnis „{step.produces}“ voraus", "freigabe") if approving else (None,) * 5,
+                (following.decider, following.id, following.label,
+                 "nächster menschlicher Entscheidungspunkt im Ablauf; setzt dieses Ergebnis nicht unmittelbar voraus",
+                 "naechste") if following and following is not approving else (None,) * 5,
+                (step.on_rework.get("decision"), step.id, step.label, "bei Bedenken des Agenten", "bedenken"),
+            ]
+            for decider, gate_id, gate_label, why, relation in candidates:
+                if decider and not any(d["gate"] == gate_id and d["role"] == decider and d["relation"] == relation
+                                       for d in decided):
                     spec = self.registry.human_roles.get(decider, {})
                     decided.append({"gate": gate_id, "gate_label": gate_label, "role": decider,
-                                    "label": spec.get("label", decider), "why": why,
+                                    "label": spec.get("label", decider), "why": why, "relation": relation,
                                     "keycloak_roles": list(spec.get("keycloak_roles", []))})
+        approved = {(d["gate"], d["role"]) for d in decided if d["relation"] == "freigabe"}
+        decided = [d for d in decided if d["relation"] != "naechste" or (d["gate"], d["role"]) not in approved]
         escalation = (self.escalation.get("roles") or {}).get(agent.role) if self.escalation.get("enabled") else None
         reviewer = self.registry.agents.get(agent.reviewed_by or "") if agent.reviewed_by else None
         repository = []
@@ -1810,6 +1822,7 @@ class Engine:
         running = {(step["run_id"], step["role"]) for step in self.store.running_steps()}
         controls = self.store.controls()
         events = self.store.events(limit=60)
+        participation = self.store.participation([run["id"] for run in runs])  # zwei Sammelabfragen statt 2 je Lauf
         agents = []
         for agent in sorted(self.registry.agents.values(), key=lambda a: a.number):
             current = None
@@ -1875,7 +1888,8 @@ class Engine:
             "pipeline": [{"id": s.id, "label": s.label, "kind": s.kind, "role": s.role, "decider": s.decider,
                           "ep": s.ep, "when": {k: list(v) for k, v in s.when.items()}, "produces": s.produces,
                           "subject": s.subject} for s in steps],
-            "runs": [self._run_summary(run, open_decisions) for run in runs],
+            "runs": [self._run_summary(run, open_decisions, participation=participation.get(run["id"]),
+                                       running=running, controls=controls) for run in runs],
             "projects": [self.project_summary(project) for project in projects],
             "project_catalog": self.project_catalog(),
             "business": self.business_overview(),
@@ -1909,7 +1923,10 @@ class Engine:
                               "bound": bool(auftrag.get("catalog_bound") or auftrag.get("catalog"))}
         return result
 
-    def _run_summary(self, run: dict[str, Any], open_decisions: list[dict[str, Any]]) -> dict[str, Any]:
+    def _run_summary(self, run: dict[str, Any], open_decisions: list[dict[str, Any]], *,
+                     participation: dict[str, list[Any]] | None = None,
+                     running: set[tuple[str, str]] | None = None,
+                     controls: dict[str, str] | None = None) -> dict[str, Any]:
         steps = self.registry.steps
         index = min(run["step_index"], len(steps))
         current = steps[index] if index < len(steps) else None
@@ -1930,10 +1947,50 @@ class Engine:
             "waiting_for": waiting["decider"] if waiting else None,
             "preview_url": (waiting or {}).get("context", {}).get("preview_url"),
             "branch": ((self.store.latest_artifact(run["id"], "uebernahme") or {}).get("content") or {}).get("branch"),
-            **self._participation(run),
+            "holder": self._holder(run, current, waiting, running, controls),
+            **self._participation(run, participation),
         }
 
-    def _participation(self, run: dict[str, Any]) -> dict[str, Any]:
+    def _holder(self, run: dict[str, Any], current: Step | None, waiting: dict[str, Any] | None,
+                running: set[tuple[str, str]] | None, controls: dict[str, str] | None) -> dict[str, Any]:
+        """Bei wem dieser eine Lauf gerade hängt (laufbezogen, nicht der Sammelzustand der Agentenrolle).
+
+        Dieselbe Agentenrolle kann in mehreren Läufen anstehen und nur in einem davon arbeiten;
+        ein globaler oder rollenbezogener Stopp hält einen eingeplanten Schritt an.
+        """
+        if running is None:
+            running = {(step["run_id"], step["role"]) for step in self.store.running_steps()}
+        if controls is None:
+            controls = self.store.controls()
+        status = run["status"]
+        decider = waiting["decider"] if waiting else None
+        if status not in OPEN_RUN_STATES:
+            return {"kind": "fertig"}
+        if status == "blockiert":
+            return {"kind": "blockiert", "reason": run["reason"], "role": decider}
+        if status == "pausiert":
+            return {"kind": "pausiert", "reason": run["reason"]}
+        if decider:
+            return {"kind": "mensch", "role": decider}
+        if current is None:
+            return {"kind": "orchestrator"}
+        role = current.role or ""
+        active = any(run_id == run["id"] and (not role or step_role == role) for run_id, step_role in running)
+        if active:  # ein laufender Schritt wird auch bei Stopp noch zu Ende geführt
+            return {"kind": "integration" if current.kind == "check" else "agent_arbeitet", "role": role,
+                    "running": True, "stopping": controls.get("global") == "pausiert"
+                    or controls.get(f"agent:{role}") == "pausiert"}
+        if controls.get("global") == "pausiert":
+            return {"kind": "pausiert_global"}
+        if role and controls.get(f"agent:{role}") == "pausiert":
+            return {"kind": "pausiert_agent", "role": role}
+        if current.kind == "check":
+            return {"kind": "integration", "running": False}
+        if role:
+            return {"kind": "agent_eingeplant", "role": role}
+        return {"kind": "orchestrator"}
+
+    def _participation(self, run: dict[str, Any], loaded: dict[str, list[Any]] | None = None) -> dict[str, Any]:
         """Wer an einem Auftrag beteiligt ist: Personen (Auftrag, Entscheidungen) und Agenten (bisherige Schritte).
 
         Damit zeigt die Agentenzentrale „Meine Sicht“: Aufträge, an denen ich beteiligt bin, und bei wem sie hängen.
@@ -1942,11 +1999,13 @@ class Engine:
         requester = run["requested_by"] or {}
         if requester.get("username"):
             people[str(requester["username"])] = str(requester.get("name") or requester["username"])
-        for decision in self.store.decisions(run_id=run["id"]):
-            person = decision.get("decided_by") or {}
+        if loaded is None:  # Einzelabruf (Laufdetail); die Übersicht lädt gesammelt über store.participation
+            loaded = self.store.participation([run["id"]])[run["id"]]
+        for person in loaded["deciders"]:
+            person = person or {}
             if person.get("username"):
                 people[str(person["username"])] = str(person.get("name") or person["username"])
-        roles = list(dict.fromkeys(step["role"] for step in self.store.steps(run["id"]) if step.get("role")))
+        roles = list(dict.fromkeys(role for role in loaded["roles"] if role))
         return {"participants": [{"username": u, "name": n} for u, n in people.items()], "agents_involved": roles}
 
     def _decision_summary(self, decision: dict[str, Any], runs: dict[str, dict[str, Any]]) -> dict[str, Any]:

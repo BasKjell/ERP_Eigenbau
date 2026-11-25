@@ -379,6 +379,13 @@ requirements:
     verification:
       - services/platform_api/tests/test_flow_agents.py::test_agents_page_and_dms_page_are_served
       - services/agent_orchestrator/tests/test_engine.py::test_overview_shows_agents_interactions_and_inbox
+      - services/agent_orchestrator/tests/test_overview_display.py::test_holder_is_per_run_not_per_agent_role
+      - services/agent_orchestrator/tests/test_overview_display.py::test_holder_shows_global_and_agent_pause
+      - services/agent_orchestrator/tests/test_overview_display.py::test_holder_names_waiting_person_and_blocked_reason
+      - services/agent_orchestrator/tests/test_overview_display.py::test_approval_relation_follows_gate_requires
+      - services/agent_orchestrator/tests/test_overview_display.py::test_participation_is_loaded_in_bulk
+      - services/agent_orchestrator/tests/test_overview_display.py::test_demo_removes_only_the_network_it_created
+      - services/agent_orchestrator/tests/test_overview_display.py::test_overview_runs_carry_holder_without_per_run_queries
 
   - id: REQ-PRT-002
     title: Interaktion der Agenten ist sichtbar

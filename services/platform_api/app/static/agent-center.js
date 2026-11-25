@@ -34,7 +34,59 @@
     return /^http:\/\/localhost:\d+(\/[a-z]*)?$/.test(url) ? url : "";
   };
   const changeUrl = (d) => `/agents?run=${encodeURIComponent(d.run_id)}&focus=${encodeURIComponent((d.focus || []).join(","))}`;
-  window.FlowAgents = { previewUrl, changeUrl, esc };
+  // -- Bedienzustand über das regelmäßige Neuzeichnen retten -------------------------------------------
+  // Bereiche werden per innerHTML ersetzt. Fokus, aufgeklappte Details, Auswahl- und Eingabewerte,
+  // Scrollpositionen und eingeblendete Meldungen ([data-keep]) werden vorher gesichert und danach
+  // über stabile Schlüssel (data-Attribute statt Position) wiederhergestellt.
+  const KEY_ATTRS = ["data-node", "data-run", "data-project", "data-package", "data-card", "data-decision", "data-register-config",
+    "data-register-map", "data-start-package", "data-global", "data-audit", "data-open-config", "data-agent-control", "data-fa-edit",
+    "data-keep", "data-view", "name", "id"];
+  const attrSelector = (el) => KEY_ATTRS.filter((a) => el.hasAttribute(a)).map((a) => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join("");
+  function keyOf(element, root) {
+    const parts = [];
+    for (let el = element; el && el !== root; el = el.parentElement) {
+      const attrs = attrSelector(el);
+      if (attrs || el === element) parts.unshift(el.tagName.toLowerCase() + attrs);
+    }
+    return parts.join(" ");
+  }
+  const detailsKey = (details, root) => `${keyOf(details.parentElement, root)}|${details.querySelector("summary")?.textContent.trim() || ""}`;
+  function scrollKey(el, root) {
+    const own = keyOf(el, root);
+    const same = [...root.querySelectorAll(own)];
+    return `${own}#${same.indexOf(el)}`;
+  }
+  function keepState(root, draw) {
+    if (!root) return draw();
+    const active = root.contains(document.activeElement) && document.activeElement !== root ? keyOf(document.activeElement, root) : "";
+    const open = new Map([...root.querySelectorAll("details")].map((d) => [detailsKey(d, root), d.open]));
+    const values = new Map([...root.querySelectorAll("select, textarea, input:not([type=checkbox]):not([type=radio])")]
+      .filter((f) => f.value).map((f) => [keyOf(f, root), f.value]));
+    const kept = new Map([...root.querySelectorAll("[data-keep]")].filter((el) => el.innerHTML.trim()).map((el) => [keyOf(el, root), el.innerHTML]));
+    const scrolls = [...root.querySelectorAll("*")].filter((el) => el.scrollTop || el.scrollLeft).map((el) => [scrollKey(el, root), el.scrollTop, el.scrollLeft]);
+    const result = draw();
+    const find = (key) => { try { return key ? root.querySelector(key) : null; } catch { return null; } };
+    root.querySelectorAll("details").forEach((d) => { const was = open.get(detailsKey(d, root)); if (was !== undefined) d.open = was; });
+    values.forEach((value, key) => {
+      const field = find(key);
+      if (!field || field.disabled) return;
+      if (field.tagName === "SELECT" && ![...field.options].some((o) => o.value === value)) return;
+      field.value = value;
+    });
+    kept.forEach((html, key) => { const el = find(key); if (el && !el.innerHTML.trim()) el.innerHTML = html; });
+    scrolls.forEach(([key, top, left]) => {
+      const [selector, index] = [key.slice(0, key.lastIndexOf("#")), Number(key.slice(key.lastIndexOf("#") + 1))];
+      let el = null;
+      try { el = selector ? root.querySelectorAll(selector)[index] : null; } catch { el = null; }
+      if (el) { el.scrollTop = top; el.scrollLeft = left; }
+    });
+    if (active) find(active)?.focus({ preventScroll: true });
+    return result;
+  }
+  // Markierter Text im Bereich: nicht neu zeichnen, sonst verschwindet die Auswahl.
+  const selecting = (root) => { const s = window.getSelection?.(); return !!s && !s.isCollapsed && !!root?.contains(s.anchorNode); };
+
+  window.FlowAgents = { previewUrl, changeUrl, esc, keepState };
 
   const KIND_LABEL_DE = {
     ui_pruefung: "Klickprüfung im Browser",
@@ -203,7 +255,10 @@ class AgentCenter {
             <div class="ac-map-head"><b>Zusammenarbeit live</b>
               <div class="ac-legend"><span><i style="background:#6fd1c0"></i>Übergabe</span><span><i style="background:#ff8a80"></i>Rücklauf</span><span><i style="background:#ffc46b"></i>Frage an Mensch</span><span><i style="background:#c8f04a"></i>Entscheidung</span><span><i style="background:#8aa4ff"></i>FLOWWORK</span></div>
             </div>
-            <svg class="ac-map" viewBox="0 0 1080 540" role="img" aria-label="Interaktionen zwischen Agenten, Gates und Menschen" data-map></svg>
+            <div class="ac-map-swipe" aria-hidden="true">Grafik seitlich verschieben ↔ · „Wo es gerade hängt“ unten zeigt dieselben Aufträge als Liste</div>
+            <div class="ac-map-scroll" tabindex="0" role="region" aria-label="Prozessgrafik, seitlich verschiebbar">
+              <svg class="ac-map" viewBox="0 0 1080 540" role="img" aria-label="Interaktionen zwischen Agenten, Gates und Menschen" data-map></svg>
+            </div>
             <div class="ac-detail" data-detail><small>Klicke auf einen Agenten, ein Gate oder eine Entscheidungsrolle, um Auftrag, Grenzen und aktuelle Arbeit zu sehen.</small></div>
           </div>
           <aside class="ac-side">
@@ -225,8 +280,10 @@ class AgentCenter {
       this.bindDialog();
     }
 
-    async poll() {
+    // Ausdrückliche Aufrufe (nach einer Aktion) zeichnen immer neu; der Takt nur bei geänderten Daten.
+    async poll(force = true) {
       clearTimeout(this.timer);
+      if (force) this.dataSignature = "";
       try {
         const response = await fetch("/api/agents/overview", { headers: { Accept: "application/json" } });
         if (response.status === 401) throw new Error("Anmeldung über FLOWID erforderlich");
@@ -237,14 +294,14 @@ class AgentCenter {
         this.$("[data-live-text]").textContent = "AGENTENZENTRALE · NICHT VERBUNDEN";
         this.$("[data-offline]").innerHTML = `<div class="ac-offline">${esc(error.message)}</div>`;
       }
-      if (!document.hidden) this.timer = setTimeout(() => this.poll(), POLL_MS);
+      if (!document.hidden) this.timer = setTimeout(() => this.poll(false), POLL_MS);
     }
 
     setView(view) {
       this.view = view === "all" ? "all" : "mine";
       try { window.localStorage.setItem("flowagents-view", this.view); } catch { /* ohne Speicher */ }
       this.markView();
-      this.inboxSignature = this.runsSignature = this.stuckSignature = "";
+      this.inboxSignature = this.runsSignature = this.stuckSignature = this.dataSignature = "";
       this.feedNewest = 0;
       if (this.data) this.update(this.data);
     }
@@ -468,24 +525,33 @@ class AgentCenter {
       const open = (view.runs || []).filter((r) => ["aktiv", "wartet", "blockiert", "pausiert"].includes(r.status));
       const { deciders, involved } = this.involvement(data);
       const agents = Object.fromEntries((data.agents || []).map((a) => [a.role, a]));
-      const signature = JSON.stringify([this.view, open.map((r) => [r.id, r.status, r.step, r.waiting_for, r.updated_at]), (data.agents || []).map((a) => a.state)]);
+      const signature = JSON.stringify([this.view, open.map((r) => [r.id, r.status, r.step, r.waiting_for, r.updated_at, r.holder]), Math.floor(Date.now() / 60000)]);
       if (signature === this.stuckSignature) return;
       this.stuckSignature = signature;
       const since = (value) => { const minutes = Math.max(0, Math.round((Date.now() - Date.parse(value)) / 60000)); return minutes < 60 ? `seit ${minutes} min` : `seit ${Math.round(minutes / 60)} h`; };
+      const you = (role) => (deciders.has(role) ? ' <span class="ac-chip lime">du</span>' : "");
+      const human = (role) => `<b>${esc(data.human_roles?.[role]?.label || role)}</b>${you(role)}`;
+      const agentName = (role) => esc(agents[role]?.name || SHORT[role] || role || "");
+      // Laufbezogener Halter vom Orchestrator (run.holder): nie der globale Zustand einer Agentenrolle,
+      // denn dieselbe Rolle kann in mehreren Läufen stehen und nur in einem davon arbeiten.
       const holder = (run) => {
-        if (run.status === "wartet" && run.waiting_for) {
-          const label = data.human_roles?.[run.waiting_for]?.label || run.waiting_for;
-          return `<span class="ac-chip amber">Mensch</span> <b>${esc(label)}</b>${deciders.has(run.waiting_for) ? ' <span class="ac-chip lime">du</span>' : ""}`;
+        const h = run.holder || {};
+        switch (h.kind) {
+          case "agent_arbeitet": return `<span class="ac-chip lime">Agent</span> <b>${agentName(h.role)}</b> <small>arbeitet an diesem Auftrag</small>`;
+          case "agent_eingeplant": return `<span class="ac-chip">Agent</span> <b>${agentName(h.role)}</b> <small>eingeplant, beginnt als Nächstes</small>`;
+          case "integration": return `<span class="ac-chip">Dienst</span> <b>Integrationsprüfung</b> <small>${h.running ? "läuft" : "eingeplant"}</small>`;
+          case "mensch": return `<span class="ac-chip amber">Mensch</span> ${human(h.role)}`;
+          case "pausiert_global": return '<span class="ac-chip red">angehalten</span> alle Agenten sind angehalten (Stopp-Schalter)';
+          case "pausiert_agent": return `<span class="ac-chip red">angehalten</span> <b>${agentName(h.role)}</b> <small>ist pausiert</small>`;
+          case "pausiert": return `<span class="ac-chip red">pausiert</span> ${esc(h.reason || run.reason || "")}`;
+          case "blockiert": return `<span class="ac-chip red">blockiert</span> ${esc(h.reason || run.reason || "")}${h.role ? ` · wartet auf ${human(h.role)}` : ""}`;
+          default: return `<span class="ac-chip">Orchestrator</span> ${esc(run.step_label)}`;
         }
-        if (run.status === "blockiert") return `<span class="ac-chip red">blockiert</span> ${esc(run.reason || "")}${run.waiting_for ? ` · wartet auf <b>${esc(data.human_roles?.[run.waiting_for]?.label || run.waiting_for)}</b>${deciders.has(run.waiting_for) ? ' <span class="ac-chip lime">du</span>' : ""}` : ""}`;
-        if (run.status === "pausiert") return `<span class="ac-chip red">pausiert</span> ${esc(run.reason || "")}`;
-        const agent = agents[run.role];
-        return agent ? `<span class="ac-chip">Agent</span> <b>${esc(agent.name)}</b> <small>${esc(STATE_LABEL[agent.state] || agent.state)}</small>` : `<span class="ac-chip">Orchestrator</span> ${esc(run.step_label)}`;
       };
       const title = this.view === "mine" ? "Wo meine Aufträge gerade hängen" : "Wo alle offenen Aufträge gerade hängen";
-      box.innerHTML = `<h3>${title} <span>${open.length} OFFEN</span></h3>${open.length ? `<div class="ac-stuck-list">${open.map((run) => `
+      keepState(box, () => { box.innerHTML = `<h3>${title} <span>${open.length} OFFEN</span></h3>${open.length ? `<div class="ac-stuck-list">${open.map((run) => `
         <button class="ac-stuck-row" type="button" data-run="${esc(run.id)}"><span class="key">${esc(run.auftrag_id)}</span><span><b>${esc(run.title)}</b><small>${esc(run.step_label)}${run.project ? ` · ${esc(run.project)}` : ""} · beauftragt von ${esc(run.requested_by || "–")}${this.view === "all" && involved(run) ? " · du bist beteiligt" : ""}</small></span><span>${holder(run)}</span><span class="since">${esc(since(run.updated_at))}</span></button>`).join("")}</div>`
-        : `<div class="ac-empty">${this.view === "mine" ? "Du bist an keinem offenen Auftrag beteiligt. „Alle“ zeigt die übrigen." : "Kein offener Auftrag."}</div>`}`;
+        : `<div class="ac-empty">${this.view === "mine" ? "Du bist an keinem offenen Auftrag beteiligt. „Alle“ zeigt die übrigen." : "Kein offener Auftrag."}</div>`}`; });
       box.querySelectorAll("[data-run]").forEach((element) => element.addEventListener("click", () => {
         if (this.full) this.openRun(element.dataset.run);
         else window.location.href = `/agents?run=${encodeURIComponent(element.dataset.run)}`;
@@ -493,6 +559,11 @@ class AgentCenter {
     }
 
     update(data) {
+      // Nur bei tatsächlich geänderten Daten neu zeichnen (Zeitangaben „seit … min“ einmal je Minute).
+      const signature = JSON.stringify([this.view, this.selected, Math.floor(Date.now() / 60000), { ...data, generated_at: null }]);
+      if (signature === this.dataSignature) return;
+      if (selecting(this.root)) return; // markierten Text nicht wegzeichnen; nächster Abruf versucht es erneut
+      this.dataSignature = signature;
       const previous = this.lastEvent;
       this.data = data;
       const view = this.viewData(data);
@@ -599,7 +670,7 @@ class AgentCenter {
         const sub = node.type === "agent" ? STATE_LABEL[node.state] || node.state : node.type === "human" ? (node.open ? `${node.open} offen` : "") : node.state === "arbeitet" ? "prüft" : "";
         parts.push(`<g class="node ${node.type} ${esc(node.state)}${selected}" data-node="${esc(node.id)}" tabindex="0">${node.state === "arbeitet" ? `<circle class="halo" cx="${x}" cy="${y}" r="${r + 4}"/>` : ""}<circle class="ring" cx="${x}" cy="${y}" r="${r}"/><text class="code" x="${x}" y="${y}">${esc(node.code)}</text><text class="label" x="${x}" y="${y + r + 14}">${esc(label)}</text>${sub ? `<text class="sub" x="${x}" y="${y + r + 25}">${esc(sub)}</text>` : ""}${node.open ? `<g class="badge"><circle cx="${x + 15}" cy="${y - 15}" r="8"/><text x="${x + 15}" y="${y - 15}">${node.open}</text></g>` : ""}</g>`);
       }
-      svg.innerHTML = parts.join("");
+      keepState(svg, () => { svg.innerHTML = parts.join(""); });
       svg.querySelectorAll("[data-node]").forEach((element) => {
         const select = () => { this.selected = element.dataset.node; this.renderMap(this.data, Infinity); this.applyFocus(this.data, this.viewData(this.data)); this.showDetail(this.selected); };
         element.addEventListener("click", select);
@@ -628,6 +699,10 @@ class AgentCenter {
     }
 
     showDetail(id) {
+      keepState(this.$("[data-detail]"), () => this.drawDetail(id));
+    }
+
+    drawDetail(id) {
       const data = this.data;
       const panel = this.$("[data-detail]");
       if (!data || !id) return;
@@ -733,7 +808,7 @@ class AgentCenter {
         box.innerHTML = `<div class="ac-empty">${data.available === false ? "Orchestrator nicht verbunden." : "Keine offene Entscheidung. Routine läuft im Hintergrund."}</div>`;
         return;
       }
-      box.innerHTML = decisions.slice(0, this.full ? 20 : 4).map((d) => `
+      keepState(box, () => { box.innerHTML = decisions.slice(0, this.full ? 20 : 4).map((d) => `
         <article class="ac-decision" data-decision="${esc(d.id)}">
           <header><b>${esc(d.title)}</b><span class="ac-chip ${d.can ? "lime" : ""}">${esc(data.human_roles?.[d.decider]?.label || d.decider)}</span></header>
           ${d.auftrag ? `<div class="ac-task-ref"><span class="ac-chip lime">${esc(d.auftrag.id)}</span> <b>${esc(d.auftrag.title)}</b><small>beauftragt von ${esc(d.auftrag.requested_by || "–")} · ${esc(d.auftrag.scope_label || "")}</small>${d.gate === "G4" && d.auftrag.success_example ? `<small>Prüfe: ${esc(d.auftrag.success_example)}</small>` : ""}</div>` : ""}
@@ -743,9 +818,9 @@ class AgentCenter {
           ${uiCheckLine(d.context?.ui_check)}
           <small>${esc(d.run_id)}${d.digest ? ` · gebunden an ${esc(d.digest.slice(0, 23))}…` : ""}</small>
           ${d.can ? `<textarea placeholder="Begründung (bei Ablehnung Pflicht)" maxlength="2000"></textarea>
-          <div class="row"><button class="ac-btn small primary" type="button" data-outcome="annehmen">Annehmen</button><button class="ac-btn small danger" type="button" data-outcome="ablehnen">Ablehnen</button><a class="ac-btn small" href="/agents?run=${encodeURIComponent(d.run_id)}">Details</a></div><div class="error" data-error></div>`
+          <div class="row"><button class="ac-btn small primary" type="button" data-outcome="annehmen">Annehmen</button><button class="ac-btn small danger" type="button" data-outcome="ablehnen">Ablehnen</button><a class="ac-btn small" href="/agents?run=${encodeURIComponent(d.run_id)}">Details</a></div><div class="error" data-error data-keep="error"></div>`
             : '<small>Nicht deine Entscheidungsrolle. Die Befugnis prüft der Orchestrator serverseitig.</small>'}
-        </article>`).join("");
+        </article>`).join(""); });
       box.querySelectorAll("[data-outcome]").forEach((button) => button.addEventListener("click", () => this.decide(button)));
       if (this.full) {
         box.querySelectorAll("[data-change]").forEach((link) => link.addEventListener("click", (event) => {
@@ -791,13 +866,14 @@ class AgentCenter {
       const signature = JSON.stringify(runs.map((r) => [r.id, r.status, r.step, r.model_calls, r.waiting_for, r.branch]));
       if (signature === this.runsSignature) return;
       this.runsSignature = signature;
-      this.$("[data-runs]").innerHTML = runs.length ? runs.map((run) => `
+      const list = this.$("[data-runs]");
+      keepState(list, () => { list.innerHTML = runs.length ? runs.map((run) => `
         <button class="ac-run" type="button" data-run="${esc(run.id)}">
           <span><span class="key">${esc(run.auftrag_id)}</span><br><small>${esc(run.project_class || "S")}/${esc(run.criticality || "K1")} · ${esc(run.change_class.replace("_", " "))}</small></span>
           <span><b>${esc(run.title)}</b><small>${esc(run.step_label)}${run.waiting_for ? ` · wartet auf ${esc(data.human_roles?.[run.waiting_for]?.label || run.waiting_for)}` : ""}${run.reason && run.status === "blockiert" ? ` · ${esc(run.reason)}` : ""}${run.branch ? ` · Branch ${esc(run.branch)}` : ""}</small></span>
           <span class="ac-progress-cell"><div class="ac-progress"><i style="width:${Number(run.progress) || 0}%"></i></div><small>${Number(run.progress) || 0} % · ${esc(run.model_calls)} Modellaufrufe</small></span>
           <span class="ac-status ${esc(run.status)}">${esc(run.status)}</span>
-        </button>`).join("") : "";
+        </button>`).join("") : ""; });
       this.$("[data-runs]").querySelectorAll("[data-run]").forEach((element) => element.addEventListener("click", () => {
         if (this.full) this.openRun(element.dataset.run);
         else window.location.href = `/agents?run=${encodeURIComponent(element.dataset.run)}`;
@@ -969,10 +1045,9 @@ class AgentCenter {
       const extra = this.$("[data-full-extra]");
       if (!extra) return;
       const isAdmin = (data.viewer?.roles || []).some((r) => ["platform-admin", "it-user", "work-admin", "flow-techlead"].includes(r));
-      // Die Ansicht wird alle paar Sekunden neu gezeichnet; gewählte Bereiche der Arbeitspakete bleiben erhalten.
-      const chosen = {};
-      extra.querySelectorAll("[data-package] select").forEach((s) => { chosen[`${s.closest("[data-package]").dataset.project}/${s.closest("[data-package]").dataset.package}`] = s.value; });
-      extra.innerHTML = `
+      // Neu gezeichnet wird nur bei geänderten Daten; Fokus, gewählte Bereiche, aufgeklappte Details,
+      // Startmeldungen und das geladene Audit bleiben dabei erhalten (keepState).
+      keepState(extra, () => { extra.innerHTML = `
         ${catalogPanel(data)}
         ${projectsPanel(data, this.scopes)}
         <section class="ac-panel" style="margin-top:14px"><h3>Agentenregister <span>${esc(data.registry?.id || "")} · ${esc(data.registry?.policy_version || "")} · STAND ${esc(data.registry?.digest || "")}</span></h3>
@@ -980,8 +1055,7 @@ class AgentCenter {
           ${(data.productive_agents || []).length ? `<h3 style="margin-top:14px">Produktive Fachagenten <span>STARTBESTAND KI-U-02</span></h3><div class="agent-grid">${data.productive_agents.map((a) => `<article class="agent-card"><header><span class="code">${esc(a.autonomy)}</span><div><b>${esc(a.name)}</b><small>${esc(a.id)} · ${esc(a.owner)}</small></div><span class="ac-chip">${esc(a.status)}</span></header><p>${esc(a.scope)}</p></article>`).join("")}</div>` : ""}
         </section>
         ${rightsMatrix(data)}
-        ${isAdmin && data.available !== false ? `<section class="ac-panel" style="margin-top:14px"><h3>Betrieb <span>STOPP-SCHALTER</span></h3><div class="chips"><button class="ac-btn small ${data.control === "pausiert" ? "" : "danger"}" type="button" data-global="${data.control === "pausiert" ? "resume" : "pause"}">${data.control === "pausiert" ? "Alle Agenten fortsetzen" : "Alle Agenten anhalten"}</button><a class="ac-btn small" href="#" data-audit>FLOWWORK-Audit anzeigen</a></div><div data-audit-table></div></section>` : ""}`;
-      extra.querySelectorAll("[data-package] select").forEach((s) => { const row = s.closest("[data-package]"); const value = chosen[`${row.dataset.project}/${row.dataset.package}`]; if (value) s.value = value; });
+        ${isAdmin && data.available !== false ? `<section class="ac-panel" style="margin-top:14px"><h3>Betrieb <span>STOPP-SCHALTER</span></h3><div class="chips"><button class="ac-btn small ${data.control === "pausiert" ? "" : "danger"}" type="button" data-global="${data.control === "pausiert" ? "resume" : "pause"}">${data.control === "pausiert" ? "Alle Agenten fortsetzen" : "Alle Agenten anhalten"}</button><a class="ac-btn small" href="#" data-audit>FLOWWORK-Audit anzeigen</a></div><div data-audit-table data-keep="audit"></div></section>` : ""}`; });
       extra.querySelectorAll("[data-start-package]").forEach((button) => button.addEventListener("click", () => this.startPackage(button)));
       if (!this.scopes && (data.projects || []).some((p) => p.packages.some((k) => k.status === "bereit" && !k.scope))) this.loadScopes();
       extra.querySelector("[data-global]")?.addEventListener("click", (event) => this.control(event.currentTarget.dataset.global));
@@ -1057,8 +1131,19 @@ class AgentCenter {
   const ESCALATION_LABEL = { codex: "Codex (Abo)", claude: "Claude (Abo)" };
   const DATA_LABEL = { oeffentlich: "öffentlich", intern: "intern", vertraulich: "vertraulich" };
 
-  function deciderChips(rights) {
-    return (rights.decided_by || []).map((d) => `<span class="ac-chip amber" title="${esc(d.why)} · Keycloak: ${esc((d.keycloak_roles || []).join(", "))}">${esc(d.gate)} · ${esc(d.label)}</span>`).join(" ") || '<span class="ac-chip">kein Gate</span>';
+  // relation: "freigabe" = das Gate setzt das Ergebnis des Agenten voraus (gate.requires ∋ step.produces),
+  // "naechste" = nur der nächste menschliche Entscheidungspunkt im Ablauf, "bedenken" = bei Bedenken des Agenten.
+  const RELATION_LABEL = { freigabe: "Ergebnis freigegeben an", naechste: "Nächste menschliche Entscheidung im Ablauf", bedenken: "Bei Bedenken entscheidet" };
+  function deciderChips(rights, relation = "") {
+    return (rights.decided_by || []).filter((d) => !relation || (d.relation || "freigabe") === relation)
+      .map((d) => `<span class="ac-chip ${(d.relation || "freigabe") === "freigabe" ? "amber" : ""}" title="${esc(d.why)} · Keycloak: ${esc((d.keycloak_roles || []).join(", "))}">${esc(d.gate)} · ${esc(d.label)}</span>`).join(" ");
+  }
+  function deciderRows(rights) {
+    return Object.entries(RELATION_LABEL).map(([relation, label]) => {
+      const chips = deciderChips(rights, relation);
+      if (relation === "freigabe") return `<dt>${label}</dt><dd>${chips || "– <small>kein Gate setzt dieses Ergebnis unmittelbar voraus</small>"}</dd>`;
+      return chips ? `<dt>${label}</dt><dd>${chips}</dd>` : "";
+    }).join("");
   }
 
   // Synthetische Lieferantenmails für die Vorführung (passen zu den Demo-Bestellungen).
@@ -1133,7 +1218,8 @@ class AgentCenter {
     const canEdit = (data.viewer?.roles || []).includes("platform-admin");
     const providerLabel = { gateway: "lokal über FLOWGATE", simulated: "Simulator", opencode: "OpenCode (lokal)", codex: "Codex (Abo)", claude: "Claude (Abo)" };
     const tasks = (agent) => (data.pipeline || []).filter((step) => step.role === agent.role).map((step) => {
-      const what = step.kind === "review" ? `prüft <i>${esc(step.subject || "")}</i>` : step.produces ? `erstellt <i>${esc(step.produces)}</i>` : "";
+      const made = step.produces ? `erstellt <i>${esc(KIND_LABEL_DE[step.produces] || step.produces)}</i>` : "";
+      const what = step.kind === "review" ? `prüft <i>${esc(KIND_LABEL_DE[step.subject] || step.subject || "")}</i>${made ? ` → ${made}` : ""}` : made;
       const only = step.when?.project_class ? ` <span class="ac-chip">nur ${esc(step.when.project_class.join("/"))}</span>` : "";
       return `<li><b>${esc(step.label)}</b>${what ? ` – ${what}` : ""}${only}</li>`;
     }).join("");
@@ -1154,7 +1240,7 @@ class AgentCenter {
             <dt>Verantwortlich</dt><dd>${esc(a.owner)}${a.deputy && a.deputy !== "offen" ? ` · Vertretung ${esc(a.deputy)}` : ""}</dd>
             <dt>Aufgaben</dt><dd>${tasks(a) ? `<ul>${tasks(a)}</ul>` : "–"}</dd>
             <dt>Geprüft von</dt><dd>${reviewer ? esc(reviewer.name) : a.kind === "review" ? "– (ist selbst Prüfer)" : "Mensch am nächsten Gate"}${reviews(a) ? `<br><small>prüft selbst: ${reviews(a)}</small>` : ""}</dd>
-            <dt>Freigabe durch</dt><dd>${deciderChips(r) || "–"}</dd>
+            ${deciderRows(r)}
             <dt>Modell</dt><dd>${esc(a.model_profile || "")} → ${esc(r.model?.alias || "")} (${esc(a.family || "")}) · ${esc(providerLabel[data.providers?.[a.model_profile]] || data.providers?.[a.model_profile] || "")}${r.model?.escalation ? ` · komplex: ${esc(ESCALATION_LABEL[r.model.escalation] || r.model.escalation)}` : ""}</dd>
             <dt>Werkzeuge</dt><dd>${(a.tools || []).map((t) => `<span class="ac-chip" title="${esc((r.tools || []).find((x) => x.name === t)?.label || "")}">${esc(t)}</span>`).join(" ") || "–"}</dd>
             <dt>Liest</dt><dd>${(a.reads || []).map((k) => `<span class="ac-chip">${esc(k)}</span>`).join(" ") || "–"}</dd>
@@ -1182,7 +1268,7 @@ class AgentCenter {
         <dt>Datenklassen</dt><dd>${(r.data_classes || []).map((c) => esc(DATA_LABEL[c] || c)).join(", ") || "–"}</dd>
         ${limits ? `<dt>Grenzen</dt><dd>${limits}</dd>` : ""}
         ${r.reviewed_by ? `<dt>Geprüft von</dt><dd>${esc(r.reviewed_by)}</dd>` : ""}
-        <dt>Freigabe durch</dt><dd>${deciderChips(r)}</dd>
+        ${deciderRows(r)}
         <dt>Darf nie</dt><dd>${(r.never || []).map((x) => esc(x)).join(" · ")}</dd>
       </dl></details>`;
   }
@@ -1217,7 +1303,7 @@ class AgentCenter {
     return `<section class="ac-panel" style="margin-top:14px"><h3>Projekte <span>ARBEITSPAKETE NACH DEM V-MODELL</span></h3>
       ${projects.map((p) => `<article style="margin-top:10px"><header><b>${esc(p.id)} · ${esc(p.title)}</b> <span class="ac-chip">${esc(p.project_class)}/${esc(p.criticality)}</span> <span class="ac-chip ${p.status === "abgeschlossen" ? "lime" : ""}">${esc(p.ep)}</span>${p.code ? ` <span class="ac-chip">${esc(p.code)} · ${esc(RIGHT_LABEL[rights[p.code] || ""])}</span>` : ""} <small>${esc(p.progress)} % fertig · Welle ${esc(p.current_wave)} · definiert von ${esc(p.defined_by)}</small></header>
         <table class="ac-table"><thead><tr><th>Paket</th><th>Ebene im V</th><th>Ergebnis und Abnahmekriterium</th><th>Welle</th><th>Vorgänger</th><th>Bereich</th><th>Status</th><th></th></tr></thead><tbody>
-        ${p.packages.map((k) => `<tr data-package="${esc(k.key)}" data-project="${esc(p.id)}"><td><b>${esc(k.key)}</b><br><small>${esc(k.title)}</small></td><td>${esc((k.v_level || "").replace(/_/g, " "))}</td><td>${esc(k.result)}<br><small>${esc(k.acceptance)}</small></td><td>${esc(k.wave || 1)}</td><td>${esc((k.depends_on || []).join(", ") || "–")}</td><td>${k.status === "bereit" ? scopeSelect(k) : esc(k.scope || "–")}</td><td><span class="ac-chip ${PACKAGE_TONE[k.status] || ""}">${esc(PACKAGE_LABEL[k.status] || k.status)}</span>${k.auftrag_id ? `<br><small>${esc(k.auftrag_id)} · ${esc(k.run_status)}</small>` : ""}</td><td>${k.status === "bereit" && canStartIn(p) ? '<button class="ac-btn small primary" type="button" data-start-package>Starten (EPi)</button>' : ""}<br><small data-package-msg></small></td></tr>`).join("")}
+        ${p.packages.map((k) => `<tr data-package="${esc(k.key)}" data-project="${esc(p.id)}"><td><b>${esc(k.key)}</b><br><small>${esc(k.title)}</small></td><td>${esc((k.v_level || "").replace(/_/g, " "))}</td><td>${esc(k.result)}<br><small>${esc(k.acceptance)}</small></td><td>${esc(k.wave || 1)}</td><td>${esc((k.depends_on || []).join(", ") || "–")}</td><td>${k.status === "bereit" ? scopeSelect(k) : esc(k.scope || "–")}</td><td><span class="ac-chip ${PACKAGE_TONE[k.status] || ""}">${esc(PACKAGE_LABEL[k.status] || k.status)}</span>${k.auftrag_id ? `<br><small>${esc(k.auftrag_id)} · ${esc(k.run_status)}</small>` : ""}</td><td>${k.status === "bereit" && canStartIn(p) ? '<button class="ac-btn small primary" type="button" data-start-package>Starten (EPi)</button>' : ""}<br><small data-package-msg data-keep="package-msg"></small></td></tr>`).join("")}
         </tbody></table></article>`).join("")}
     </section>`;
   }
@@ -1291,12 +1377,12 @@ class AgentCenter {
     const head = tools.map((t) => `<th title="${esc(agents.flatMap((a) => a.rights.tools).find((x) => x.name === t)?.label || t)}"><span class="ac-vert">${esc(t)}</span></th>`).join("");
     const rows = agents.map((a) => {
       const own = new Set(a.rights.tools.map((t) => t.name));
-      return `<tr data-card="${esc(a.role)}"><td><b>${esc(a.name)}</b><br><small><code>${esc(a.role)}</code> · Stufe ${esc(a.autonomy)}</small></td>${tools.map((t) => `<td class="ac-cell ${own.has(t) ? "on" : ""}">${own.has(t) ? "●" : ""}</td>`).join("")}<td>${esc(a.rights.model?.alias || "")}${a.rights.model?.escalation ? `<br><small>↗ ${esc(ESCALATION_LABEL[a.rights.model.escalation] || a.rights.model.escalation)}</small>` : ""}</td><td>${esc((a.rights.data_classes || []).map((c) => DATA_LABEL[c] || c).join(", "))}</td><td>${deciderChips(a.rights)}</td></tr>`;
+      return `<tr data-card="${esc(a.role)}"><td><b>${esc(a.name)}</b><br><small><code>${esc(a.role)}</code> · Stufe ${esc(a.autonomy)}</small></td>${tools.map((t) => `<td class="ac-cell ${own.has(t) ? "on" : ""}">${own.has(t) ? "●" : ""}</td>`).join("")}<td>${esc(a.rights.model?.alias || "")}${a.rights.model?.escalation ? `<br><small>↗ ${esc(ESCALATION_LABEL[a.rights.model.escalation] || a.rights.model.escalation)}</small>` : ""}</td><td>${esc((a.rights.data_classes || []).map((c) => DATA_LABEL[c] || c).join(", "))}</td><td>${deciderChips(a.rights, "freigabe") || "–"}</td></tr>`;
     }).join("");
     const humans = Object.entries(data.human_roles || {}).map(([name, spec]) => `<span class="ac-chip" title="${esc(name)}">${esc(spec.label)} → ${esc((spec.keycloak_roles || []).join(", "))}</span>`).join(" ");
     return `<section class="ac-panel" style="margin-top:14px"><h3>Rechte der Agenten <span>WERKZEUGE JE TECHNISCHER ROLLE · FREIGABE DURCH MENSCHEN</span></h3>
       <div class="ac-hint">Jeder Agent handelt nur über seine technische Rolle: eigener FLOWGATE-Schlüssel und je Lauf ein Kurzzeit-Token für FLOWWORK. Werkzeuge prüft FLOWWORK bei jedem Aufruf serverseitig; Freigeben, Mergen, Löschen und Ausliefern hat kein Agent. Klick auf eine Zeile zeigt die Einzelheiten.</div>
-      <div class="ac-scroll"><table class="ac-table ac-matrix"><thead><tr><th>Agent / Rolle</th>${head}<th>Modell</th><th>Daten</th><th>Freigabe durch</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="ac-scroll"><table class="ac-table ac-matrix"><thead><tr><th>Agent / Rolle</th>${head}<th>Modell</th><th>Daten</th><th title="Gate, das das Ergebnis des Agenten voraussetzt (gate.requires)">Ergebnis freigegeben an</th></tr></thead><tbody>${rows}</tbody></table></div>
       <div class="ac-hint" style="margin-top:10px">Menschliche Freigaberollen (Keycloak): ${humans}</div></section>`;
   }
 

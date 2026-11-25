@@ -85,6 +85,8 @@ CREATE TABLE IF NOT EXISTS business_jobs (
 CREATE INDEX IF NOT EXISTS business_jobs_status ON business_jobs(status, created);
 CREATE INDEX IF NOT EXISTS events_run ON events(run_id, id);
 CREATE INDEX IF NOT EXISTS decisions_open ON decisions(status, created);
+CREATE INDEX IF NOT EXISTS steps_run ON steps(run_id, id);
+CREATE INDEX IF NOT EXISTS decisions_run ON decisions(run_id, created);
 """
 
 RUN_STATES = ("aktiv", "wartet", "blockiert", "pausiert", "abgeschlossen", "abgelehnt", "abgebrochen")
@@ -470,6 +472,28 @@ class Store:
             value["started_at"] = iso(value["started"])
             value["finished_at"] = iso(value["finished"])
             result.append(value)
+        return result
+
+    def participation(self, run_ids: list[str]) -> dict[str, dict[str, list[Any]]]:
+        """Beteiligung vieler Läufe mit je einer Sammelabfrage (statt je Lauf decisions() und steps()).
+
+        Liefert je Lauf die entscheidenden Personen (in Entscheidungsreihenfolge) und die Agentenrollen
+        (in Schrittreihenfolge). Für die Übersicht, die regelmäßig für bis zu 30 Läufe abgerufen wird.
+        """
+        result: dict[str, dict[str, list[Any]]] = {run_id: {"deciders": [], "roles": []} for run_id in run_ids}
+        if not run_ids:
+            return result
+        marks = ",".join("?" * len(run_ids))  # nur Platzhalter, Werte gebunden
+        with self._lock:
+            decisions = self.db.execute(
+                f"SELECT run_id, decided_by FROM decisions WHERE run_id IN ({marks}) ORDER BY run_id, created",
+                run_ids).fetchall()
+            steps = self.db.execute(
+                f"SELECT run_id, role FROM steps WHERE run_id IN ({marks}) ORDER BY run_id, id", run_ids).fetchall()
+        for row in decisions:
+            result[row["run_id"]]["deciders"].append(json.loads(row["decided_by"]))
+        for row in steps:
+            result[row["run_id"]]["roles"].append(row["role"])
         return result
 
     def running_steps(self) -> list[dict[str, Any]]:

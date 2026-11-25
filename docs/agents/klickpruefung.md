@@ -88,7 +88,12 @@ docker build -t flow-agents-ui-runner:1 deployment/ui-runner
 Das Skript startet die Vorschau aus dem aktuellen Arbeitsstand, lässt den Akzeptanztest-Agenten über
 FLOWGATE die Testfälle schreiben (mit bis zu zwei Rückweisungen wie im Orchestrator), führt sie aus und
 legt Ergebnis und Bilder unter `docs/agents/bilder/klickpruefung/` ab. `--replay` führt die zuletzt
-erzeugten Klickpfade erneut aus, ohne das Modell zu fragen. Danach die Vorschau beenden:
+erzeugten Klickpfade erneut aus, ohne das Modell zu fragen.
+
+Seiteneffekte: Es bleiben die beiden Images, der Vorschau-Container `flow-agents-preview` und die
+Bilder unter `docs/agents/bilder/klickpruefung/`. Das interne Docker-Netz `flow-agents-ui` legt das
+Skript nur an, wenn es noch fehlt, und entfernt es am Ende wieder. Ein bereits vorhandenes Netz (etwa
+vom laufenden Orchestrator) bleibt unverändert. Danach die Vorschau beenden:
 `docker rm -f flow-agents-preview`.
 
 ## Grenzen und Regeln

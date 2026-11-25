@@ -96,8 +96,12 @@ def main() -> int:
         print("Der Agent hat keinen Klickpfad geliefert.")
         return 1
     runner = UiRunner(image="flow-agents-ui-runner:1")
-    runner.prepare_network(Preview.NAME)
-    report = runner.run(scenarios)
+    created = runner.prepare_network(Preview.NAME)
+    try:
+        report = runner.run(scenarios)
+    finally:
+        if created:  # nur ein von diesem Lauf angelegtes Netz wieder entfernen
+            runner.remove_network(Preview.NAME)
     OUT.mkdir(parents=True, exist_ok=True)
     for scenario in report["scenarios"]:
         for shot in scenario["screenshots"]:

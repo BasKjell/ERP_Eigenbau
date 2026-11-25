@@ -102,16 +102,30 @@ class UiRunner:
                 "--pids-limit", "512", "--shm-size", "256m", "--tmpfs", "/tmp:rw,size=300m",
                 "--env", "HOME=/tmp", "--log-driver", "none", "--label", "flow-agents-ui=1", self.image]
 
-    def prepare_network(self, preview_container: str) -> None:
-        """Internes Netz ohne Internet; nur Vorschau und Prüfbrowser hängen daran."""
+    def prepare_network(self, preview_container: str) -> bool:
+        """Internes Netz ohne Internet; nur Vorschau und Prüfbrowser hängen daran.
+
+        Liefert True, wenn das Netz durch diesen Aufruf angelegt wurde (dann darf es der Aufrufer
+        mit remove_network wieder entfernen; ein vorhandenes Netz bleibt unangetastet).
+        """
         inspect = subprocess.run(["docker", "network", "inspect", "--format", "{{.Internal}}", self.network],
                                  capture_output=True, text=True, timeout=30, check=False)
+        created = False
         if inspect.returncode:
             subprocess.run(["docker", "network", "create", "--internal", self.network],
                            capture_output=True, text=True, timeout=30, check=True)
+            created = True
         elif inspect.stdout.strip() != "true":
             raise UiCheckError(f"Netz {self.network} muss intern sein")
         subprocess.run(["docker", "network", "connect", self.network, preview_container],
+                       capture_output=True, text=True, timeout=30, check=False)
+        return created
+
+    def remove_network(self, preview_container: str) -> None:
+        """Vom eigenen Lauf angelegtes Netz wieder entfernen (Vorschau vorher abhängen)."""
+        subprocess.run(["docker", "network", "disconnect", "--force", self.network, preview_container],
+                       capture_output=True, text=True, timeout=30, check=False)
+        subprocess.run(["docker", "network", "rm", self.network],
                        capture_output=True, text=True, timeout=30, check=False)
 
     def run(self, scenarios: list[dict[str, Any]]) -> dict[str, Any]:
