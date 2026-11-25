@@ -43,7 +43,7 @@ from .registry import (
 )
 from .rm import RM, RMConflict, RMError
 from .sandbox import Sandbox, SandboxError, validate_path
-from .store import OPEN_RUN_STATES, Store, digest_of
+from .store import OPEN_RUN_STATES, Store, digest_of, iso
 from .uicheck import UiCheckError, UiRunner, scenarios_from
 
 ORCHESTRATOR = ("orchestrator", "FLOW-ORCHESTRATOR")
@@ -1819,7 +1819,8 @@ class Engine:
         runs = self.store.runs(limit=30)
         open_decisions = self.store.decisions(status="offen")
         referenced: set[str] = set()
-        running = {(step["run_id"], step["role"]) for step in self.store.running_steps()}
+        # Laufender Schritt → Beginn (für „seit …“ am laufbezogenen Halter); auch als Menge nutzbar.
+        running = {(step["run_id"], step["role"]): iso(step["started"]) for step in self.store.running_steps()}
         controls = self.store.controls()
         events = self.store.events(limit=60)
         participation = self.store.participation([run["id"] for run in runs])  # zwei Sammelabfragen statt 2 je Lauf
@@ -1925,7 +1926,7 @@ class Engine:
 
     def _run_summary(self, run: dict[str, Any], open_decisions: list[dict[str, Any]], *,
                      participation: dict[str, list[Any]] | None = None,
-                     running: set[tuple[str, str]] | None = None,
+                     running: dict[tuple[str, str], str | None] | set[tuple[str, str]] | None = None,
                      controls: dict[str, str] | None = None) -> dict[str, Any]:
         steps = self.registry.steps
         index = min(run["step_index"], len(steps))
@@ -1952,34 +1953,40 @@ class Engine:
         }
 
     def _holder(self, run: dict[str, Any], current: Step | None, waiting: dict[str, Any] | None,
-                running: set[tuple[str, str]] | None, controls: dict[str, str] | None) -> dict[str, Any]:
+                running: dict[tuple[str, str], str | None] | set[tuple[str, str]] | None,
+                controls: dict[str, str] | None) -> dict[str, Any]:
         """Bei wem dieser eine Lauf gerade hängt (laufbezogen, nicht der Sammelzustand der Agentenrolle).
 
         Dieselbe Agentenrolle kann in mehreren Läufen anstehen und nur in einem davon arbeiten;
-        ein globaler oder rollenbezogener Stopp hält einen eingeplanten Schritt an.
+        ein globaler oder rollenbezogener Stopp hält einen eingeplanten Schritt an. ``since`` nennt den
+        Beginn genau dieses Halterzustands (laufender Schritt bzw. offene Entscheidung), sofern bekannt;
+        ohne ``since`` zeigt die Oberfläche „Lauf zuletzt geändert“.
         """
         if running is None:
-            running = {(step["run_id"], step["role"]) for step in self.store.running_steps()}
+            running = {(step["run_id"], step["role"]): iso(step["started"]) for step in self.store.running_steps()}
         if controls is None:
             controls = self.store.controls()
         status = run["status"]
         decider = waiting["decider"] if waiting else None
         if status not in OPEN_RUN_STATES:
             return {"kind": "fertig"}
+        opened = {"since": waiting["created_at"]} if waiting and waiting.get("created_at") else {}
         if status == "blockiert":
-            return {"kind": "blockiert", "reason": run["reason"], "role": decider}
+            return {"kind": "blockiert", "reason": run["reason"], "role": decider, **opened}
         if status == "pausiert":
             return {"kind": "pausiert", "reason": run["reason"]}
         if decider:
-            return {"kind": "mensch", "role": decider}
+            return {"kind": "mensch", "role": decider, **opened}
         if current is None:
             return {"kind": "orchestrator"}
         role = current.role or ""
-        active = any(run_id == run["id"] and (not role or step_role == role) for run_id, step_role in running)
-        if active:  # ein laufender Schritt wird auch bei Stopp noch zu Ende geführt
+        active_key = next(((run_id, step_role) for run_id, step_role in running
+                           if run_id == run["id"] and (not role or step_role == role)), None)
+        if active_key:  # ein laufender Schritt wird auch bei Stopp noch zu Ende geführt
+            started = running.get(active_key) if isinstance(running, dict) else None
             return {"kind": "integration" if current.kind == "check" else "agent_arbeitet", "role": role,
                     "running": True, "stopping": controls.get("global") == "pausiert"
-                    or controls.get(f"agent:{role}") == "pausiert"}
+                    or controls.get(f"agent:{role}") == "pausiert", **({"since": started} if started else {})}
         if controls.get("global") == "pausiert":
             return {"kind": "pausiert_global"}
         if role and controls.get(f"agent:{role}") == "pausiert":

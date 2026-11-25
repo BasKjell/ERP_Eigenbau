@@ -528,7 +528,10 @@ class AgentCenter {
       const signature = JSON.stringify([this.view, open.map((r) => [r.id, r.status, r.step, r.waiting_for, r.updated_at, r.holder]), Math.floor(Date.now() / 60000)]);
       if (signature === this.stuckSignature) return;
       this.stuckSignature = signature;
-      const since = (value) => { const minutes = Math.max(0, Math.round((Date.now() - Date.parse(value)) / 60000)); return minutes < 60 ? `seit ${minutes} min` : `seit ${Math.round(minutes / 60)} h`; };
+      const ago = (value) => { const minutes = Math.max(0, Math.round((Date.now() - Date.parse(value)) / 60000)); return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} h`; };
+      // „seit …“ nur mit dem Beginn des tatsächlichen Halterzustands (laufender Schritt, offene Entscheidung);
+      // sonst ehrlich „Lauf zuletzt geändert vor …“.
+      const since = (run) => run.holder?.since ? `seit ${ago(run.holder.since)}` : `Lauf zuletzt geändert vor ${ago(run.updated_at)}`;
       const you = (role) => (deciders.has(role) ? ' <span class="ac-chip lime">du</span>' : "");
       const human = (role) => `<b>${esc(data.human_roles?.[role]?.label || role)}</b>${you(role)}`;
       const agentName = (role) => esc(agents[role]?.name || SHORT[role] || role || "");
@@ -537,9 +540,9 @@ class AgentCenter {
       const holder = (run) => {
         const h = run.holder || {};
         switch (h.kind) {
-          case "agent_arbeitet": return `<span class="ac-chip lime">Agent</span> <b>${agentName(h.role)}</b> <small>arbeitet an diesem Auftrag</small>`;
+          case "agent_arbeitet": return `<span class="ac-chip lime">Agent</span> <b>${agentName(h.role)}</b> <small>${h.stopping ? "arbeitet noch – hält danach an" : "arbeitet an diesem Auftrag"}</small>`;
           case "agent_eingeplant": return `<span class="ac-chip">Agent</span> <b>${agentName(h.role)}</b> <small>eingeplant, beginnt als Nächstes</small>`;
-          case "integration": return `<span class="ac-chip">Dienst</span> <b>Integrationsprüfung</b> <small>${h.running ? "läuft" : "eingeplant"}</small>`;
+          case "integration": return `<span class="ac-chip">Dienst</span> <b>Integrationsprüfung</b> <small>${h.running ? (h.stopping ? "läuft noch – hält danach an" : "läuft") : "eingeplant"}</small>`;
           case "mensch": return `<span class="ac-chip amber">Mensch</span> ${human(h.role)}`;
           case "pausiert_global": return '<span class="ac-chip red">angehalten</span> alle Agenten sind angehalten (Stopp-Schalter)';
           case "pausiert_agent": return `<span class="ac-chip red">angehalten</span> <b>${agentName(h.role)}</b> <small>ist pausiert</small>`;
@@ -550,7 +553,7 @@ class AgentCenter {
       };
       const title = this.view === "mine" ? "Wo meine Aufträge gerade hängen" : "Wo alle offenen Aufträge gerade hängen";
       keepState(box, () => { box.innerHTML = `<h3>${title} <span>${open.length} OFFEN</span></h3>${open.length ? `<div class="ac-stuck-list">${open.map((run) => `
-        <button class="ac-stuck-row" type="button" data-run="${esc(run.id)}"><span class="key">${esc(run.auftrag_id)}</span><span><b>${esc(run.title)}</b><small>${esc(run.step_label)}${run.project ? ` · ${esc(run.project)}` : ""} · beauftragt von ${esc(run.requested_by || "–")}${this.view === "all" && involved(run) ? " · du bist beteiligt" : ""}</small></span><span>${holder(run)}</span><span class="since">${esc(since(run.updated_at))}</span></button>`).join("")}</div>`
+        <button class="ac-stuck-row" type="button" data-run="${esc(run.id)}"><span class="key">${esc(run.auftrag_id)}</span><span><b>${esc(run.title)}</b><small>${esc(run.step_label)}${run.project ? ` · ${esc(run.project)}` : ""} · beauftragt von ${esc(run.requested_by || "–")}${this.view === "all" && involved(run) ? " · du bist beteiligt" : ""}</small></span><span>${holder(run)}</span><span class="since">${esc(since(run))}</span></button>`).join("")}</div>`
         : `<div class="ac-empty">${this.view === "mine" ? "Du bist an keinem offenen Auftrag beteiligt. „Alle“ zeigt die übrigen." : "Kein offener Auftrag."}</div>`}`; });
       box.querySelectorAll("[data-run]").forEach((element) => element.addEventListener("click", () => {
         if (this.full) this.openRun(element.dataset.run);
@@ -1239,7 +1242,7 @@ class AgentCenter {
           <dl>
             <dt>Verantwortlich</dt><dd>${esc(a.owner)}${a.deputy && a.deputy !== "offen" ? ` · Vertretung ${esc(a.deputy)}` : ""}</dd>
             <dt>Aufgaben</dt><dd>${tasks(a) ? `<ul>${tasks(a)}</ul>` : "–"}</dd>
-            <dt>Geprüft von</dt><dd>${reviewer ? esc(reviewer.name) : a.kind === "review" ? "– (ist selbst Prüfer)" : "Mensch am nächsten Gate"}${reviews(a) ? `<br><small>prüft selbst: ${reviews(a)}</small>` : ""}</dd>
+            ${reviewer || a.kind === "review" || reviews(a) ? `<dt>Geprüft von</dt><dd>${reviewer ? esc(reviewer.name) : a.kind === "review" ? "– (ist selbst Prüfer)" : "–"}${reviews(a) ? `<br><small>prüft selbst: ${reviews(a)}</small>` : ""}</dd>` : ""}
             ${deciderRows(r)}
             <dt>Modell</dt><dd>${esc(a.model_profile || "")} → ${esc(r.model?.alias || "")} (${esc(a.family || "")}) · ${esc(providerLabel[data.providers?.[a.model_profile]] || data.providers?.[a.model_profile] || "")}${r.model?.escalation ? ` · komplex: ${esc(ESCALATION_LABEL[r.model.escalation] || r.model.escalation)}` : ""}</dd>
             <dt>Werkzeuge</dt><dd>${(a.tools || []).map((t) => `<span class="ac-chip" title="${esc((r.tools || []).find((x) => x.name === t)?.label || "")}">${esc(t)}</span>`).join(" ") || "–"}</dd>

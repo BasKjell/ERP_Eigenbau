@@ -326,3 +326,15 @@ def test_agent_token_usage_is_exported_as_prometheus_metrics() -> None:
     assert 'flow_agents_tokens_total{model="flow-coder",provider="gateway",role="entwicklung",type="input"} 1200.0' in text
     assert 'flow_agents_model_calls_total{model="flow-coder",provider="gateway",role="entwicklung"} 3.0' in text
     assert "flow_agents_orchestrator_connected 1.0" in text
+
+
+def test_agent_center_wording_follows_the_actual_state() -> None:
+    """REQ-PRT-001 (Codex-Review Anzeige): „seit …“ nur mit Beginn des Halterzustands, sonst „Lauf zuletzt
+    geändert“; Stopp während der Arbeit als „arbeitet noch – hält danach an“; kein erfundener Prüfer."""
+    from pathlib import Path
+
+    script = (Path(__file__).resolve().parents[1] / "app" / "static" / "agent-center.js").read_text(encoding="utf-8")
+    assert "run.holder?.since ? `seit ${ago(run.holder.since)}` : `Lauf zuletzt geändert vor ${ago(run.updated_at)}`" in script
+    assert "since(run.updated_at)" not in script
+    assert "arbeitet noch – hält danach an" in script and "h.stopping ?" in script
+    assert "Mensch am nächsten Gate" not in script

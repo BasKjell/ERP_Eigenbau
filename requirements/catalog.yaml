@@ -373,7 +373,7 @@ requirements:
     source: AUF-BAS-2026-11-22 „auf der Landingpage sehen, was die Agenten machen“
     text: FLOWPORTAL zeigt auf der Startseite den Zustand jedes Agenten (arbeitet, als Nächstes, wartet, pausiert), laufende Aufträge mit Schritt und Fortschritt sowie ein Live-Protokoll.
     acceptance_criteria:
-      - Die Startseite enthält die Agentenzentrale; die Übersicht liefert alle zwölf Rollen mit Zustand.
+      - Die Startseite enthält die Agentenzentrale; die Übersicht liefert alle im Register geführten Rollen mit Zustand.
       - Ein Auftrag, der auf einen Menschen wartet, zeigt die wartende Rolle.
     derives: [REQ-AGT-008, REQ-AGT-012]
     verification:
@@ -382,6 +382,9 @@ requirements:
       - services/agent_orchestrator/tests/test_overview_display.py::test_holder_is_per_run_not_per_agent_role
       - services/agent_orchestrator/tests/test_overview_display.py::test_holder_shows_global_and_agent_pause
       - services/agent_orchestrator/tests/test_overview_display.py::test_holder_names_waiting_person_and_blocked_reason
+      - services/agent_orchestrator/tests/test_overview_display.py::test_holder_since_is_the_start_of_the_actual_holder_state
+      - services/agent_orchestrator/tests/test_overview_display.py::test_overview_holder_since_comes_from_the_open_decision
+      - services/platform_api/tests/test_flow_agents.py::test_agent_center_wording_follows_the_actual_state
       - services/agent_orchestrator/tests/test_overview_display.py::test_approval_relation_follows_gate_requires
       - services/agent_orchestrator/tests/test_overview_display.py::test_participation_is_loaded_in_bulk
       - services/agent_orchestrator/tests/test_overview_display.py::test_demo_removes_only_the_network_it_created

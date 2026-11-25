@@ -115,3 +115,27 @@ def test_overview_runs_carry_holder_without_per_run_queries(make_engine, monkeyp
     assert not calls, "Schritte je Lauf nachgeladen (N+1)"
     assert len(runs) == 3 and all(run["holder"]["kind"] for run in runs)
     assert all(run["agents_involved"] for run in runs)
+
+
+def test_holder_since_is_the_start_of_the_actual_holder_state(make_engine) -> None:  # noqa: ANN001
+    """REQ-PRT-001: „seit …“ bezieht sich auf den Beginn des Halterzustands – laufender Schritt bzw. offene
+    Entscheidung –, nicht auf die letzte Änderung des Laufs. Ohne bekannten Beginn kein „since“."""
+    engine = make_engine()
+    step = next(s for s in engine.registry.steps if s.role == "entwicklung")
+    gate = next(s for s in engine.registry.steps if s.id == "G4")
+    working = engine._holder(_run("RUN-A"), step, None, {("RUN-A", "entwicklung"): "2026-11-25T08:00:00+00:00"}, {})
+    assert working["since"] == "2026-11-25T08:00:00+00:00"
+    waiting = engine._holder(_run("RUN-A", "wartet"), gate, {"decider": "key-user",
+                                                           "created_at": "2026-11-25T07:00:00+00:00"}, {}, {})
+    assert waiting == {"kind": "mensch", "role": "key-user", "since": "2026-11-25T07:00:00+00:00"}
+    assert "since" not in engine._holder(_run("RUN-A"), step, None, {}, {}), "eingeplant: Beginn unbekannt"
+    assert "since" not in engine._holder(_run("RUN-A"), step, None, set(), {"global": "pausiert"})
+
+
+def test_overview_holder_since_comes_from_the_open_decision(make_engine) -> None:  # noqa: ANN001
+    engine = make_engine()
+    run = engine.submit(auftrag(), PO, "disp-since-0001")
+    drive(engine)
+    summary = next(r for r in engine.overview()["runs"] if r["id"] == run["id"])
+    decision = engine.store.decisions(status="offen", run_id=run["id"])[0]
+    assert summary["holder"]["kind"] == "mensch" and summary["holder"]["since"] == decision["created_at"]
