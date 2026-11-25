@@ -54,6 +54,12 @@ OVERSIGHT_ROLES = frozenset({"platform-admin", "flow-isb", "flow-gf"})
 CATALOG_OWNER = {"username": "projektkatalog", "name": "Projektkatalog"}
 # Agenteneigenschaften ändern nur Administratoren; alle anderen sehen sie nur an.
 CONFIG_ADMIN_ROLES = frozenset({"platform-admin"})
+# Projektübergreifende Betriebsbefugnis (Laufabbruch ohne Projektrecht): nur Plattformbetrieb.
+CROSS_PROJECT_OPERATIONS = frozenset({"platform-admin"})
+# V-Ebenen, deren Arbeitspaket den projektweiten Integrationsnachweis eines L-Projekts liefert.
+INTEGRATION_LEVELS = frozenset({"software_integration", "systemintegration"})
+# Abschlussarten eines Laufs (nur „produktion“ ist eine Auslieferung nach G5).
+COMPLETIONS = ("produktion", "projektplanung", "katalog", "ende")
 GATE_BACK_TO = {"EP1": "projektplanung", "G1": "anforderungen", "G2": "architektur", "G3": "entwicklung", "G4": "entwicklung"}
 # Domänenprofile (KI-Softwareentwicklung Teil 07).
 DOMAINS = ("it", "produkt", "pruefsoftware", "werkzeug")
@@ -122,7 +128,47 @@ class Engine:
                 for path in [*scope.get("paths", []), *scope.get("reads", [])]:
                     validate_path(path, self.sandbox.allowed_prefixes)  # fail closed beim Start
         self.lock = threading.RLock()
+        self._migrate_step_ids()
 
+    def _migrate_step_ids(self) -> None:
+        """Altaufträge ohne stabile Schritt-ID: aus Index (gleicher Registerstand) oder offenem Gate ableiten."""
+        for run in self.store.runs(limit=10_000):
+            if run.get("step_id") or run["status"] not in OPEN_RUN_STATES:
+                continue
+            step_id = ""
+            if run["registry_digest"] == self.registry.digest:
+                step_id = self.registry.steps[run["step_index"]].id if run["step_index"] < len(self.registry.steps) \
+                    else "fertig"
+            else:
+                gate = next((d for d in self.store.decisions(status="offen", run_id=run["id"]) if d["gate"] in GATE_IDS),
+                            None)
+                step_id = gate["step_id"] if gate else ""
+            if step_id:
+                self.store.update_run(run["id"], step_id=step_id)
+
+    def _update_run(self, run_id: str, **fields: Any) -> None:
+        """Lauf ändern; ein neuer Schrittindex bekommt immer die stabile Schritt-ID dazu."""
+        if "step_index" in fields and "step_id" not in fields:
+            index = int(fields["step_index"])
+            fields["step_id"] = self.registry.steps[index].id if index < len(self.registry.steps) else "fertig"
+        if fields.get("status") == "abgeschlossen" and "completion" not in fields:
+            fields["completion"] = "ende"
+        self.store.update_run(run_id, **fields)
+
+    def _open_decision(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        kwargs.setdefault("registry_digest", self.registry.digest)
+        return self.store.open_decision(*args, **kwargs)
+
+    def _current_step_id(self, run: dict[str, Any]) -> str:
+        """Stabile Schritt-ID eines Laufs. Leer, wenn sie sich nach einer Registeränderung nicht mehr ableiten lässt."""
+        if run.get("step_id"):
+            return str(run["step_id"])
+        if run["registry_digest"] == self.registry.digest:
+            return self.registry.steps[run["step_index"]].id if run["step_index"] < len(self.registry.steps) else "fertig"
+        return ""
+
+    def _step_by_id(self, step_id: str) -> Step | None:
+        return next((s for s in self.registry.steps if s.id == step_id), None)
     # =================================================================================
     # Aufträge
     # =================================================================================
@@ -140,6 +186,7 @@ class Engine:
                     requested_by=_person(user),
                     registry_digest=self.registry.digest,
                     idempotency_key=idempotency_key,
+                    step_id=self.registry.steps[0].id,
                 )
             except ValueError as exc:
                 raise EngineError(str(exc)) from None
@@ -226,6 +273,10 @@ class Engine:
             "project": project,
             "execution": execution,
             "owner": _person(user)["name"],
+            # Ausdrücklich verlangte Änderungsklasse: wird an Arbeitspakete vererbt (nur Verschärfung).
+            "change_class_explicit": str(values.get("change_class") or ""),
+            # Bindung an den Projektkatalog bleibt erhalten, auch wenn Katalog oder Projekt später fehlen.
+            "catalog_bound": bool(self.projects),
         }
 
     def _classify(self, values: dict[str, Any]) -> tuple[str, str, str]:
@@ -237,9 +288,14 @@ class Engine:
         explicit = values.get("change_class")
         if explicit is not None and str(explicit) not in self.registry.classes:
             raise EngineError("unbekannte Änderungsklasse")
-        if not values.get("project_class") and not values.get("criticality"):
-            change_class = str(explicit or "neue_funktion")
-            return "S", "K2" if change_class == "kritisch" else "K1", change_class
+        if not values.get("project_class"):
+            # Ohne Projektklasse bleibt der bisherige Standard „neue_funktion“ (menschliches G1); eine
+            # Kritikalität allein darf den Weg nur verschärfen, nie zur Standardänderung abschwächen.
+            criticality = str(values.get("criticality") or ("K2" if explicit == "kritisch" else "K1"))
+            if criticality not in CRITICALITIES:
+                raise EngineError("Kritikalität muss K1, K2 oder K3 sein")
+            change_class = "kritisch" if criticality in {"K2", "K3"} else str(explicit or "neue_funktion")
+            return "S", criticality, change_class
         project_class = str(values.get("project_class") or "S")
         criticality = str(values.get("criticality") or "K1")
         if project_class not in PROJECT_CLASSES:
@@ -255,11 +311,20 @@ class Engine:
     # Ein Arbeitsschritt
     # =================================================================================
     def recover(self) -> None:
-        """Nach Neustart: unterbrochene Schritte markieren; idempotente Schritte laufen erneut."""
+        """Nach Neustart: unterbrochene Schritte markieren; idempotente Schritte laufen erneut.
+
+        Wartet ein Lauf ohne offene Entscheidung (Absturz zwischen Entscheidung und Folgeschritt),
+        wird derselbe Schritt erneut eingeplant; ein Gate öffnet dann eine neue Entscheidung.
+        """
         for step in self.store.running_steps():
             self.store.finish_step(step["id"], "unterbrochen", error="Dienst wurde während des Schritts beendet")
             self.store.event(step["run_id"], "wiederanlauf", "orchestrator", step["role"] or step["step_id"],
                              f"Schritt {step['step_id']} nach Neustart erneut eingeplant")
+        for run in self.store.runs(limit=10_000):
+            if run["status"] in {"wartet", "blockiert"} and not self.store.decisions(status="offen", run_id=run["id"]):
+                self._update_run(run["id"], status="aktiv", reason="")
+                self.store.event(run["id"], "wiederanlauf", "orchestrator", "orchestrator",
+                                 "Lauf wartete ohne offene Entscheidung; Schritt erneut eingeplant")
 
     def cycle(self) -> bool:
         """Bearbeitet höchstens einen Schritt. Liefert True, wenn Arbeit erledigt wurde."""
@@ -273,10 +338,10 @@ class Engine:
                 return False
             if run["registry_digest"] != self.registry.digest:
                 self._block(run, "Agentenregister oder Ablauf wurden geändert; Lauf neu bewerten",
-                            "blockade", step_id=self._step(run).id if run["step_index"] < len(self.registry.steps) else "")
+                            "blockade", step_id=self._current_step_id(run))
                 return True
             if run["step_index"] >= len(self.registry.steps):
-                self.store.update_run(run["id"], status="abgeschlossen")
+                self._update_run(run["id"], status="abgeschlossen")
                 return True
             step = self._step(run)
             if not step.applies(run["auftrag"]):
@@ -305,9 +370,9 @@ class Engine:
         step = self._step(run)
         index = self._next_applicable(run, run["step_index"])
         if index >= len(self.registry.steps):
-            self.store.update_run(run["id"], status="abgeschlossen", step_index=index, reason="")
+            self._update_run(run["id"], status="abgeschlossen", step_index=index, reason="")
             return
-        self.store.update_run(run["id"], step_index=index)
+        self._update_run(run["id"], step_index=index)
         self.store.event(run["id"], "uebersprungen", "orchestrator", step.role or step.id,
                          f"{step.label} entfällt für Projektklasse {run['auftrag'].get('project_class', 'S')}",
                          {"step": step.id})
@@ -320,7 +385,7 @@ class Engine:
                         "blockade", step_id=step.id)
             return
         if self.store.control(f"agent:{agent.role}") == "pausiert":
-            self.store.update_run(run["id"], status="pausiert", reason=f"{agent.name} ist pausiert")
+            self._update_run(run["id"], status="pausiert", reason=f"{agent.name} ist pausiert")
             self.store.event(run["id"], "pausiert", "orchestrator", agent.role, f"{agent.name} ist pausiert; Lauf hält an")
             return
         budget = self._budget(run)
@@ -496,7 +561,7 @@ class Engine:
 
     def _count(self, run: dict[str, Any], reply: AgentReply) -> dict[str, Any]:
         calls, tokens = run["model_calls"] + 1, run["output_tokens"] + reply.output_tokens
-        self.store.update_run(run["id"], model_calls=calls, output_tokens=tokens)
+        self._update_run(run["id"], model_calls=calls, output_tokens=tokens)
         return {**run, "model_calls": calls, "output_tokens": tokens}
 
     @staticmethod
@@ -511,8 +576,8 @@ class Engine:
         if handoff.status == "entscheidung_offen":
             question = handoff.questions[0]
             decider = question["to"] if question["to"] in self.registry.human_roles else "product-owner"
-            self.store.update_run(run["id"], status="wartet", reason=f"Frage an {decider}")
-            self.store.open_decision(
+            self._update_run(run["id"], status="wartet", reason=f"Frage an {decider}")
+            self._open_decision(
                 run["id"], step.id, "frage", decider, f"Rückfrage von {agent.name}",
                 "\n".join(f"- {q['question']}" + (f" ({q['impact']})" if q.get("impact") else "")
                           for q in handoff.questions),
@@ -526,8 +591,8 @@ class Engine:
                 counts[step.id] = counts.get(step.id, 0) + 1
                 if counts[step.id] > self.registry.max_correction_rounds:
                     self._set_corrections(run, counts=counts)
-                    self.store.update_run(run["id"], status="wartet", reason="Korrekturlimit erreicht")
-                    self.store.open_decision(
+                    self._update_run(run["id"], status="wartet", reason="Korrekturlimit erreicht")
+                    self._open_decision(
                         run["id"], step.id, "korrekturlimit", "tech-lead",
                         f"{self.registry.max_correction_rounds} Korrekturrunden ohne Erfolg",
                         "Befunde bestehen weiter. Weitere Runde zulassen oder Lauf abbrechen?",
@@ -537,14 +602,14 @@ class Engine:
                 self._set_corrections(run, counts=counts, pending={back_to: handoff.blocking_findings()})
                 target = self.registry.step_index(back_to)
                 creator = self.registry.steps[target].role or back_to
-                self.store.update_run(run["id"], step_index=target, reason="")
+                self._update_run(run["id"], step_index=target, reason="")
                 self.store.event(run["id"], "ruecklauf", agent.role, creator,
                                  f"{agent.name} gibt {len(handoff.blocking_findings())} Befund(e) zurück",
                                  {"round": counts[step.id]})
                 return
             decider = step.on_rework.get("decision", "tech-lead")
-            self.store.update_run(run["id"], status="wartet", reason=f"Eskalation an {decider}")
-            self.store.open_decision(
+            self._update_run(run["id"], status="wartet", reason=f"Eskalation an {decider}")
+            self._open_decision(
                 run["id"], step.id, "eskalation", decider, step.on_rework.get("reason", f"Bedenken von {agent.name}"),
                 handoff.summary + "\n" + "\n".join(f"- {f['impact']}" for f in handoff.blocking_findings()),
                 {"agent": agent.id, "findings": handoff.findings}, actor=agent.role,
@@ -624,6 +689,10 @@ class Engine:
             lines.append("Freigegebene Pfade: " + (", ".join(context.get("allowed_paths") or []) or "keine"))
         if agent.role == "akzeptanztest" and _has_ui(run["auftrag"].get("paths") or []):
             lines.append(UI_HINT)
+        if agent.role == "entwicklung" and (context.get("artifacts") or {}).get("integrationstests"):
+            lines.append("Für jeden Integrationstestfall (integrationstests) legst du einen automatisierten Test an, "
+                         "dessen Name die Fall-ID enthält (z. B. test_IT_1_rechte für IT-1). Nur so zählt das "
+                         "Ergebnis an G3; ein grüner Gesamtlauf allein genügt nicht.")
         if agent.role in {"entwicklung", "planung", "architektur"}:
             lines.append("Braucht die Änderung Dateien außerhalb der freigegebenen Pfade, setze status "
                          "entscheidung_offen und nenne in questions genau diese Dateien – liefere keine Teillösung.")
@@ -756,12 +825,22 @@ class Engine:
             try:
                 result = self.sandbox.check(str(implementation["refs"].get("workspace", "")))
                 passed, summary, seconds, command = result.passed, result.summary, result.seconds, result.command
+                output = result.output or result.summary
             except SandboxError as exc:
-                passed, summary, seconds, command = False, str(exc), 0.0, ""
+                passed, summary, seconds, command, output = False, str(exc), 0.0, "", ""
+        cases: dict[str, str] = {}
+        if self._requires_kind(run, "integrationstests"):
+            specified = (self.store.latest_artifact(run["id"], "integrationstests") or {}).get("content", {}).get("items", [])
+            cases = _case_results(output, [str(c.get("key", "")) for c in specified if c.get("key")])
+            open_cases = sorted(k for k, v in cases.items() if v != "bestanden")
+            if passed and open_cases:
+                passed = False
+                summary = (f"Integrationstests ohne bestandenes Ergebnis am Kandidaten: {', '.join(open_cases)}. "
+                           "Je Fall einen automatisierten Test mit der Fall-ID im Namen anlegen (z. B. test_IT_1_…).")
         with self.lock:
             content = {"passed": passed, "digest": implementation["refs"].get("digest"),
                        "implementation_version": implementation["version"], "summary": summary,
-                       "seconds": round(seconds, 1), "command": command}
+                       "seconds": round(seconds, 1), "command": command, "cases": cases}
             self.store.add_artifact(run["id"], "integration", "integration", step.id, content)
             self.store.finish_step(row, "fertig" if passed else "nacharbeit", summary=summary[-500:])
             if passed:
@@ -777,14 +856,14 @@ class Engine:
             back_to = step.on_failure.get("back_to", "entwicklung")
             if counts[step.id] > self.registry.max_correction_rounds:
                 self._set_corrections(run, counts=counts)
-                self.store.update_run(run["id"], status="wartet", reason="Korrekturlimit erreicht")
-                self.store.open_decision(run["id"], step.id, "korrekturlimit", "tech-lead",
+                self._update_run(run["id"], status="wartet", reason="Korrekturlimit erreicht")
+                self._open_decision(run["id"], step.id, "korrekturlimit", "tech-lead",
                                          "Integrationsprüfung wiederholt rot",
                                          "Weitere Runde zulassen oder Lauf abbrechen?",
                                          {"findings": finding, "back_to": back_to}, actor="integration")
                 return
             self._set_corrections(run, counts=counts, pending={back_to: finding})
-            self.store.update_run(run["id"], step_index=self.registry.step_index(back_to))
+            self._update_run(run["id"], step_index=self.registry.step_index(back_to))
             self.store.event(run["id"], "ruecklauf", "integration", "entwicklung", "Integrationsprüfung rot")
 
     # -- Gates -----------------------------------------------------------------------------
@@ -826,8 +905,8 @@ class Engine:
                 scenarios = scenarios_from(self.store.latest_artifact(run["id"], "akzeptanztests"))
                 if scenarios:
                     context["ui_check"] = {"status": "laeuft", "total": len(scenarios)}
-            self.store.update_run(run["id"], status="wartet", reason=f"{step.id} wartet auf {step.decider}")
-            decision = self.store.open_decision(run["id"], step.id, step.id, step.decider or "tech-lead",
+            self._update_run(run["id"], status="wartet", reason=f"{step.id} wartet auf {step.decider}")
+            decision = self._open_decision(run["id"], step.id, step.id, step.decider or "tech-lead",
                                                 f"{step.id} · {step.label}", self._gate_question(run, step),
                                                 context, digest, actor=step.id)
             if scenarios:
@@ -860,9 +939,17 @@ class Engine:
             unknown = sorted({dep for item in packages for dep in item.get("depends_on", []) if dep not in keys})
             if unknown:
                 problems.append(f"Abhängigkeiten auf unbekannte Arbeitspakete: {', '.join(unknown)}")
-            bad_scopes = sorted({item["scope"] for item in packages if item.get("scope") and item["scope"] not in self.scopes})
+            cyclic = _cycles(packages)
+            if cyclic:
+                problems.append(f"Zyklische Abhängigkeiten zwischen Arbeitspaketen: {', '.join(cyclic)}")
+            allowed_scopes = self._project_scope_set(run["auftrag"])
+            bad_scopes = sorted({item["scope"] for item in packages if item.get("scope") and item["scope"] not in allowed_scopes})
             if bad_scopes:
-                problems.append(f"Arbeitspakete nennen nicht freigegebene Änderungsbereiche: {', '.join(bad_scopes)}")
+                problems.append(f"Arbeitspakete nennen Änderungsbereiche außerhalb des Projekts: {', '.join(bad_scopes)}")
+            if run["auftrag"].get("project_class") == "L" and not any(
+                    item.get("v_level") in INTEGRATION_LEVELS for item in packages):
+                problems.append("Projektplan enthält kein Integrationspaket (software_integration oder "
+                                "systemintegration) für den projektweiten Integrationsnachweis")
         if step.id == "G1" and not reviewed("anforderungsbefund", "anforderungen"):
             problems.append("Prüfung gilt nicht für den aktuellen Anforderungsstand")
         if step.id == "G2" and not reviewed("sicherheitsbefund", "architektur"):
@@ -875,11 +962,33 @@ class Engine:
                 problems.append("Integrationsprüfung gehört zu einem anderen Änderungsstand")
             if not reviewed("codebefund", "implementierung", by_digest=True):
                 problems.append("Codeprüfung gehört zu einem anderen Änderungsstand")
-            if self._requires_kind(run, "integrationstests") and not latest("integrationstests"):
-                problems.append("Integrationstests aus der Architektur fehlen")
+            if self._requires_kind(run, "integrationstests"):
+                problems += self._integration_gaps(run)
         if step.id in {"G4", "G5"}:
             problems += self.verify_manifest(run["id"])
         return problems
+
+    def _integration_gaps(self, run: dict[str, Any]) -> list[str]:
+        """Jeder spezifizierte Integrationstestfall braucht ein gültiges Baseline-Kriterium und ein bestandenes
+        Ergebnis im Prüfjob genau dieses Kandidaten (Fall-ID ↔ Kriterium ↔ Digest ↔ Testergebnis)."""
+        cases = (self.store.latest_artifact(run["id"], "integrationstests") or {}).get("content", {}).get("items", [])
+        if not cases:
+            return ["Integrationstests aus der Architektur fehlen"]
+        baseline = (self.store.latest_artifact(run["id"], "baseline") or {}).get("content", {})
+        criteria = _criteria(baseline)
+        integration = (self.store.latest_artifact(run["id"], "integration") or {}).get("content", {})
+        candidate = (self.store.latest_artifact(run["id"], "implementierung") or {}).get("refs", {}).get("digest")
+        results = integration.get("cases", {}) if integration.get("digest") == candidate else {}
+        gaps = []
+        for case in cases:
+            key = str(case.get("key", ""))
+            covers = [str(c) for c in case.get("covers", []) or []]
+            if not any(c in criteria for c in covers):
+                gaps.append(f"Integrationstest {key} sichert kein gültiges Baseline-Kriterium ab")
+            if results.get(key) != "bestanden":
+                state = results.get(key, "fehlt")
+                gaps.append(f"Integrationstest {key} hat am Kandidaten kein bestandenes Ergebnis ({state})")
+        return gaps
 
     def _requires_kind(self, run: dict[str, Any], kind: str) -> bool:
         """Entsteht diese Artefaktart im Zuschnitt des Laufs (Projektklasse)?"""
@@ -896,12 +1005,16 @@ class Engine:
         run = self.store.run(run_id)
         baseline = (self.store.latest_artifact(run_id, "baseline") or {}).get("content", {})
         tests = (self.store.latest_artifact(run_id, "akzeptanztests") or {}).get("content", {}).get("items", [])
-        covered = {str(item.get("criterion", "")).split("/")[0] for item in tests}
+        criteria = _criteria(baseline)
+        covered = {criteria[str(item.get("criterion", ""))] for item in tests if str(item.get("criterion", "")) in criteria}
+        unknown = sorted({str(item.get("criterion", "")) for item in tests if str(item.get("criterion", "")) not in criteria})
+        if unknown:
+            gaps.append(f"Akzeptanztests nennen unbekannte Kriterien: {', '.join(unknown)}")
         for requirement in baseline.get("items", []):
             if requirement.get("key") not in covered:
                 gaps.append(f"Anforderung {requirement.get('key')} hat keinen Akzeptanztest")
-        if self._requires_kind(run, "integrationstests") and self.store.latest_artifact(run_id, "integrationstests") is None:
-            gaps.append("Integrationstests fehlen (Projektklasse M/L)")
+        if self._requires_kind(run, "integrationstests"):
+            gaps += self._integration_gaps(run)
         manifest = (self.store.latest_artifact(run_id, "nachweise") or {}).get("content", {})
         claimed = {item.get("title"): item for item in manifest.get("items", [])}
         for kind in ("anforderungen", "baseline", "implementierung", "integration", "codebefund", "akzeptanztests"):
@@ -1005,16 +1118,36 @@ class Engine:
                 raise EngineError("Entscheidung ist nicht mehr offen")
             self._authorize(user, decision["decider"])
             run = self.store.run(decision["run_id"])
-            self._require_project(user, str(run["auftrag"].get("project", "")), "lesen")
+            self._require_run(user, run, "lesen")
             if run["status"] not in {"wartet", "blockiert"}:
                 raise EngineError("Lauf wartet nicht auf diese Entscheidung")
-            step = self.registry.steps[run["step_index"]]
             gate = decision["gate"]
+            current_id = self._current_step_id(run)
+            stale_rules = gate != "blockade" and (
+                run["registry_digest"] != self.registry.digest
+                or (decision.get("registry_digest") or self.registry.digest) != self.registry.digest)
+            moved = gate in GATE_IDS and current_id and current_id != decision["step_id"]
+            if stale_rules or moved:
+                # Eine unter altem Regelstand oder an einem anderen Schritt geöffnete Entscheidung darf weder
+                # übernehmen noch abschließen: sie verfällt, ein Mensch bewertet den Lauf neu.
+                why = "Regelstand geändert" if stale_rules else "Lauf steht nicht mehr an diesem Schritt"
+                self.store.close_decision(decision_id, "verfallen", "", _person(user), why)
+                if gate == "G4" and self.preview is not None:
+                    self.preview.stop()
+                self._block(run, f"{decision['title']}: Entscheidung verfallen ({why}); Lauf neu bewerten",
+                            "blockade", step_id=current_id or decision["step_id"])
+                raise EngineError(f"Die Entscheidung ist verfallen ({why}); der Lauf wartet auf eine Neubewertung")
+            rebind_index = None
+            if gate == "blockade" and outcome == "annehmen" and run["registry_digest"] != self.registry.digest:
+                rebind_index = self._rebind_index(run)
+            step = self._step_by_id(decision["step_id"]) or self._step_by_id(current_id)
+            if step is None:
+                raise EngineError("Schritt der Entscheidung ist im aktuellen Ablauf nicht vorhanden")
             if decision["digest"] and gate in {"G3", "G4", "G5"}:
                 bound = self.store.latest_artifact(run["id"], step.bind_digest or "implementierung") or {}
                 if bound.get("refs", {}).get("digest") != decision["digest"]:
                     self.store.close_decision(decision_id, "verfallen", "", _person(user), "Digest geändert")
-                    self.store.update_run(run["id"], status="aktiv", reason="")
+                    self._update_run(run["id"], status="aktiv", reason="")
                     raise EngineError("Der Kandidat hat sich geändert; eine neue Entscheidung ist erforderlich")
             person = _person(user)
             self.store.close_decision(decision_id, "angenommen" if outcome == "annehmen" else "abgelehnt",
@@ -1027,19 +1160,37 @@ class Engine:
                     self.preview.stop()
                 if outcome == "annehmen":
                     self._adopt(run, person, decision["digest"])
+            if rebind_index is not None:
+                self._update_run(run["id"], registry_digest=self.registry.digest, step_index=rebind_index)
+                self.store.event(run["id"], "steuerung", f"mensch:{decision['decider']}", "orchestrator",
+                                 f"Lauf auf Registerstand {self.registry.digest[:12]} umgestellt durch {person['name']} "
+                                 f"(Schritt {self.registry.steps[rebind_index].id if rebind_index < len(self.registry.steps) else 'fertig'})")
+                run = self.store.run(run["id"])
             self._apply_decision(run, step, decision, outcome, comment, person)
             return self.store.decision(decision_id)
 
-    def _on_project_defined(self, run: dict[str, Any], person: dict[str, Any]) -> None:
-        """EP1 für Projektklasse L: Projekt mit den Arbeitspaketen aus dem Projektplan anlegen."""
+    def _rebind_index(self, run: dict[str, Any]) -> int:
+        """Neuer Index eines Laufs nach einer Registeränderung – nur über die stabile Schritt-ID."""
+        step_id = self._current_step_id(run)
+        if step_id == "fertig":
+            return len(self.registry.steps)
+        if not step_id or self._step_by_id(step_id) is None:
+            raise EngineError(f"Schritt „{step_id or 'unbekannt'}“ gibt es im aktuellen Ablauf nicht; "
+                              "den Lauf bitte abbrechen und neu einreichen")
+        return self.registry.step_index(step_id)
+
+    def _on_project_defined(self, run: dict[str, Any], person: dict[str, Any], decision: dict[str, Any]) -> None:
+        """EP1 für Projektklasse L: Projekt anlegen und Planungslauf abschließen – atomar und wiederanlauffähig."""
         plan = (self.store.latest_artifact(run["id"], "projektplan") or {}).get("content", {})
         packages = [{key: item.get(key) for key in ("key", "title", "result", "v_level", "acceptance", "wave", "effort",
                                                      "depends_on", "scope", "owner_role", "criticality")
                      if item.get(key) not in (None, "", [])} for item in plan.get("items", [])]
-        project = self.store.create_project(run, packages, person)
-        self.store.event(run["id"], "projekt", "orchestrator", "projektplanung",
-                         f"Projekt {project['id']} mit {len(packages)} Arbeitspaketen angelegt",
-                         {"project_id": project["id"]})
+        project = self.store.complete_with_project(
+            run, packages, person, reason="Projekt definiert; Arbeitspakete laufen als eigene Aufträge",
+            completion="projektplanung", step_index=len(self.registry.steps))
+        self.store.event(run["id"], "projekt", f"mensch:{decision['decider']}", "projektplanung",
+                         f"EP1 Projekt definiert durch {person['name']}: {project['id']} mit {len(packages)} "
+                         "Arbeitspaketen angelegt", {"project_id": project["id"]})
 
     # =================================================================================
     # Projekte und Arbeitspakete (Stufe 2)
@@ -1060,6 +1211,9 @@ class Engine:
                 project = self.store.project(project_id)
             except KeyError:
                 raise EngineError("Projekt nicht gefunden") from None
+            base = project["auftrag"]
+            # Projektrecht vor jeder Auskunft (bestehender Lauf, Vorgänger) und vor jeder Zustandsänderung.
+            self._require_auftrag(user, base, "aendern")
             states = self._package_states(project)
             package = next((item for item in project["packages"] if item["key"] == key), None)
             if package is None:
@@ -1069,10 +1223,15 @@ class Engine:
             open_deps = [dep for dep in package.get("depends_on", []) if states.get(dep) != "fertig"]
             if open_deps:
                 raise EngineError(f"Vorgänger noch nicht fertig: {', '.join(open_deps)}")
-            scope_id = scope or str(package.get("scope") or "")
+            planned = str(package.get("scope") or "")
+            if scope and planned and scope != planned:
+                raise EngineError(f"Arbeitspaket {key} hat den genehmigten Bereich {planned}; er lässt sich beim Start "
+                                  "nicht ersetzen")
+            scope_id = planned or scope
             if not scope_id:
                 raise EngineError("Arbeitspaket nennt keinen Änderungsbereich; bitte einen freigegebenen Bereich wählen")
-            base = project["auftrag"]
+            if scope_id not in self._project_scope_set(base):
+                raise EngineError(f"Änderungsbereich {scope_id} gehört nicht zum Projekt {base.get('project', '')}")
             values = {
                 "title": f"{key} {package['title']}"[:160],
                 "goal": f"{base.get('goal', '')} – Arbeitspaket {key}: {package['result']}"[:2000],
@@ -1085,17 +1244,25 @@ class Engine:
                 "project": base.get("project", "FLOW-PLATFORM"),
                 "execution": base.get("execution", "automatisch"),
                 "project_class": "S",
-                "criticality": str(package.get("criticality") or base.get("criticality") or "K1"),
+                # Kritikalität des Projekts ist die Untergrenze; ein Paket kann sie nur verschärfen.
+                "criticality": _strictest(CRITICALITIES, package.get("criticality"), base.get("criticality"), "K1"),
                 "domain": base.get("domain", "it"),
             }
+            inherited = base.get("change_class_explicit") or ("kritisch" if base.get("change_class") == "kritisch" else "")
+            if inherited:
+                values["change_class"] = inherited  # ausdrückliche Verschärfung des Projekts gilt auch je Paket
             auftrag = self._validated_auftrag(values, user)
             auftrag.update({"project_id": project_id, "package_key": key, "v_level": package.get("v_level", ""),
-                            "parent_run": project["run_id"]})
+                            "parent_run": project["run_id"],
+                            "catalog_bound": bool(base.get("catalog_bound") or base.get("catalog"))})
+            if package.get("v_level") in INTEGRATION_LEVELS:
+                auftrag["integration_required"] = True  # projektweiter Integrationsnachweis (Schritt integrationstests)
             try:
-                run = self.store.create_run(title=auftrag["title"], change_class=auftrag["change_class"], auftrag=auftrag,
-                                            requested_by=_person(user), registry_digest=self.registry.digest,
-                                            idempotency_key=f"{project_id}:{key}")
-                self.store.attach_package_run(project_id, key, run["id"], _person(user))
+                run = self.store.create_package_run(
+                    project_id, key, _person(user), title=auftrag["title"], change_class=auftrag["change_class"],
+                    auftrag=auftrag, requested_by=_person(user), registry_digest=self.registry.digest,
+                    idempotency_key=f"{project_id}:{key}", announce=True,
+                    step_id=self.registry.steps[0].id)
             except ValueError as exc:
                 raise EngineError(str(exc)) from None
             wave = package.get("wave", 1)
@@ -1138,8 +1305,11 @@ class Engine:
                              "run_status": run["status"] if run else "",
                              "started_by": item["started_by"].get("name", "") if item["started_by"] else ""})
         values = list(states.values())
+        integration_done = any(states[item["key"]] == "fertig" and item.get("v_level") in INTEGRATION_LEVELS
+                               for item in project["packages"])
         if values and all(state == "fertig" for state in values):
-            status = "abgeschlossen"
+            # Ohne fertiges Integrationspaket fehlt der projektweite Integrationsnachweis.
+            status = "abgeschlossen" if integration_done else "nachweis_offen"
         elif any(state == "in_arbeit" for state in values):
             status = "in_arbeit"
         else:
@@ -1182,59 +1352,51 @@ class Engine:
         if gate in GATE_IDS:
             if accepted:
                 if gate == "EP1" and run["auftrag"].get("project_class") in step.completes_for:
-                    self.store.update_run(run["id"], status="abgeschlossen", step_index=len(self.registry.steps),
-                                          reason="Projekt definiert; Arbeitspakete laufen als eigene Aufträge")
-                    self.store.event(run["id"], "projekt", f"mensch:{decision['decider']}", "projektplanung",
-                                     f"EP1 Projekt definiert durch {person['name']}")
-                    self._on_project_defined(run, person)
+                    self._on_project_defined(run, person, decision)  # Projekt und Abschluss in einer Transaktion
                     return
                 if gate == "G5":
-                    self.store.update_run(run["id"], status="abgeschlossen", step_index=len(self.registry.steps),
-                                          reason="Produktionsfreigabe protokolliert; Auslieferung manuell")
+                    self._update_run(run["id"], status="abgeschlossen", step_index=len(self.registry.steps),
+                                     completion="produktion",
+                                     reason="Produktionsfreigabe protokolliert; Auslieferung manuell")
                     self.store.event(run["id"], "abschluss", "release", "release", "Lauf abgeschlossen")
                     return
-                self.store.update_run(run["id"], status="aktiv", reason="")
+                self._update_run(run["id"], status="aktiv", reason="")
                 self._advance(run, step, f"{gate} durch {person['name']} bestätigt")
                 return
             if gate == "G5":
-                self.store.update_run(run["id"], status="abgelehnt", reason=f"Produktion abgelehnt: {comment}")
+                self._update_run(run["id"], status="abgelehnt", reason=f"Produktion abgelehnt: {comment}")
                 return
             back_to = GATE_BACK_TO[gate]
             finding = [{"severity": "hoch", "location": gate, "impact": comment,
                         "recommendation": f"Rückmeldung von {person['name']} umsetzen"}]
             self._set_corrections(run, pending={back_to: finding})
-            self.store.update_run(run["id"], status="aktiv", step_index=self.registry.step_index(back_to), reason="")
+            self._update_run(run["id"], status="aktiv", step_index=self.registry.step_index(back_to), reason="")
             self.store.event(run["id"], "ruecklauf", f"mensch:{decision['decider']}", self.registry.steps[
                 self.registry.step_index(back_to)].role or back_to, f"{gate} abgelehnt: {comment[:120]}")
             return
         if not accepted:
-            self.store.update_run(run["id"], status="abgebrochen", reason=f"{decision['title']}: abgelehnt – {comment}")
+            self._update_run(run["id"], status="abgebrochen", reason=f"{decision['title']}: abgelehnt – {comment}")
             self.store.event(run["id"], "abbruch", f"mensch:{decision['decider']}", "orchestrator", "Lauf abgebrochen")
             return
         if gate == "eskalation":
-            self.store.update_run(run["id"], status="aktiv", reason="")
+            self._update_run(run["id"], status="aktiv", reason="")
             self._advance(run, step, f"Fortsetzung trotz Bedenken durch {person['name']}")
         elif gate == "korrekturlimit":
             counts = dict(run["corrections"].get("counts", {}))
             counts[decision["step_id"]] = 0
             back_to = decision["context"].get("back_to") or step.id
             self._set_corrections(run, counts=counts, pending={back_to: decision["context"].get("findings", [])})
-            self.store.update_run(run["id"], status="aktiv", step_index=self.registry.step_index(back_to), reason="")
+            self._update_run(run["id"], status="aktiv", step_index=self.registry.step_index(back_to), reason="")
         else:  # frage, blockade: denselben Schritt mit der Antwort erneut ausführen
             if gate == "blockade" and run["reason"].startswith("Laufbudget"):
                 current = self.store.run(run["id"])["corrections"]
                 bonus = current.get("budget_bonus", {})
                 current["budget_bonus"] = {"max_model_calls": int(bonus.get("max_model_calls", 0)) + 20,
                                            "max_output_tokens": int(bonus.get("max_output_tokens", 0)) + 60000}
-                self.store.update_run(run["id"], corrections=current)
+                self._update_run(run["id"], corrections=current)
                 self.store.event(run["id"], "steuerung", f"mensch:{decision['decider']}", "orchestrator",
                                  f"Laufbudget um 20 Modellaufrufe erhöht durch {person['name']}")
-            if gate == "blockade" and run["registry_digest"] != self.registry.digest:
-                # Ein Mensch stellt den Lauf bewusst auf den aktuellen Regelstand um.
-                self.store.update_run(run["id"], registry_digest=self.registry.digest)
-                self.store.event(run["id"], "steuerung", f"mensch:{decision['decider']}", "orchestrator",
-                                 f"Lauf auf Registerstand {self.registry.digest[:12]} umgestellt durch {person['name']}")
-            self.store.update_run(run["id"], status="aktiv", reason="")
+            self._update_run(run["id"], status="aktiv", reason="")
 
     # -- Fachagenten (außerhalb des V-Modells, nur lokale Modelle, nur Entwürfe) ----------------
     def _local_profiles(self) -> dict[str, Any]:
@@ -1457,11 +1619,43 @@ class Engine:
     def project_roles(code: str) -> dict[str, str]:
         return {right: f"flow-prj-{code.lower()}-{right}" for right in ("lesen", "aendern")}
 
-    def project_access(self, user: dict[str, Any], code: str) -> str:
-        """Recht einer Person im Projekt: aendern, lesen oder leer. Projekte außerhalb des Katalogs
-        (Altaufträge) sind nicht zugeordnet und bleiben für alle wie bisher bearbeitbar."""
-        if not self.projects or code not in self.projects:
+    def auftrag_access(self, user: dict[str, Any], auftrag: dict[str, Any]) -> str:
+        """Recht einer Person an einem Auftrag. Nur echte Altaufträge (nie an den Katalog gebunden) sind offen;
+        eine Katalogbindung bleibt erhalten, auch wenn Katalogdatei oder Projektcode später fehlen."""
+        code = str(auftrag.get("project", ""))
+        bound = bool(auftrag.get("catalog_bound") or auftrag.get("catalog"))
+        if code in self.projects:
+            return self.project_access(user, code)
+        if not bound:
             return "aendern"
+        roles = {str(r) for r in user.get("roles", [])}
+        return "lesen" if roles & OVERSIGHT_ROLES else ""
+
+    def can_see_run(self, user: dict[str, Any], run: dict[str, Any]) -> bool:
+        roles = {str(r) for r in user.get("roles", [])}
+        return bool(self.auftrag_access(user, run["auftrag"])) or bool(roles & OVERSIGHT_ROLES)
+
+    def _require_auftrag(self, user: dict[str, Any], auftrag: dict[str, Any], need: str) -> None:
+        access = self.auftrag_access(user, auftrag)
+        if access == "aendern" or (need == "lesen" and access == "lesen"):
+            return
+        code = str(auftrag.get("project", ""))
+        raise EngineError(f"Keine Befugnis im Projekt {code}: {'Änderungsrecht' if need == 'aendern' else 'Projektmitgliedschaft'}"
+                          f" fehlt (AD-Gruppe AD-GG-FLOW-PRJ-{code}-{'AENDERN' if need == 'aendern' else 'LESEN'})")
+
+    def _require_run(self, user: dict[str, Any], run: dict[str, Any], need: str) -> None:
+        self._require_auftrag(user, run["auftrag"], need)
+
+    def _project_scope_set(self, auftrag: dict[str, Any]) -> set[str]:
+        code = str(auftrag.get("project", ""))
+        return set(self.project_scopes(code)) if code in self.projects else set(self.scopes)
+
+    def project_access(self, user: dict[str, Any], code: str) -> str:
+        """Recht einer Person in einem Katalogprojekt: aendern, lesen oder leer (ohne Katalog: frei)."""
+        if not self.projects:
+            return "aendern"
+        if code not in self.projects:
+            return ""
         roles = {str(r) for r in user.get("roles", [])}
         if self.demo_mode and "platform-admin" in roles:
             return "aendern"
@@ -1502,14 +1696,15 @@ class Engine:
                        else "neue_funktion", "project_class": "L", "criticality": spec.get("criticality", "K1"),
                        "domain": spec.get("domain", "it"), "scope": "", "scope_label": "", "paths": [],
                        "reference_paths": [], "project": code, "execution": "automatisch",
-                       "owner": spec.get("owner", "Projektkatalog"), "catalog": True}
+                       "owner": spec.get("owner", "Projektkatalog"), "catalog": True, "catalog_bound": True}
             with self.lock:
                 run = self.store.create_run(title=spec["title"], change_class=auftrag["change_class"], auftrag=auftrag,
                                             requested_by=CATALOG_OWNER, registry_digest=self.registry.digest,
                                             idempotency_key=f"katalog:{code}", announce=False)
-                self.store.update_run(run["id"], status="abgeschlossen", step_index=len(self.registry.steps),
-                                      reason="Projekt aus dem Projektkatalog angelegt; Arbeitspakete laufen als eigene Aufträge")
-                project = self.store.create_project(run, packages, CATALOG_OWNER, project_id=project_id)
+                project = self.store.complete_with_project(
+                    run, packages, CATALOG_OWNER, project_id=project_id, completion="katalog",
+                    step_index=len(self.registry.steps),
+                    reason="Projekt aus dem Projektkatalog angelegt; Arbeitspakete laufen als eigene Aufträge")
                 self.store.event(run["id"], "projekt", "orchestrator", "projektplanung",
                                  f"Projekt {project['id']} aus dem Projektkatalog mit {len(packages)} Arbeitspaketen angelegt",
                                  {"project_id": project["id"]})
@@ -1549,12 +1744,14 @@ class Engine:
                 if action == "resume":
                     for item in self.store.runs(limit=200):
                         if item["status"] == "pausiert":
-                            self.store.update_run(item["id"], status="aktiv", reason="")
+                            self._update_run(item["id"], status="aktiv", reason="")
             elif action == "cancel" and run_id:
                 run = self.store.run(run_id)
+                if not roles & CROSS_PROJECT_OPERATIONS:
+                    self._require_run(user, run, "aendern")  # Tech Lead/Betrieb nur im eigenen Projekt
                 if run["status"] not in OPEN_RUN_STATES:
                     raise EngineError("Lauf ist bereits beendet")
-                self.store.update_run(run_id, status="abgebrochen", reason=f"durch {actor} abgebrochen")
+                self._update_run(run_id, status="abgebrochen", reason=f"durch {actor} abgebrochen")
                 if self.preview is not None and any(
                         d["gate"] == "G4" for d in self.store.decisions(status="offen", run_id=run_id)):
                     self.preview.stop()
@@ -1570,10 +1767,10 @@ class Engine:
     def _advance(self, run: dict[str, Any], step: Step, message: str) -> None:
         index = self._next_applicable(run, self.registry.step_index(step.id) + 1)
         if index >= len(self.registry.steps):
-            self.store.update_run(run["id"], status="abgeschlossen", step_index=index, reason="")
+            self._update_run(run["id"], status="abgeschlossen", step_index=index, reason="")
             return
         following = self.registry.steps[index]
-        self.store.update_run(run["id"], step_index=index, status="aktiv", reason="")
+        self._update_run(run["id"], step_index=index, status="aktiv", reason="")
         source = step.role or ("integration" if step.kind == "check" else step.id)
         target = following.role or ("integration" if following.kind == "check" else following.id)
         self.store.event(run["id"], "uebergabe", source, target, f"{message} → {following.label}",
@@ -1582,8 +1779,8 @@ class Engine:
     def _block(self, run: dict[str, Any], reason: str, gate: str, *, step_id: str) -> None:
         step = next((s for s in self.registry.steps if s.id == step_id), None)
         actor = (step.role or ("integration" if step.kind == "check" else step.id)) if step else "orchestrator"
-        self.store.update_run(run["id"], status="blockiert", reason=reason[:500])
-        self.store.open_decision(run["id"], step_id, gate, "tech-lead", "Lauf blockiert", reason[:1500],
+        self._update_run(run["id"], status="blockiert", reason=reason[:500])
+        self._open_decision(run["id"], step_id, gate, "tech-lead", "Lauf blockiert", reason[:1500],
                                  {"step": step_id}, actor=actor)
 
     def _set_corrections(
@@ -1595,13 +1792,13 @@ class Engine:
             current["counts"] = counts
         if pending is not None:
             current["pending"] = {**current.get("pending", {}), **pending}
-        self.store.update_run(run["id"], corrections=current)
+        self._update_run(run["id"], corrections=current)
 
     def _clear_pending(self, run: dict[str, Any], step_id: str) -> None:
         current = self.store.run(run["id"])["corrections"]
         if step_id in current.get("pending", {}):
             current["pending"].pop(step_id)
-            self.store.update_run(run["id"], corrections=current)
+            self._update_run(run["id"], corrections=current)
 
     # =================================================================================
     # Sicht für FLOWPORTAL
@@ -1609,6 +1806,7 @@ class Engine:
     def overview(self) -> dict[str, Any]:
         runs = self.store.runs(limit=30)
         open_decisions = self.store.decisions(status="offen")
+        referenced: set[str] = set()
         running = {(step["run_id"], step["role"]) for step in self.store.running_steps()}
         controls = self.store.controls()
         events = self.store.events(limit=60)
@@ -1635,9 +1833,11 @@ class Engine:
             if controls.get(f"agent:{agent.role}") == "pausiert":
                 state = "pausiert"
             last = next((e for e in reversed(events) if e["actor"] == agent.role), None)
+            if current:
+                referenced.add(current["run_id"])
             agents.append({**agent.public(), "rights": self._agent_rights(agent), "state": state, "current": current,
                            "overridden": sorted((self.registry.overrides.get(agent.role) or {}).keys()),
-                           "last": {"message": last["message"], "at": last["at"]} if last else None})
+                           "last": {"message": last["message"], "at": last["at"], "run_id": last["run_id"]} if last else None})
         edges: Counter[tuple[str, str, str]] = Counter()
         last_seen: dict[tuple[str, str, str], str] = {}
         for event in self.store.events(limit=400):
@@ -1646,8 +1846,19 @@ class Engine:
                 edges[key] += 1
                 last_seen[key] = event["at"]
         steps = self.registry.steps
+        usage_by_run = self.store.usage_by_run()
+        projects = self.store.projects(limit=20)
+        referenced |= {r["id"] for r in runs} | {d["run_id"] for d in open_decisions}
+        referenced |= {e["run_id"] for e in events if e.get("run_id")} | {u["run_id"] for u in usage_by_run}
+        for project in projects:
+            referenced |= {project["run_id"], *(p["run_id"] for p in project["packages"] if p["run_id"])}
         return {
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            # Für die Rechtefilter der Plattform: Projektbindung jedes Laufs, der in dieser Übersicht vorkommt.
+            "access": {"runs": self._access_map(referenced),
+                       "projects": {p["id"]: {"project": p["auftrag"].get("project", ""),
+                                              "bound": bool(p["auftrag"].get("catalog_bound") or p["auftrag"].get("catalog"))}
+                                    for p in projects}},
             "control": controls.get("global", "bereit"),
             "agent_controls": {k[6:]: v for k, v in controls.items() if k.startswith("agent:")},
             "demo_mode": self.demo_mode,
@@ -1665,7 +1876,7 @@ class Engine:
                           "ep": s.ep, "when": {k: list(v) for k, v in s.when.items()}, "produces": s.produces,
                           "subject": s.subject} for s in steps],
             "runs": [self._run_summary(run, open_decisions) for run in runs],
-            "projects": [self.project_summary(project) for project in self.store.projects(limit=20)],
+            "projects": [self.project_summary(project) for project in projects],
             "project_catalog": self.project_catalog(),
             "business": self.business_overview(),
             "decisions": [self._decision_summary(d, {r["id"]: r for r in runs}) for d in open_decisions],
@@ -1674,15 +1885,29 @@ class Engine:
                 {"from": a, "to": b, "kind": kind, "count": count, "last_at": last_seen[(a, b, kind)]}
                 for (a, b, kind), count in edges.most_common(60)
             ],
-            "usage": {"totals": self.store.usage_totals(), "by_run": self.store.usage_by_run()},
+            "usage": {"totals": self.store.usage_totals(), "by_run": usage_by_run},
             "metrics": {
                 "runs_open": sum(1 for r in runs if r["status"] in OPEN_RUN_STATES),
-                "runs_done": sum(1 for r in runs if r["status"] == "abgeschlossen"),
+                # Nur Produktionsfreigaben nach G5 zählen als erledigt; Planung und Katalog getrennt.
+                "runs_done": sum(1 for r in runs if self._completion(r) == "produktion"),
+                "runs_planned": sum(1 for r in runs if self._completion(r) == "projektplanung"),
+                "projects_from_catalog": sum(1 for r in runs if self._completion(r) == "katalog"),
                 "decisions_open": len(open_decisions),
                 "agents_working": sum(1 for a in agents if a["state"] == "arbeitet"),
                 "reworks": sum(1 for e in events if e["kind"] == "ruecklauf"),
             },
         }
+
+    def _access_map(self, run_ids: set[str]) -> dict[str, dict[str, Any]]:
+        result = {}
+        for run_id in run_ids:
+            try:
+                auftrag = self.store.run(run_id)["auftrag"]
+            except KeyError:
+                continue
+            result[run_id] = {"project": str(auftrag.get("project", "")),
+                              "bound": bool(auftrag.get("catalog_bound") or auftrag.get("catalog"))}
+        return result
 
     def _run_summary(self, run: dict[str, Any], open_decisions: list[dict[str, Any]]) -> dict[str, Any]:
         steps = self.registry.steps
@@ -1701,7 +1926,7 @@ class Engine:
             "criticality": auftrag.get("criticality", "K1"), "domain": auftrag.get("domain", "it"),
             "project_id": auftrag.get("project_id", ""), "package_key": auftrag.get("package_key", ""),
             "project": auftrag.get("project", ""), "requested_by": run["requested_by"].get("name"), "updated_at": run["updated_at"],
-            "created_at": run["created_at"], "model_calls": run["model_calls"],
+            "created_at": run["created_at"], "model_calls": run["model_calls"], "completion": self._completion(run),
             "waiting_for": waiting["decider"] if waiting else None,
             "preview_url": (waiting or {}).get("context", {}).get("preview_url"),
             "branch": ((self.store.latest_artifact(run["id"], "uebernahme") or {}).get("content") or {}).get("branch"),
@@ -1772,8 +1997,11 @@ class Engine:
                 kinds.append(target.produces)
         return list(dict.fromkeys(kinds or ["auftrag"]))
 
-    def run_detail(self, run_id: str) -> dict[str, Any]:
+    def run_detail(self, run_id: str, user: dict[str, Any] | None = None) -> dict[str, Any]:
         run = self.store.run(run_id)
+        if user is not None and not self.can_see_run(user, run):
+            raise KeyError(run_id)  # wie „nicht gefunden“: keine Auskunft über fremde Läufe
+        completion = self._completion(run)
         return {
             "run": run,
             "summary": self._run_summary(run, self.store.decisions(status="offen")),
@@ -1783,9 +2011,26 @@ class Engine:
                           for a in self.store.artifacts(run_id)],
             "decisions": self.store.decisions(run_id=run_id),
             "events": self.store.events(run_id=run_id, limit=300),
-            "manifest_gaps": self.verify_manifest(run_id),
+            # Katalog- und Planungsläufe liefern nichts aus: keine Release-Manifestprüfung.
+            "manifest_gaps": [] if completion in {"katalog", "projektplanung"} else self.verify_manifest(run_id),
+            "completion": completion,
             "project": self._project_of(run_id),
         }
+
+    @staticmethod
+    def _completion(run: dict[str, Any]) -> str:
+        """Abschlussart; Altläufe ohne gespeicherte Art werden aus Katalogkennung und Grund abgeleitet."""
+        if run["status"] != "abgeschlossen":
+            return ""
+        if run.get("completion"):
+            return str(run["completion"])
+        if run["auftrag"].get("catalog"):
+            return "katalog"
+        if str(run.get("reason", "")).startswith("Projekt definiert"):
+            return "projektplanung"
+        if str(run.get("reason", "")).startswith("Produktionsfreigabe"):
+            return "produktion"
+        return "ende"
 
     def _project_of(self, run_id: str) -> dict[str, Any] | None:
         project = self.store.project_for_run(run_id)
@@ -1854,6 +2099,64 @@ def _require_real_change(role: str, handoff: Handoff, originals: dict[str, str |
         raise ContractError("alle gelieferten Dateien sind identisch mit dem Ausgangsstand – liefere die "
                             "geänderten Inhalte (vollständige Datei mit deinen Änderungen) oder status "
                             "entscheidung_offen mit der Begründung, warum keine Änderung nötig ist")
+
+
+def _strictest(order: tuple[str, ...], *values: Any) -> str:
+    """Strengster gültiger Wert (spätester in ``order``); ungültige oder leere Werte zählen nicht."""
+    valid = [str(v) for v in values if str(v or "") in order]
+    return max(valid, key=order.index) if valid else order[0]
+
+
+def _case_results(output: str, keys: list[str]) -> dict[str, str]:
+    """Ergebnis je Testfall-ID aus der Ausgabe des Prüfjobs (z. B. ``PASSED tests/x.py::test_IT_1_rechte``).
+
+    Ein Fall gilt nur als bestanden, wenn ein Test mit seiner ID ausdrücklich bestanden hat und keiner
+    mit seiner ID fehlschlug. Ohne Treffer bleibt er „fehlt“ – ein grüner Gesamtlauf genügt nicht.
+    """
+    results = {}
+    lines = output.splitlines()
+    for key in keys:
+        variants = {key, key.replace("-", "_")}
+        pattern = re.compile("|".join(rf"(?<![A-Za-z0-9]){re.escape(v)}(?![0-9A-Za-z])" for v in variants), re.IGNORECASE)
+        hits = [line for line in lines if pattern.search(line)]
+        failed = any(re.search(r"\b(FAILED|ERROR|FAIL)\b|^not ok", line) for line in hits)
+        passed = any(re.search(r"\b(PASSED|PASS)\b|^ok\b", line) for line in hits)
+        results[key] = "fehlgeschlagen" if failed else "bestanden" if passed else "fehlt"
+    return results
+
+
+def _criteria(baseline: dict[str, Any]) -> dict[str, str]:
+    """Gültige Kriterien der Arbeitsbaseline als ``R1/AC-1`` → Anforderung ``R1``."""
+    result = {}
+    for requirement in baseline.get("items", []):
+        for criterion in requirement.get("acceptance_criteria", []) or []:
+            label = str(criterion).split(":", 1)[0].strip()
+            if label:
+                result[f"{requirement.get('key')}/{label}"] = str(requirement.get("key"))
+    return result
+
+
+def _cycles(packages: list[dict[str, Any]]) -> list[str]:
+    """Arbeitspakete, die in einem Abhängigkeitszyklus liegen."""
+    graph = {str(item.get("key")): [str(d) for d in item.get("depends_on", []) or []] for item in packages}
+    state: dict[str, int] = {}
+    cyclic: set[str] = set()
+
+    def visit(node: str, path: list[str]) -> None:
+        if state.get(node) == 2:
+            return
+        if state.get(node) == 1:
+            cyclic.update(path[path.index(node):])
+            return
+        state[node] = 1
+        for dep in graph.get(node, []):
+            if dep in graph:
+                visit(dep, [*path, dep])
+        state[node] = 2
+
+    for node in graph:
+        visit(node, [node])
+    return sorted(cyclic)
 
 
 def _limit(agent: Agent) -> int | None:

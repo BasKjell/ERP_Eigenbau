@@ -112,7 +112,8 @@ def person(request: Request) -> dict[str, Any] | None:
     identity = getattr(request.state, "identity", None)
     if identity:
         return identity
-    return DEMO_PERSON if settings.auth_mode != "oidc" else None
+    # Anonyme Plattformrechte nur in der ausdrücklich gewählten lokalen Demo (Loopback, beim Start geprüft).
+    return DEMO_PERSON if settings.auth_mode == "demo" else None
 
 
 # -- Projektrechte (agents/projects.json → AD-Gruppen AD-GG-FLOW-PRJ-* → Realm-Rollen flow-prj-*) -------
@@ -135,35 +136,72 @@ def project_rights(catalog: dict[str, Any], user: dict[str, Any], demo_mode: boo
     return result
 
 
-def project_visible(catalog: dict[str, Any], user: dict[str, Any], code: str, demo_mode: bool) -> bool:
-    if code not in catalog:
-        return True  # Altaufträge ohne Katalogprojekt bleiben für alle sichtbar
+def project_visible(catalog: dict[str, Any], user: dict[str, Any], code: str, demo_mode: bool,
+                    bound: bool = False) -> bool:
+    """Darf die Person Läufe dieses Projekts sehen? Nur nie gebundene Altaufträge sind offen;
+    eine Katalogbindung bleibt geschützt, auch wenn das Projekt im Katalog fehlt."""
     if {str(r) for r in user.get("roles", [])} & OVERSIGHT_ROLES:
         return True
-    return bool(project_rights(catalog, user, demo_mode).get(code))
+    if code in catalog:
+        return bool(project_rights(catalog, user, demo_mode).get(code))
+    return not bound
 
 
 def visible_overview(overview: dict[str, Any], user: dict[str, Any]) -> dict[str, Any]:
+    """Alle personenbezogenen Teile der Übersicht aus derselben berechtigten Laufmenge bilden.
+
+    Grundlage ist ``access.runs`` (Projektbindung jedes Laufs, der in der Übersicht vorkommt). Ein
+    Lauf ohne Eintrag gilt als nicht sichtbar (fail closed).
+    """
     catalog = overview.get("project_catalog") or {}
-    if not catalog:
-        return overview
     demo = bool(overview.get("demo_mode"))
+    access = (overview.get("access") or {}).get("runs") or {}
+    project_access = (overview.get("access") or {}).get("projects") or {}
 
-    def shown(code: Any) -> bool:
-        return project_visible(catalog, user, str(code or ""), demo)
+    def run_ok(run_id: Any) -> bool:
+        if not run_id:
+            return True  # Ereignisse ohne Lauf (Betrieb, Steuerung)
+        info = access.get(str(run_id))
+        return bool(info) and project_visible(catalog, user, str(info.get("project", "")), demo, bool(info.get("bound")))
 
-    runs = overview.get("runs") or []
-    hidden = {run.get("id") for run in runs if not shown(run.get("project"))}
     result = dict(overview)
-    result["runs"] = [run for run in runs if run.get("id") not in hidden]
-    result["projects"] = [p for p in overview.get("projects") or [] if shown(p.get("code"))]
-    result["decisions"] = [d for d in overview.get("decisions") or []
-                           if d.get("run_id") not in hidden and shown((d.get("auftrag") or {}).get("project"))]
-    result["events"] = [e for e in overview.get("events") or [] if e.get("run_id") not in hidden]
-    result["project_catalog"] = {code: spec for code, spec in catalog.items() if shown(code)}
+    runs = overview.get("runs") or []
+    result["runs"] = [run for run in runs if run_ok(run.get("id"))]
+    result["projects"] = [p for p in overview.get("projects") or []
+                          if run_ok(p.get("run_id")) and project_visible(
+                              catalog, user, str(p.get("code") or ""), demo,
+                              bool((project_access.get(str(p.get("id"))) or {}).get("bound")))]
+    result["decisions"] = [d for d in overview.get("decisions") or [] if run_ok(d.get("run_id"))]
+    result["events"] = [e for e in overview.get("events") or [] if run_ok(e.get("run_id"))]
+    usage = dict(overview.get("usage") or {})
+    usage["by_run"] = [u for u in usage.get("by_run") or [] if run_ok(u.get("run_id"))]
+    result["usage"] = usage
+    agents = []
+    for agent in overview.get("agents") or []:
+        agent = dict(agent)
+        if agent.get("current") and not run_ok(agent["current"].get("run_id")):
+            agent["current"] = None  # Agent arbeitet für ein fremdes Projekt: Zustand ja, Auftrag nein
+        if agent.get("last") and not run_ok(agent["last"].get("run_id")):
+            agent["last"] = None
+        agents.append(agent)
+    result["agents"] = agents
+    result["project_catalog"] = {code: spec for code, spec in catalog.items()
+                                 if project_visible(catalog, user, code, demo, True)}
+    metrics = dict(overview.get("metrics") or {})
+    metrics.update({
+        "runs_open": sum(1 for r in result["runs"] if r.get("status") in {"aktiv", "wartet", "blockiert", "pausiert"}),
+        "runs_done": sum(1 for r in result["runs"] if r.get("completion") == "produktion"),
+        "decisions_open": len(result["decisions"]),
+    })
+    result["metrics"] = metrics
+    result.pop("access", None)
+    hidden = len(runs) - len(result["runs"])
     if hidden:
-        result["hidden_runs"] = len(hidden)
+        result["hidden_runs"] = hidden
     return result
+
+
+SERVICE_IDENTITY: dict[str, Any] = {"username": "", "roles": []}
 
 
 # -- Fachagenten: Sichtbarkeit und Hintergrunddaten ------------------------------------------
@@ -369,10 +407,13 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
     def agents_run(run_id: str, request: Request) -> dict[str, Any]:
         if not run_id.replace("-", "").isalnum():
             raise HTTPException(status_code=404, detail="Lauf nicht gefunden")
-        detail = forward("detail", {"run_id": run_id}, request, with_person=False)
+        # Der Orchestrator prüft die Detailrechte mit der Identität der anfragenden Person.
+        detail = forward("detail", {"run_id": run_id}, request, with_person=True)
         catalog = (agents.overview().get("project_catalog") or {})
-        code = str(((detail.get("run") or {}).get("auftrag") or {}).get("project", ""))
-        if not project_visible(catalog, person(request) or {}, code, bool(agents.overview().get("demo_mode"))):
+        auftrag = (detail.get("run") or {}).get("auftrag") or {}
+        bound = bool(auftrag.get("catalog_bound") or auftrag.get("catalog"))
+        if not project_visible(catalog, person(request) or {}, str(auftrag.get("project", "")),
+                               bool(agents.overview().get("demo_mode")), bound):
             raise HTTPException(status_code=404, detail="Lauf nicht gefunden")
         return detail
 
@@ -408,7 +449,9 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
     @router.get("/api/agents/internal/status", include_in_schema=False)
     def internal_status(authorization: Annotated[str, Header()] = "") -> dict[str, Any]:
         internal(authorization)
-        overview = agents.overview()
+        # FLOWAI ruft mit Dienstrecht ohne Person: nur Altaufträge ohne Projektbindung, keine Projektdaten.
+        full = agents.overview()
+        overview = visible_overview(full, SERVICE_IDENTITY)
         try:
             scopes = agents.registry().get("scopes", {})
         except AgentsUnavailable:
@@ -422,6 +465,8 @@ def build_router(rm_adapter: RMAdapter, agents: AgentsHub, dms: DmsService, draf
                                       for d in overview.get("decisions", [])],
             "offene_vorschlaege": [{"id": d["id"], "title": d["title"]} for d in drafts.open()],
             "aenderungsbereiche": scopes,
+            "geschuetzte_projektauftraege": overview.get("hidden_runs", 0),
+            "hinweis": "Aufträge in Katalogprojekten sieht nur, wer im Portal das Projektrecht hat.",
         }
 
     @router.get("/api/agents/drafts", tags=["agents"])

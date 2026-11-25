@@ -76,6 +76,9 @@ class Settings:
         "READINESS_REQUIRE_INTEGRATIONS"
     )
     auth_mode: str = os.getenv("AUTH_MODE", "demo").strip().casefold()
+    # Adresse, an die Compose den Port der Plattform bindet. Der Demo-Modus ohne Anmeldung ist nur an
+    # Loopback zulässig; gemeinsam erreichbare Instanzen setzen OIDC voraus (siehe check_auth_exposure).
+    platform_bind: str = os.getenv("PLATFORM_BIND", "127.0.0.1").strip()
     auth_session_secret: str = os.getenv(
         "AUTH_SESSION_SECRET", "local-session-secret-change-before-network-use"
     )
@@ -101,3 +104,16 @@ class Settings:
 
 
 settings = Settings()
+
+
+LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
+
+
+def check_auth_exposure(current: Settings) -> None:
+    """Fail closed: ohne Anmeldung (AUTH_MODE=demo) erhält jede Anfrage Plattformrechte. Das ist nur für eine
+    lokale Demo an Loopback vertretbar. Unbekannte Modi und Demo an einer erreichbaren Adresse starten nicht."""
+    if current.auth_mode not in {"oidc", "demo"}:
+        raise RuntimeError(f"AUTH_MODE={current.auth_mode!r} unbekannt (oidc oder demo)")
+    if current.auth_mode == "demo" and current.platform_bind not in LOOPBACK:
+        raise RuntimeError(f"AUTH_MODE=demo ist nur an Loopback zulässig, nicht an {current.platform_bind!r}; "
+                           "für gemeinsam erreichbare Instanzen AUTH_MODE=oidc setzen")

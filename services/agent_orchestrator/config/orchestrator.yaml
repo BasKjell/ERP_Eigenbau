@@ -44,7 +44,7 @@ sandbox:
     export PYTHONPATH=$PWD DEMO_DATA_FILE=/tmp/scenario.json DEMO_SEED_FILE=$PWD/seed/scenario.json
     DOCUMENT_DIR=/tmp/w/output/pdf AGENT_REGISTRY_DIR=/tmp/w/agents MCP_AUDIT_FILE=/tmp/mcp-audit.jsonl &&
     ruff check app tests &&
-    python -m pytest -q -p no:cacheprovider tests --ignore=tests/integration
+    python -m pytest -q -rA -p no:cacheprovider tests --ignore=tests/integration
 
 # Freigegebene Änderungsbereiche. Ein Fachauftrag wählt genau einen Bereich; der
 # Entwicklungs-Agent darf nur diese Dateien ändern. Erweiterung ist Klasse K.

@@ -28,7 +28,7 @@ from .agent_drafts import DraftService
 from .agents_bff import AgentsHub, AgentUsageCollector
 from .assistant import answer_question
 from .auth import AuthError, OidcAuth
-from .config import settings
+from .config import check_auth_exposure, settings
 from .desksharing import (
     DesksharingError,
     DesksharingNotFoundError,
@@ -60,6 +60,7 @@ finance_service = FinanceService(store)
 reporting_service = LiveReportingService(finance_service, mes_service, settings)
 quality_service = QualityService(store, settings)
 workplace_service = WorkplaceService(store)
+check_auth_exposure(settings)  # Demo ohne Anmeldung nur an Loopback, sonst kein Start
 oidc_auth = OidcAuth(settings)
 rm_adapter = RMAdapter(store, work_service)
 agents_hub = AgentsHub()

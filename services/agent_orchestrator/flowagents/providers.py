@@ -317,7 +317,7 @@ class SimulatedProvider:
             ("AP-1", "Anforderungen festlegen", "Anforderungs-Baseline mit Prüfkriterien", "anforderungen", 1, []),
             ("AP-2", "Architektur und Schnittstellen", "Architektur mit Bedrohungsmodell", "software_architektur", 1, ["AP-1"]),
             ("AP-3", "Umsetzung im freigegebenen Bereich", "Geprüfter Änderungsstand mit Unit-Tests", "implementierung", 1, ["AP-2"]),
-            ("AP-4", "Integration und Verifikation", "Bestandene Integrations- und Software-Tests", "software_verifikation", 2, ["AP-3"]),
+            ("AP-4", "Integration und Verifikation", "Bestandene Integrations- und Software-Tests", "software_integration", 2, ["AP-3"]),
             ("AP-5", "Abnahme durch den Fachbereich", "Dokumentierte Fachabnahme am Digest", "abnahme", 2, ["AP-4"]),
         ]
         artifacts = [
@@ -483,6 +483,10 @@ class SimulatedProvider:
             note = (f"\n\n## Änderung {auftrag.get('id', '')}: {auftrag.get('title', '')}\n\n"
                     f"{auftrag.get('behavior') or auftrag.get('goal', '')}\n\n"
                     "Rechte und Freigabestatus des Quellsystems gelten unverändert (R2).\n")
+            cases = ((context.get("artifacts") or {}).get("integrationstests") or {}).get("items", [])
+            if cases:  # Simulation: je Integrationstestfall ein benannter Test (die Prüfung zählt nur benannte Fälle)
+                note += "\nAutomatisierte Integrationstests:\n" + "".join(
+                    f"- test_{str(c.get('key', '')).replace('-', '_')}\n" for c in cases)
             changes.append({"type": "dateiaenderung", "key": path, "title": "Bedienhinweis ergänzt",
                             "content": original.rstrip("\n") + note})
         return {"status": "fertig", "summary": "Bedienhinweis im freigegebenen Pfad ergänzt.", "artifacts": changes,

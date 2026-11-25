@@ -49,6 +49,7 @@ class CheckResult:
     summary: str
     seconds: float
     command: str
+    output: str = ""  # vollständige Ausgabe (gekürzt auf 200k) für die Zuordnung von Testergebnissen je Fall
 
 
 class CheckRunner(Protocol):
@@ -193,8 +194,10 @@ class DockerCheck:
         except (OSError, subprocess.TimeoutExpired) as exc:
             return CheckResult(False, f"Prüfcontainer nicht ausführbar: {type(exc).__name__}",
                                time.monotonic() - started, self.command)
-        tail = "\n".join((result.stdout + result.stderr).strip().splitlines()[-12:])
-        return CheckResult(result.returncode == 0, tail[-3000:], time.monotonic() - started, self.command)
+        output = (result.stdout + result.stderr).strip()
+        tail = "\n".join(output.splitlines()[-12:])
+        return CheckResult(result.returncode == 0, tail[-3000:], time.monotonic() - started, self.command,
+                           output[-200_000:])
 
 
 class LocalCheck:
@@ -206,8 +209,10 @@ class LocalCheck:
     def run(self, workspace: Path) -> CheckResult:
         started = time.monotonic()
         result = subprocess.run(self.command, cwd=workspace, capture_output=True, text=True, timeout=300, check=False)
-        tail = "\n".join((result.stdout + result.stderr).strip().splitlines()[-12:])
-        return CheckResult(result.returncode == 0, tail, time.monotonic() - started, " ".join(self.command))
+        output = (result.stdout + result.stderr).strip()
+        tail = "\n".join(output.splitlines()[-12:])
+        return CheckResult(result.returncode == 0, tail, time.monotonic() - started, " ".join(self.command),
+                           output[-200_000:])
 
 
 def cleanup(state_dir: Path, run_id: str) -> None:

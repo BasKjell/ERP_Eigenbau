@@ -65,7 +65,10 @@ class PlatformSync:
             if kind not in ACTIONS:
                 return {"status": 400, "body": {"detail": "unbekannte Aktion"}}
             if kind == "detail":
-                return {"status": 200, "body": self.engine.run_detail(str(payload.get("run_id", "")))}
+                # Detailrechte prüft der Orchestrator mit der Identität der anfragenden Person.
+                if not isinstance(person, dict) or not person.get("username"):
+                    return {"status": 403, "body": {"detail": "Aktion braucht eine angemeldete Person"}}
+                return {"status": 200, "body": self.engine.run_detail(str(payload.get("run_id", "")), person)}
             if kind == "agent_config":
                 return {"status": 200, "body": self.engine.agent_config(str(payload.get("role", "")))}
             if not isinstance(person, dict) or not person.get("username"):

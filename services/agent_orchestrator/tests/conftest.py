@@ -65,7 +65,11 @@ def make_engine(tmp_path: Path, registry: registry_module.Registry, git_repo: Pa
                 profile_providers: dict[str, str] | None = None, sandbox: bool = True,
                 demo_mode: bool = False, **extra: Any) -> Engine:
         store = Store(tmp_path / "state" / "flow.sqlite")
-        command = ["python3", "-c", "import sys; sys.exit(0)" if check_passes else "import sys; print('1 failed'); sys.exit(1)"]
+        # Wie „pytest -rA“: meldet je im Arbeitsbereich benanntem Test test_IT_… ein PASSED (Ergebnis je Fall).
+        passing = ("import pathlib, re, sys\n"
+                   "names = sorted({m for f in pathlib.Path('.').rglob('*.md') for m in re.findall(r'test_IT_[A-Za-z0-9_]+', f.read_text())})\n"
+                   "[print(f'PASSED tests/test_integration.py::{n}') for n in names]\nsys.exit(0)")
+        command = ["python3", "-c", passing if check_passes else "import sys; print('1 failed'); sys.exit(1)"]
         box = Sandbox(git_repo, tmp_path / "state", base_ref="HEAD", allowed_prefixes=("docs/",),
                       checker=LocalCheck(command)) if sandbox else None
         all_providers = {"simulated": SimulatedProvider(), **(providers or {})}

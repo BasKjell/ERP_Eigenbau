@@ -248,7 +248,7 @@ agents:
     kind: create
     mission: Liefert Code und Unit-Tests ausschließlich im eigenen Aufgabenbranch der Sandbox.
     tools: [rm.get_baseline, repo.read, repo.write_branch, ci.read]
-    reads: [auftrag, anforderungen, baseline, architektur, plan, codebefund, sicherheitsbefund]
+    reads: [auftrag, anforderungen, baseline, architektur, plan, codebefund, sicherheitsbefund, integrationstests]
     data_classes: [intern]
     limits: {max_changed_files: 6}
     reviewed_by: codepruefung

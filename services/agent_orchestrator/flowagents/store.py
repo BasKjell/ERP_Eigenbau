@@ -111,6 +111,24 @@ class Store:
         self.db.row_factory = sqlite3.Row
         with self._lock:
             self.db.executescript(SCHEMA)
+            self._migrate()
+
+    # Spalten, die nach der ersten Fassung hinzukamen (ALTER TABLE, idempotent).
+    MIGRATIONS = (
+        # Stabile Schritt-ID: der Index allein verschiebt sich, wenn sich der Ablauf im Register ändert.
+        ("runs", "step_id", "TEXT NOT NULL DEFAULT ''"),
+        # Abschlussart: produktion (G5), projektplanung (EP1 bei L), katalog (Projekt aus dem Katalog).
+        ("runs", "completion", "TEXT NOT NULL DEFAULT ''"),
+        # Registerstand, unter dem eine Entscheidung geöffnet wurde.
+        ("decisions", "registry_digest", "TEXT NOT NULL DEFAULT ''"),
+    )
+
+    def _migrate(self) -> None:
+        for table, column, spec in self.MIGRATIONS:
+            existing = {row["name"] for row in self.db.execute(f"PRAGMA table_info({table})")}
+            if column not in existing:
+                with self.db:
+                    self.db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {spec}")  # nur feste Namen
 
     def close(self) -> None:
         with self._lock:
@@ -142,32 +160,41 @@ class Store:
         registry_digest: str,
         idempotency_key: str,
         announce: bool = True,
+        step_id: str = "",
     ) -> dict[str, Any]:
         with self._lock, self.db:
-            existing = self.db.execute(
-                "SELECT * FROM runs WHERE idempotency_key=?", (idempotency_key,)
-            ).fetchone()
-            if existing:
-                previous = {k: v for k, v in json.loads(existing["auftrag"]).items() if k != "id"}
-                if previous != auftrag:
-                    raise ValueError("Idempotenzschlüssel bereits mit anderem Auftrag verwendet")
-                return self._run(existing)
-            number = self.db.execute("SELECT COUNT(*) FROM runs").fetchone()[0] + 1
-            now = time.time()
-            run_id = f"RUN-{datetime.fromtimestamp(now, UTC):%Y%m%d}-{secrets.token_hex(3).upper()}"
-            auftrag_id = f"A-{number:03d}"
-            stored = {**auftrag, "id": auftrag_id}
-            self.db.execute(
-                "INSERT INTO runs(id, auftrag_id, title, change_class, status, auftrag, requested_by,"
-                " registry_digest, idempotency_key, created, updated) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                (run_id, auftrag_id, title, change_class, "aktiv", canonical(stored), canonical(requested_by),
-                 registry_digest, idempotency_key, now, now),
-            )
-            self._add_artifact(run_id, "auftrag", "auftraggeber", "eingang", stored, {})
-            if announce:  # Katalogprojekte gehen nicht durch die Geschäftsführung
-                self._event(run_id, "auftrag", str(requested_by.get("username") or "mensch"), "geschaeftsfuehrung",
-                            f"Fachauftrag {auftrag_id} „{title}“ eingereicht ({change_class})", {})
-            return self.run(run_id)
+            run_id = self._create_run(title=title, change_class=change_class, auftrag=auftrag,
+                                      requested_by=requested_by, registry_digest=registry_digest,
+                                      idempotency_key=idempotency_key, announce=announce, step_id=step_id)
+        return self.run(run_id)
+
+    def _create_run(self, *, title: str, change_class: str, auftrag: dict[str, Any], requested_by: dict[str, Any],
+                    registry_digest: str, idempotency_key: str, announce: bool, step_id: str) -> str:
+        """Lauf anlegen ohne eigene Transaktion (Aufrufer hält Sperre und Transaktion)."""
+        existing = self.db.execute(
+            "SELECT * FROM runs WHERE idempotency_key=?", (idempotency_key,)
+        ).fetchone()
+        if existing:
+            previous = {k: v for k, v in json.loads(existing["auftrag"]).items() if k != "id"}
+            if previous != auftrag:
+                raise ValueError("Idempotenzschlüssel bereits mit anderem Auftrag verwendet")
+            return str(existing["id"])
+        number = self.db.execute("SELECT COUNT(*) FROM runs").fetchone()[0] + 1
+        now = time.time()
+        run_id = f"RUN-{datetime.fromtimestamp(now, UTC):%Y%m%d}-{secrets.token_hex(3).upper()}"
+        auftrag_id = f"A-{number:03d}"
+        stored = {**auftrag, "id": auftrag_id}
+        self.db.execute(
+            "INSERT INTO runs(id, auftrag_id, title, change_class, status, auftrag, requested_by,"
+            " registry_digest, idempotency_key, created, updated, step_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (run_id, auftrag_id, title, change_class, "aktiv", canonical(stored), canonical(requested_by),
+             registry_digest, idempotency_key, now, now, step_id),
+        )
+        self._add_artifact(run_id, "auftrag", "auftraggeber", "eingang", stored, {})
+        if announce:  # Katalogprojekte gehen nicht durch die Geschäftsführung
+            self._event(run_id, "auftrag", str(requested_by.get("username") or "mensch"), "geschaeftsfuehrung",
+                        f"Fachauftrag {auftrag_id} „{title}“ eingereicht ({change_class})", {})
+        return run_id
 
     def run(self, run_id: str) -> dict[str, Any]:
         with self._lock:
@@ -189,14 +216,18 @@ class Store:
         return self._run(row) if row else None
 
     def update_run(self, run_id: str, **fields: Any) -> None:
-        allowed = {"status", "step_index", "corrections", "model_calls", "output_tokens", "reason", "registry_digest"}
+        allowed = {"status", "step_index", "corrections", "model_calls", "output_tokens", "reason", "registry_digest",
+                   "step_id", "completion"}
         if set(fields) - allowed:
             raise ValueError("unzulässige Laufspalte")
         values = {k: canonical(v) if k == "corrections" else v for k, v in fields.items()}
         values["updated"] = time.time()
         columns = ", ".join(f"{name}=?" for name in values)  # Spalten nur aus der Positivliste
         with self._lock, self.db:
-            self.db.execute(f"UPDATE runs SET {columns} WHERE id=?", (*values.values(), run_id))
+            self._update_run(run_id, values, columns)
+
+    def _update_run(self, run_id: str, values: dict[str, Any], columns: str) -> None:
+        self.db.execute(f"UPDATE runs SET {columns} WHERE id=?", (*values.values(), run_id))
 
     @staticmethod
     def _run(row: sqlite3.Row) -> dict[str, Any]:
@@ -316,17 +347,51 @@ class Store:
                        defined_by: dict[str, Any], *, project_id: str = "") -> dict[str, Any]:
         """Legt zu einem Projektlauf genau ein Projekt an (idempotent über die Lauf-ID)."""
         with self._lock, self.db:
-            existing = self.db.execute("SELECT id FROM projects WHERE run_id=?", (run["id"],)).fetchone()
-            if existing:
-                return self.project(existing["id"])
-            project_id = project_id or "PRJ-" + run["auftrag_id"].split("-", 1)[-1]
-            self.db.execute("INSERT INTO projects VALUES (?,?,?,?,?,?)",
-                            (project_id, run["id"], run["title"], canonical(run["auftrag"]), canonical(defined_by),
-                             time.time()))
-            for position, spec in enumerate(packages):
-                self.db.execute("INSERT INTO work_packages(project_id, key, position, spec) VALUES (?,?,?,?)",
-                                (project_id, str(spec["key"]), position, canonical(spec)))
+            project_id = self._create_project(run, packages, defined_by, project_id)
         return self.project(project_id)
+
+    def _create_project(self, run: dict[str, Any], packages: list[dict[str, Any]], defined_by: dict[str, Any],
+                        project_id: str) -> str:
+        existing = self.db.execute("SELECT id FROM projects WHERE run_id=?", (run["id"],)).fetchone()
+        if existing:
+            return str(existing["id"])
+        project_id = project_id or "PRJ-" + run["auftrag_id"].split("-", 1)[-1]
+        self.db.execute("INSERT INTO projects VALUES (?,?,?,?,?,?)",
+                        (project_id, run["id"], run["title"], canonical(run["auftrag"]), canonical(defined_by),
+                         time.time()))
+        for position, spec in enumerate(packages):
+            self.db.execute("INSERT INTO work_packages(project_id, key, position, spec) VALUES (?,?,?,?)",
+                            (project_id, str(spec["key"]), position, canonical(spec)))
+        return project_id
+
+    def complete_with_project(self, run: dict[str, Any], packages: list[dict[str, Any]], defined_by: dict[str, Any],
+                              *, reason: str, completion: str, step_index: int, project_id: str = "") -> dict[str, Any]:
+        """Lauf abschließen und Projekt anlegen in einer Transaktion (kein abgeschlossener Lauf ohne Projekt)."""
+        with self._lock, self.db:
+            project_id = self._create_project(run, packages, defined_by, project_id)
+            values = {"status": "abgeschlossen", "step_index": step_index, "step_id": "fertig", "reason": reason,
+                      "completion": completion, "updated": time.time()}
+            self._update_run(run["id"], values, ", ".join(f"{name}=?" for name in values))
+        return self.project(project_id)
+
+    def create_package_run(self, project_id: str, key: str, person: dict[str, Any], **run: Any) -> dict[str, Any]:
+        """Lauf für ein Arbeitspaket anlegen und binden in einer Transaktion (wiederanlauffähig).
+
+        Ist das Paket schon gebunden, gilt die bestehende Bindung. Hinterlässt ein Absturz einen Lauf
+        mit dem Paketschlüssel ohne Bindung, wird er hier gebunden statt doppelt angelegt.
+        """
+        with self._lock, self.db:
+            row = self.db.execute("SELECT run_id FROM work_packages WHERE project_id=? AND key=?",
+                                  (project_id, key)).fetchone()
+            if row is None:
+                raise KeyError(key)
+            if row["run_id"]:
+                return self._run(self.db.execute("SELECT * FROM runs WHERE id=?", (row["run_id"],)).fetchone())
+            run_id = self._create_run(**run)
+            self.db.execute(
+                "UPDATE work_packages SET run_id=?, started_by=?, started=? WHERE project_id=? AND key=? AND run_id=''",
+                (run_id, canonical(person), time.time(), project_id, key))
+        return self.run(run_id)
 
     def project(self, project_id: str) -> dict[str, Any]:
         with self._lock:
@@ -471,14 +536,15 @@ class Store:
         context: dict[str, Any],
         digest: str = "",
         actor: str = "orchestrator",
+        registry_digest: str = "",
     ) -> dict[str, Any]:
         decision_id = f"ENT-{secrets.token_hex(4).upper()}"
         with self._lock, self.db:
             self.db.execute(
                 "INSERT INTO decisions(id, run_id, step_id, gate, decider, status, title, question, context,"
-                " digest, created) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                " digest, created, registry_digest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                 (decision_id, run_id, step_id, gate, decider, "offen", title, question, canonical(context),
-                 digest, time.time()),
+                 digest, time.time(), registry_digest),
             )
             self._event(run_id, "entscheidung_offen", actor, f"mensch:{decider}",
                         f"{title}: Entscheidung durch {decider} erforderlich", {"decision": decision_id, "gate": gate})

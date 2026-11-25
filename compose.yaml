@@ -85,7 +85,10 @@ services:
       GRAFANA_PUBLIC_URL: ${GRAFANA_PUBLIC_URL:-http://localhost:3000}
       REDMINE_API_KEY: ${REDMINE_API_KEY:-f6ab4d1c02fe9a7b3e5d8c4f1a6b9e2c7d0f3a5b}
       READINESS_REQUIRE_INTEGRATIONS: ${READINESS_REQUIRE_INTEGRATIONS:-false}
-      AUTH_MODE: ${AUTH_MODE:-demo}
+      # Standard ist die Anmeldung über FLOWID. Die Demo ohne Anmeldung (jede Anfrage erhält
+      # platform-admin) nur ausdrücklich mit AUTH_MODE=demo und nur an Loopback (PLATFORM_BIND).
+      AUTH_MODE: ${AUTH_MODE:-oidc}
+      PLATFORM_BIND: ${PLATFORM_BIND:-127.0.0.1}
       AUTH_SESSION_SECRET: ${AUTH_SESSION_SECRET:-local-session-secret-change-before-network-use}
       AUTH_SESSION_MINUTES: ${AUTH_SESSION_MINUTES:-480}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
@@ -105,7 +108,7 @@ services:
       # FLOWDOC-Dateispeicher für Formate, die Paperless nicht verarbeitet (STL), siehe app/dms_files.py
       DMS_FILE_STORE: /data/flowdoc-files
     ports:
-      - "${DEMO_API_PORT:-8088}:8080"
+      - "${PLATFORM_BIND:-127.0.0.1}:${DEMO_API_PORT:-8088}:8080"
     volumes:
       - demo-state:/data
       - flowdoc-files:/data/flowdoc-files

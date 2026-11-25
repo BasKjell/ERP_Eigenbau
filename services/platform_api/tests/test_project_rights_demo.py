@@ -37,6 +37,11 @@ OVERVIEW = {
     "decisions": [{"run_id": "R1", "auftrag": {"project": "TM-100"}}, {"run_id": "R2", "auftrag": {"project": "PS-TM100"}}],
     "projects": [{"id": "PRJ-TM-100", "code": "TM-100"}, {"id": "PRJ-PS-TM100", "code": "PS-TM100"}],
     "events": [{"run_id": "R1"}, {"run_id": "R2"}, {"run_id": "R3"}],
+    # Projektbindung jedes referenzierten Laufs (liefert der Orchestrator in der Übersicht mit).
+    "access": {"runs": {"R1": {"project": "TM-100", "bound": True}, "R2": {"project": "PS-TM100", "bound": True},
+                        "R3": {"project": "FLOW-ALT", "bound": False}},
+               "projects": {"PRJ-TM-100": {"project": "TM-100", "bound": True},
+                            "PRJ-PS-TM100": {"project": "PS-TM100", "bound": True}}},
 }
 
 
@@ -174,3 +179,66 @@ def test_only_admins_manage_business_agents(switch_client) -> None:  # noqa: ANN
     assert client.post("/api/agents/fachagenten", json=spec, cookies=session(auth, "po.demo")).status_code == 403
     assert client.post("/api/agents/fachagenten/entwurf", json={"description": "Ein Agent für Einkaufsmails"},
                        cookies=session(auth, "po.demo")).status_code == 403
+
+
+def test_foreign_run_details_do_not_leak_through_agents_usage_or_older_events() -> None:
+    """B2: aktuelle Arbeit der Agenten, letzte Meldung, Token je Lauf und ältere Ereignisse folgen derselben
+    berechtigten Laufmenge wie die Auftragsliste."""
+    overview = {
+        **OVERVIEW,
+        "agents": [{"role": "entwicklung", "current": {"run_id": "R2", "title": "Geheimes Prüfprogramm"},
+                    "last": {"run_id": "R2", "message": "Prüfprogramm PS-TM100 umgesetzt"}},
+                   {"role": "planung", "current": {"run_id": "R1", "title": "TM-100"}, "last": None}],
+        "usage": {"totals": [], "by_run": [{"run_id": "R2", "title": "Geheimes Prüfprogramm"}, {"run_id": "R1"}]},
+        # R9 steht nicht in der Auftragsliste (älter als die letzten 30 Läufe), aber im Zugriffsverzeichnis.
+        "events": [{"run_id": "R9", "message": "alt"}, {"run_id": "R7", "message": "ohne Eintrag"}, {"run_id": None}],
+        "access": {**OVERVIEW["access"], "runs": {**OVERVIEW["access"]["runs"],
+                                                  "R9": {"project": "PS-TM100", "bound": True}}},
+    }
+    shown = visible_overview(overview, {"roles": ["flow-po", "flow-prj-tm-100-lesen"]})
+    agents = {a["role"]: a for a in shown["agents"]}
+    assert agents["entwicklung"]["current"] is None and agents["entwicklung"]["last"] is None
+    assert agents["planung"]["current"]["run_id"] == "R1"
+    assert [u["run_id"] for u in shown["usage"]["by_run"]] == ["R1"]
+    assert [e["run_id"] for e in shown["events"]] == [None], "fremde und unbekannte Läufe bleiben verborgen"
+    assert "Geheimes" not in str(shown) and "access" not in shown
+
+
+def test_bound_runs_stay_protected_when_the_catalog_loses_the_project() -> None:
+    """B3: Fehlt ein Projekt im Katalog (Datei leer, Code entfernt), bleiben gebundene Läufe geschützt."""
+    overview = {**OVERVIEW, "project_catalog": {}}
+    shown = visible_overview(overview, {"roles": ["flow-po"]})
+    assert [r["id"] for r in shown["runs"]] == ["R3"], "nur der nie gebundene Altauftrag ist offen"
+    assert [r["id"] for r in visible_overview(overview, {"roles": ["flow-isb"]})["runs"]] == ["R1", "R2", "R3"]
+
+
+def test_demo_without_login_only_on_loopback() -> None:
+    """B4: Der Demo-Modus gibt jeder Anfrage Plattformrechte – deshalb nur ausdrücklich und nur an Loopback."""
+    from app.config import check_auth_exposure
+
+    check_auth_exposure(dataclasses.replace(oidc_settings(), auth_mode="demo", platform_bind="127.0.0.1"))
+    check_auth_exposure(dataclasses.replace(oidc_settings(), platform_bind="0.0.0.0"))  # OIDC darf erreichbar sein
+    for bind in ("0.0.0.0", "192.168.1.20", ""):
+        with pytest.raises(RuntimeError, match="nur an Loopback"):
+            check_auth_exposure(dataclasses.replace(oidc_settings(), auth_mode="demo", platform_bind=bind))
+    with pytest.raises(RuntimeError, match="unbekannt"):
+        check_auth_exposure(dataclasses.replace(oidc_settings(), auth_mode="aus"))
+
+
+def test_compose_binds_the_platform_to_loopback_and_defaults_to_oidc() -> None:
+    here = Path(__file__).resolve()
+    found = [p / "compose.yaml" for p in here.parents if (p / "compose.yaml").exists()] + \
+        [Path("/repo/compose.yaml")] * Path("/repo/compose.yaml").exists()
+    if not found:
+        pytest.skip("compose.yaml liegt nicht im Testcontainer")
+    compose = found[0].read_text(encoding="utf-8")
+    assert '"${PLATFORM_BIND:-127.0.0.1}:${DEMO_API_PORT:-8088}:8080"' in compose
+    assert "AUTH_MODE: ${AUTH_MODE:-oidc}" in compose and "AUTH_MODE: ${AUTH_MODE:-demo}" not in compose
+
+
+def test_flowai_service_status_contains_no_project_runs() -> None:
+    """B2: FLOWAI fragt mit Dienstrecht ohne Person und sieht nur ungebundene Altaufträge."""
+    from app.flow_routes import SERVICE_IDENTITY
+
+    shown = visible_overview(OVERVIEW, SERVICE_IDENTITY)
+    assert [r["id"] for r in shown["runs"]] == ["R3"] and shown["decisions"] == [] and shown["hidden_runs"] == 2

@@ -80,15 +80,17 @@ def test_sync_pulls_actions_and_publishes_state(make_engine) -> None:  # noqa: A
         drive(engine)
         decision = engine.store.decisions(status="offen", run_id=run_id)[0]
         FakePortal.actions = [
-            {"id": "b1", "kind": "detail", "person": None, "payload": {"run_id": run_id}},
+            {"id": "b1", "kind": "detail", "person": KEY_USER, "payload": {"run_id": run_id}},
+            {"id": "b0", "kind": "detail", "person": None, "payload": {"run_id": run_id}},
             {"id": "b2", "kind": "decide", "person": NOBODY, "payload": {"decision_id": decision["id"], "outcome": "annehmen"}},
             {"id": "b3", "kind": "decide", "person": KEY_USER,
              "payload": {"decision_id": decision["id"], "outcome": "annehmen", "comment": "geprüft"}},
-            {"id": "b4", "kind": "detail", "person": None, "payload": {"run_id": "RUN-unbekannt"}},
+            {"id": "b4", "kind": "detail", "person": KEY_USER, "payload": {"run_id": "RUN-unbekannt"}},
         ]
         sync.once()
         results = {r["id"]: r for r in FakePortal.results[-1]["results"]}
         assert results["b1"]["status"] == 200 and results["b1"]["body"]["run"]["id"] == run_id
+        assert results["b0"]["status"] == 403, "Details nur mit der Identität der anfragenden Person"
         assert results["b2"]["status"] == 403
         assert results["b3"]["status"] == 200 and results["b3"]["body"]["status"] == "angenommen"
         assert results["b4"]["status"] == 404

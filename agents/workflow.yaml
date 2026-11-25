@@ -113,7 +113,9 @@ steps:
     role: integrationstest
     kind: create
     produces: integrationstests
-    when: {project_class: [M, L]}
+    # Bei L laufen Arbeitspakete im Kurzweg; das Integrationspaket (V-Ebene *integration) liefert
+    # den projektweiten Integrationsnachweis und durchläuft deshalb diesen Schritt.
+    when: {project_class: [M, L], flag: [integration_required]}
 
   - id: planung
     label: Aufgaben planen

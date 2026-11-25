@@ -118,6 +118,8 @@ class Step:
     def applies(self, auftrag: dict[str, Any]) -> bool:
         """Gilt dieser Schritt für den Zuschnitt des Auftrags (Projektklasse)?"""
         allowed = self.when.get("project_class")
+        if any(auftrag.get(flag) for flag in self.when.get("flag", ())):
+            return True  # z. B. Integrationspaket eines L-Projekts: Integrationstests trotz Kurzweg
         return not allowed or str(auftrag.get("project_class") or "S") in allowed
 
 
@@ -361,7 +363,8 @@ def load(directory: Path, overrides: dict[str, dict[str, Any]] | None = None) ->
             ep=str(raw.get("ep") or ""),
             completes_for=tuple(str(x) for x in raw.get("completes_for") or ()),
         )
-        _require(set(step.when) <= {"project_class"}, f"Schritt {step.id}: unbekannte Bedingung")
+        _require(set(step.when) <= {"project_class", "flag"}, f"Schritt {step.id}: unbekannte Bedingung")
+        _require(set(step.when.get("flag", ())) <= {"integration_required"}, f"Schritt {step.id}: unbekannte Kennzeichnung")
         _require(set(step.when.get("project_class", ())) <= set(PROJECT_CLASSES),
                  f"Schritt {step.id}: unbekannte Projektklasse")
         _require(set(step.completes_for) <= set(PROJECT_CLASSES) and (not step.completes_for or step.kind == "gate"),
