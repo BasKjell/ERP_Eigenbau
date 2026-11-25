@@ -11,7 +11,7 @@
 | Freigabe | Informationsverbundverantwortlicher nach dokumentierter Prüfung durch ISB |
 | Überprüfung | jährlich sowie bei neuem Verbraucher, neuem Modell, Architektur- oder Schutzbedarfsänderung |
 | Einstufung | intern |
-| Mitgeltend | [SEC-IAM-001 IAM-Sicherheitskonzept](iam-security-concept.md), [KI-EK Teil 09](../konzepte/ki-entwicklungskonzept/09-regeln-fuer-gateway-und-lokale-modellserver.md), [KI-U-10 Modelle und Lieferanten](../konzepte/ki-unternehmenskonzept/10-modelle-und-lieferanten.md) |
+| Mitgeltend | [SEC-IAM-001 IAM-Sicherheitskonzept](iam-security-concept.md), [KI-Softwareentwicklung Teil 08 Plattform, Identitäten und Rechte](../konzepte/ki-softwareentwicklung/08-plattform-identitaeten-rechte.md), [KI-U-10 Modelle und Lieferanten](../konzepte/ki-unternehmenskonzept/10-modelle-und-lieferanten.md) |
 
 ## 1. Zweck
 
@@ -63,6 +63,27 @@ flowchart LR
 | Administration | Eigene Oberfläche, Anmeldung über Keycloak (OIDC-Code-Flow durch das Gateway), Autorisierungsregel `platform-admin` |
 | Netz | LLM-Endpunkt auf dem Host nur Loopback (`127.0.0.1:4000`); sonst nur interne Docker-Netze (`platform`, `flow-agents-opencode`); Ollama auf dem Host nur Loopback (`127.0.0.1:11434`) |
 | Externe Modelle | **Laufen nicht über FLOWGATE.** Die Abo-Worker Codex und Claude nutzen eigene isolierte Netze mit Egress-Proxy nur zum jeweiligen Anbieter und nur für nicht vertrauliche Aufträge ([Sicherheitskonzept FLOWAGENTS](../agents/sicherheitskonzept.md)) |
+
+### Reihenfolge der Autorisierung (Zielbild)
+
+Übernommen aus den Gateway-Regeln des bisherigen KI-Entwicklungskonzepts. Die Referenzumgebung setzt
+Schritt 1 und 2 über virtuelle Schlüssel und Modelllisten um; Werkzeugrouten laufen dort über den
+Orchestrator und den RM-Adapter.
+
+1. **Gateway:** prüft für jede Modell- und Werkzeugroute TLS, zugelassenen Aussteller, Signatur mit erlaubtem
+   Algorithmus, Zielressource, Gültigkeit und autorisierte Dienstidentität. Ein geschütztes Register bindet
+   Identität, Rolle, Projekt, Lauf und freigegebenes Modell. Unbekannte Rollen, fehlende Bindungen und
+   mehrdeutige Zuordnungen führen zur Ablehnung.
+2. **Erlaubte Kombinationen:** Das Gateway akzeptiert nur ausdrücklich erlaubte Kombinationen aus Rolle, Ziel
+   und Operation, auch bei direkten Aufrufen von Werkzeugen, die in einer Liste verborgen sind. Der Worker
+   kann weder Modellpfad noch Backend-Adresse wählen. Werkzeugbeschreibungen sind versioniert; neue Werkzeuge
+   bleiben bis zum geprüften Change gesperrt.
+3. **Adapter:** Zum Adapter gilt mTLS mit festgelegter Dienstidentität und vertrauenswürdiger CA. Bei
+   getrennten OAuth-Ressourcen wird ein neues, für den jeweiligen Adapter bestimmtes Token verwendet (Token
+   Exchange nach SEC-IAM-001). Delegierte Aufträge binden die auslösende Person nachvollziehbar an den Lauf.
+4. **Zielsystem:** Adapter und Zielsystem kontrollieren Objekt, Projekt, Version, Pfad, Status und
+   Empfängerkreis. Für einen Retry gelten dieselben Bedingungen wie für den ersten Aufruf; der Server prüft
+   den aktuellen Zustand erneut.
 
 ## 3. Verbraucher und Schlüssel
 
@@ -128,7 +149,7 @@ Regeln:
   bis zum ersten Token, Zeit je Ausgabe-Token. Grafana zeigt das Dashboard „Lokale KI – Token-Verbrauch“.
 - **Je Agentenrolle** speichert der Orchestrator jeden Modellaufruf (Rolle, Modell, Token, Sekunden) ohne
   Inhalte; Fachagenten erscheinen als Rolle `fachagenten`.
-- **Diagnose-Mitschnitte** mit Inhalten nur befristet, begründet und mit Löschfrist (KI-EK Teil 09).
+- **Diagnose-Mitschnitte** mit Inhalten nur befristet, begründet, im Umfang begrenzt, redigiert und mit Löschfrist. Standardprotokolle enthalten Ereignis-ID, Zeit, Lauf, Dienstrolle, soweit erforderlich eine pseudonyme Personenreferenz, Ressource, Richtlinienversion, Entscheidung und Fehlercode; Integritätsschutz und Löschkonzept sind aufeinander abgestimmt.
 
 ## 7. Grenzen, Budgets und Ausfall
 
@@ -144,7 +165,7 @@ Regeln:
 
 | Punkt | Festlegung |
 |---|---|
-| Konfiguration | `deployment/agentgateway/config.yaml` im Git; Geheimnisse nur als Umgebungsvariablen |
+| Konfiguration | `deployment/agentgateway/config.yaml` im Git; Geheimnisse nur als Umgebungsvariablen. Im Release der Plattform werden Produktversion, Konfigurationsschema, Richtlinien-Hash, Vertrauenskette und Testergebnisse gemeinsam erfasst. |
 | Version | Agentgateway 1.7 (Apache-2.0); Image `cr.agentgateway.dev/agentgateway:v1.7.0` |
 | Start | `make ai-gateway` bzw. `docker compose --profile ai-gateway up -d agentgateway`; Ollama auf dem Host |
 | Funktionsprüfung | Aufruf ohne gültigen Schlüssel → 401; Aufruf mit Rollenschlüssel und fremdem Modell → 403; Admin-Oberfläche nur mit `platform-admin` |
@@ -158,7 +179,7 @@ Regeln:
 | Abweichung | Behandlung |
 |---|---|
 | Demo-Schlüssel (`agw-demo-…-change-before-network-use`) im Klartext in `.env` bzw. als Compose-Standard | vor jeder Netzwerknutzung durch Secret Store ersetzen |
-| Kein TLS zwischen Verbrauchern, Gateway und Modellserver | intern TLS bzw. mTLS (KI-EK Teil 09) |
+| Kein TLS zwischen Verbrauchern, Gateway und Modellserver | intern TLS bzw. mTLS (Abschnitt 2, Reihenfolge der Autorisierung) |
 | Gateway-Image per Tag statt per Digest | im Produktivbetrieb per Digest |
 | Keine Budgets oder Ratenbegrenzung im Gateway; Budgets nur im Orchestrator | Kontingente je Verbraucher im Gateway |
 | Keine Identität der Person bei FLOWAI-Aufrufen | Token-Weitergabe bzw. Token Exchange |

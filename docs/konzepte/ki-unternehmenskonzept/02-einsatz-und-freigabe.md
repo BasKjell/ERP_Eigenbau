@@ -14,7 +14,7 @@ Jeder produktive Einsatz besitzt eine Use-Case-ID, einen fachlichen Eigentümer 
 | A3 Begrenzt automatisieren | Vorab genehmigte, umkehrbare Routine in einem festen Bereich ausführen | Mengengrenze, Abschaltung, Überwachung, Stichprobe, manuelle Ersatzbearbeitung und erneute Befristung. |
 | A4 Menschliche Verantwortung | Keine Ausführung durch den Agenten; er darf nur nach A0 oder A1 zuarbeiten | Beziehung, Signatur, Haftung und Grundsatzentscheidungen bleiben beim Menschen. |
 
-Die Stufen entsprechen dem Agentenregister der Referenzumgebung. Sie ordnen die Bedienung. Die rechtliche Einstufung und die Risikoklasse einer Softwareänderung aus dem KI-Entwicklungskonzept werden in eigenen Feldern geführt. A0 kann hochsensible Informationen betreffen. A2 kann für einen ERP-Entwurf angemessen sein, obwohl die spätere Bestellung eine gesonderte Zeichnungsbefugnis erfordert.
+Die Stufen entsprechen dem Agentenregister der Referenzumgebung. Sie ordnen die Bedienung. Die rechtliche Einstufung und die Einstufung einer Softwareänderung nach Projektklasse und Kritikalität aus dem Konzept KI-Softwareentwicklung nach dem V-Modell werden in eigenen Feldern geführt. A0 kann hochsensible Informationen betreffen. A2 kann für einen ERP-Entwurf angemessen sein, obwohl die spätere Bestellung eine gesonderte Zeichnungsbefugnis erfordert.
 
 ## Das Agentenregister
 

@@ -1,7 +1,7 @@
 # Bewertung der Agenten und Modelle
 
 Bewertet werden bestandene Abnahmekriterien, gefundene Fehler und der Gesamtaufwand einschließlich
-Nacharbeit (AGENTS.md §3, KI-EK Teil 05 „Wirksamkeit messen“). Übereinstimmung mehrerer Modelle ist
+Nacharbeit (AGENTS.md §3, Kennzahlen in KI-Softwareentwicklung Teil 11). Übereinstimmung mehrerer Modelle ist
 kein empirischer Nachweis. Fehler, die später gefunden werden, werden beim verursachenden Eintrag
 nachgetragen.
 
@@ -25,4 +25,4 @@ nachgetragen.
 Folgerung: Die lokalen Prüfer sind nachgiebig und anfällig für Kontextwiederholung. Vor einem
 Pilot braucht jede Rolle einen Evaluationssatz mit Referenzfällen (korrekte Arbeit, fehlende Quelle,
 widersprüchlicher Auftrag, unzulässiges Werkzeug, gewünschte Selbstfreigabe; KI-U-05) und eine
-Schwelle, unter der ein Modellwechsel gesperrt bleibt (KI-EK Test 34).
+Schwelle, unter der ein Modellwechsel gesperrt bleibt (Abnahmetest 34 in KI-Softwareentwicklung Teil 11).

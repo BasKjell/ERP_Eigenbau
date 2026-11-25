@@ -82,7 +82,7 @@ Administrationsoberflächen der Werkzeuge bleiben für Betrieb und seltene Sonde
    angemeldeten Person** (FLOWDOC: Paperless-Remote-User aus der FLOWID-Sitzung) und baut keine
    eigene Rechtelogik nach. Technische Konten nur im gekennzeichneten Demo-Modus.
 2. Keine Schattendatenhaltung: Die Oberfläche speichert keine Fachobjekte; Caches unterliegen
-   derselben Rechteprüfung (KI-EK Teil 04).
+   derselben Rechteprüfung (KI-Softwareentwicklung Teil 08, SEC-IAM-001).
 3. Nur unterstützte, versionierte APIs; Abhängigkeiten von internen Endpunkten werden als Risiko
    dokumentiert und getestet.
 4. Ein Werkzeug wird nur dann „headless“ genutzt, wenn seine API den Fachprozess abdeckt. Seltene

@@ -1,8 +1,9 @@
 # AGENTS.md – verbindliche Arbeitsregeln für ERP_Eigenbau
 
 Gilt für alle Agenten (Claude Code, Codex, lokale Rollen über FLOWAGENTS) und für Menschen, die an
-diesem Repository arbeiten. Grundlage sind das KI-Entwicklungskonzept (Revision 2026-11-20), das
-Unternehmenskonzept KI-U-00 bis KI-U-12 und die Arbeitsweise aus `Trading_Ai`. Bei Widerspruch
+diesem Repository arbeiten. Grundlage sind das Konzept KI-Softwareentwicklung nach dem V-Modell (löst
+das KI-Entwicklungskonzept vom 2026-11-20 ab), das Unternehmenskonzept KI-U-00 bis KI-U-12 und die
+Arbeitsweise aus `Trading_Ai`. Bei Widerspruch
 gelten diese Datei, `agents/registry.yaml`, `agents/workflow.yaml` und ausdrückliche Entscheidungen
 von Bas. Konflikte werden dokumentiert und geklärt, nicht stillschweigend interpretiert.
 

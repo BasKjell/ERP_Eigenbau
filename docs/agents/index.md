@@ -8,7 +8,7 @@ FLOWPORTAL, welche Arbeit leichter werden soll; Agenten leiten Anforderungen ab,
 entwerfen Architektur, planen, testen, entwickeln, dokumentieren und stellen Nachweise zusammen.
 Menschen entscheiden an festen Punkten. Grundlage:
 [KI-Softwareentwicklung nach dem V-Modell](../konzepte/ki-softwareentwicklung/00-hauptdokument.md),
-technische Einzelheiten im [KI-Entwicklungskonzept (Teil 01–10)](../konzepte/ki-entwicklungskonzept/index.md),
+Plattform, Identitäten und Abnahmetests in dessen [Teil 08](../konzepte/ki-softwareentwicklung/08-plattform-identitaeten-rechte.md) und [Teil 11](../konzepte/ki-softwareentwicklung/11-einfuehrung-und-abnahmetests.md),
 sowie das [Unternehmenskonzept KI-U-00 bis KI-U-12](../konzepte/ki-unternehmenskonzept/00-hauptdokument.md).
 
 ## Wo man was sieht

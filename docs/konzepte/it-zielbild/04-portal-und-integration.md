@@ -41,7 +41,7 @@ Synchrone Abfragen nutzen dokumentierte APIs. Ereignisse tragen ID, Quelle, Obje
 
 Beispiel Eingangsrechnung: Der Eingangsdienst sichert den empfangenen Beleg und vergibt eine stabile ID. Der ERP-Adapter ordnet Geschäftspartner und Bestellung zu. Nach Timeout fragt er den bereits erzeugten Vorgang anhand des Fremdschlüssels ab. Ein zweiter Zustellversuch erzeugt keine zweite Rechnung. Stimmen Betrag oder Identität nicht überein, bleibt der Vorgang zur fachlichen Klärung offen. Der Buchungsbeleg und das Eingangsoriginal bleiben verknüpft.
 
-Interne Referenz: Revidiertes KI-Entwicklungskonzept vom 20.11.2026, Teile 3, 4, 8 und 9. Der Schutz vor unberechtigter Offenlegung ist im Pilot an jedem Ausgabeweg zu prüfen.
+Interne Referenz: KI-Softwareentwicklung nach dem V-Modell, Teil 08, sowie SEC-IAM-001 und SEC-AI-001. Der Schutz vor unberechtigter Offenlegung ist im Pilot an jedem Ausgabeweg zu prüfen.
 
 ## Quellen und Referenzen
 

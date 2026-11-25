@@ -133,7 +133,7 @@ Die Spalte „Benötigt“ bezeichnet fachliche Schnittstellen. Die Teile könne
 
 | Dokument | Vorliegende Fassungen | Inhalt |
 | --- | --- | --- |
-| KI-Entwicklungskonzept | Word-Fassung in zehn Teilen und überarbeitete Textfassung „KI-Entwicklungskonzept_Revision_2026-11-20“ | Entwicklungsprozess mit elf Agentenrollen, Risiko- bzw. Änderungsklassen, Gates und Abnahmetests |
+| KI-Softwareentwicklung nach dem V-Modell | Textfassung in zwölf Teilen (Stand 25.11.2026); löst das frühere KI-Entwicklungskonzept (Revision 20.11.2026) ab | Entwicklungsprozess nach dem V-Modell mit Projektplanung, Agentenrollen 0 bis 12, Einstufung nach Projektklasse und Kritikalität, Entscheidungspunkten und Abnahmetests |
 | IT-Zielbild Business Applications | Word-Fassung in sieben Teilen und überarbeitete Textfassung „IT-Zielbild_Business_Applications_Revision_2026-11-20“ | Plattform, Produktwahl, Schnittstellen, Weg aus der Microsoft-Abhängigkeit |
 | Dokumentation der Referenzumgebung (FLOWDOCS) | Stand des Prototyps | Architekturentscheidungen ADR-001 bis ADR-006, IAM-Sicherheitskonzept SEC-IAM-001, Schnittstellen und Bedienung |
 
@@ -178,7 +178,7 @@ Jeder Fachbereich pflegt bei Übernahme einen Prozesssteckbrief mit Auslöser, h
 
 ## Wie viel Arbeit beim Menschen bleibt
 
-Bei einem zugelassenen, wiederholbaren Entwicklungsauftrag klärt der Fachbereich Ziel und Abnahmekriterien und nimmt am Ende den konkreten Stand ab. Dazwischen können Agenten Anforderungen ableiten, gegenprüfen, umsetzen, testen und Belege sowie Dokumentation zusammenstellen. Der Ablauf hält nur an festgelegten Entscheidungspunkten an, etwa bei widersprüchlichen Anforderungen, geändertem Schutzbedarf, fehlgeschlagenem Test oder vorgeschriebener unabhängiger Freigabe. Solche Punkte erscheinen in der Entscheidungs-Inbox. Die Freigaberegel der jeweiligen Risikoklasse aus dem KI-Entwicklungskonzept bleibt wirksam. Das Programm misst deshalb auch unnötige Rückfragen und die Zahl echter menschlicher Eingriffe je abgeschlossenem Vorgang.
+Bei einem zugelassenen, wiederholbaren Entwicklungsauftrag klärt der Fachbereich Ziel und Abnahmekriterien und nimmt am Ende den konkreten Stand ab. Dazwischen können Agenten Anforderungen ableiten, gegenprüfen, umsetzen, testen und Belege sowie Dokumentation zusammenstellen. Der Ablauf hält nur an festgelegten Entscheidungspunkten an, etwa bei widersprüchlichen Anforderungen, geändertem Schutzbedarf, fehlgeschlagenem Test oder vorgeschriebener unabhängiger Freigabe. Solche Punkte erscheinen in der Entscheidungs-Inbox. Die Freigaberegel der jeweiligen Einstufung aus dem Konzept KI-Softwareentwicklung nach dem V-Modell bleibt wirksam. Das Programm misst deshalb auch unnötige Rückfragen und die Zahl echter menschlicher Eingriffe je abgeschlossenem Vorgang.
 
 ## Programmsteuerung und Investitionslogik
 

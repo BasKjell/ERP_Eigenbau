@@ -46,7 +46,7 @@ sichern diese Maßnahmen bei jeder Änderung ab; sie sind Entwicklungsnachweis, 
 | Abweichung | Behandlung |
 |---|---|
 | Lokaler Betrieb ohne TLS; Demo-Geheimnisse (`change-before-network-use`); Demo-Kennwörter und „Person wechseln“ nur für die lokale Demo | vor jeder Netzwerknutzung beheben |
-| Symmetrische Tokens zwischen Orchestrator und Plattform statt Keycloak-Dienstkonten mit Token Exchange | Ziel nach KI-EK Teil 09 |
+| Symmetrische Tokens zwischen Orchestrator und Plattform statt Keycloak-Dienstkonten mit Token Exchange | Ziel nach SEC-IAM-001 und SEC-AI-001 |
 | Paperless-Remote-User-Header im internen Netz fälschbar | Netzsegmentierung oder OIDC-Weitergabe |
 | AD-Anbindung simuliert; MFA-Pflicht für Freigabe- und Projektgruppen und benannte Vertretungen offen | mit echter LDAP-Föderation |
 | Kein Paketspiegel, keine SBOM; Schwachstellen-Agent inaktiv | offen |

@@ -62,7 +62,7 @@ Das bisherige KI-Entwicklungskonzept folgte der Logik des V-Modells nur verkürz
 
 | Dokument | Verhältnis |
 | --- | --- |
-| KI-Entwicklungskonzept (Word-Fassung und Revision vom 20.11.2026) | Wird durch dieses Konzept verallgemeinert. Die technischen Teile zu Keycloak, MCP-Verträgen, Gateway-Regeln und die Abnahmetests 01 bis 36 gelten weiter. |
+| KI-Entwicklungskonzept (Revision vom 20.11.2026) | Durch dieses Konzept abgelöst und am 25.11.2026 zurückgezogen. Die weiter gültigen technischen Teile sind übernommen: Identitäten, Rechtefluss, Fachmodell und MCP-Adapter sowie Wiederanlauf in Teil 08, Abnahmetests 01 bis 36 in Teil 11, Gateway-Regeln in SEC-AI-001, Anmeldung und Tokens in SEC-IAM-001. |
 | Unternehmenskonzept für den Einsatz lokaler KI | Regelt den KI-Einsatz in den Fachprozessen; dieses Konzept regelt die Entwicklung der Software dafür. |
 | IT-Zielbild Business Applications | Gibt Plattform und Technologie-Standards für Profil A vor. |
 | Vorlagensatz Systemdokumentation (V00 bis V14) | Dokumentiert jedes System, das in Betrieb geht. |

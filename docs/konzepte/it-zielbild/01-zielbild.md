@@ -30,7 +30,7 @@ Die IT soll ERP, Dokumentenmanagement, PLM, Tickets, Wiki und Fachanwendungen ü
 7. Zentraler Identitätsnachweis und dezentrale Objektberechtigung greifen ineinander. Entzug wird an bestehenden Sitzungen und zwischengespeicherten Daten getestet.
 8. Bei der Beschaffung zählen Open-Source-Lizenz, Wartbarkeit und vollständiger Export mit Wiederimport. Proprietäre Ausnahmen erhalten Begründung, Kosten und Ausstiegspfad.
 9. Git führt Code und versionierbare Konfiguration. Das RM-System führt Anforderungen und Abnahmen, der Tresor die Secrets und das Fachsystem die Geschäftsdaten.
-10. Ein Release enthält geprüften Stand, Betriebsanleitung und Rückfallweg. KI-generierte Änderungen durchlaufen die Prüfungen aus dem KI-Entwicklungskonzept.
+10. Ein Release enthält geprüften Stand, Betriebsanleitung und Rückfallweg. KI-generierte Änderungen durchlaufen die Prüfungen aus dem Konzept KI-Softwareentwicklung nach dem V-Modell.
 
 ## Geltung und Entscheidungsstand
 
